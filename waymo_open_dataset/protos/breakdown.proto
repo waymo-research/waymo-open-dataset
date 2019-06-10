@@ -1,0 +1,50 @@
+/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/label.proto";
+
+// A breakdown generator defines a way to shard a set of objects such that users
+// can compute metrics for different subsets of objects. Each breakdown
+// generator comes with a unique breakdown generator ID.
+message Breakdown {
+  enum GeneratorId {
+    UNKNOWN = 0;
+    // Everything is in one shard.
+    ONE_SHARD = 1;
+    // Shard by object types.
+    OBJECT_TYPE = 2;
+    // Shard by box center distance.
+    RANGE = 3;
+
+    // The following are not implemented.
+    // Shard by time of the day at which the scene is.
+    TIME_OF_DAY = 4;
+    // Shard by location of the scene.
+    LOCATION = 5;
+    // Shard by the weather of the scene.
+    WEATHER = 6;
+  }
+
+  // The breakdown generator ID.
+  optional GeneratorId generator_id = 1;
+  // The breakdown generator shard.
+  optional int32 shard = 2;
+  // The difficulty level.
+  optional Label.DifficultyLevel difficulty_level = 3;
+}

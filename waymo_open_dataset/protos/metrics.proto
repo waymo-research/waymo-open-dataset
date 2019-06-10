@@ -1,0 +1,177 @@
+// Various protos to compute tracking and detection metrics.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/label.proto";
+import "waymo_open_dataset/protos/breakdown.proto";
+
+// This is a wrapper on waymo.open_dataset.Label. We have another proto
+// to add more information such as class confidence for metrics computation.
+message Object {
+  optional Label object = 1;
+  // The confidence within [0, 1] of the prediction. Defaults to 1.0 for
+  // ground truths.
+  optional float score = 2 [default = 1.0];
+
+  // Whether this object overlaps with any NLZ (no label zone).
+  // Users do not need to set this field when evaluating on the eval leaderboard
+  // as the leaderboard does this computation.
+  optional bool overlap_with_nlz = 3;
+
+  // These must be set when evaluating on the leaderboard.
+  // This should be set to Context.name defined in
+  // dataset.proto::Context.
+  optional string context_name = 4;
+  // This should be set to Frame.timestamp_micros defined in
+  // dataset.proto::Frame.
+  optional int64 frame_timestamp_micros = 5;
+}
+
+message NoLabelZoneObject {
+  optional Polygon2dProto zone = 1;
+  optional string context_name = 2;
+  optional int64 frame_timestamp_micros = 3;
+}
+
+message Objects {
+  repeated Object objects = 1;
+
+  // Users do not need to set this when evaluating on the leaderboard.
+  repeated NoLabelZoneObject no_label_zone_objects = 2;
+}
+
+// Different types of matchers can be supported. Each matcher has a unique ID.
+message MatcherProto {
+  enum Type {
+    TYPE_UNKNOWN = 0;
+    // The Hungarian algorithm based matching that maximizes the sum of IoUs of
+    // all matched pairs. Detection scores have no effect on this matcher.
+    // https://en.wikipedia.org/wiki/Hungarian_algorithm
+    TYPE_HUNGARIAN = 1;
+    // A COCO-style matcher: matches detections (ordered by scores) one by one
+    // to the groundtruth of largest IoUs.
+    TYPE_SCORE_FIRST = 2;
+    // TEST ONLY.
+    TYPE_HUNGARIAN_TEST_ONLY = 100;
+  }
+}
+
+// A set of difficulty levels.
+message Difficulty {
+  // If no levels are set, the highest difficulty level is assumed.
+  repeated Label.DifficultyLevel levels = 1;
+}
+
+// Configuration to compute detection/tracking metrics.
+message Config {
+  // Score cutoffs used to remove predictions with lower Object::score during
+  // matching in order to compute precision-recall pairs at different operating
+  // points.
+  repeated float score_cutoffs = 1;
+  // If `score_cutoffs` above is not set, the cutoffs are generated based on the
+  // score distributions in the predictions and produce
+  // `num_desired_score_cutoffs`.
+  // NOTE: this field is to be deprecated. Manually set score_cutoffs above to
+  // [0:0.01:1].
+  // TODO: clean this up.
+  optional int32 num_desired_score_cutoffs = 2;
+  // Breakdown generator IDs. Note that users only need to specify the IDs but
+  // NOT other information about this generator such as number of shards.
+  repeated Breakdown.GeneratorId breakdown_generator_ids = 3;
+  // This has the same size as breakdown_generator_ids. Each entry indicates the
+  // set of difficulty levels to be considered for each breakdown generator.
+  repeated Difficulty difficulties = 4;
+  optional MatcherProto.Type matcher_type = 5;
+  // Indexed by label type. Size = Label::TYPE_MAX+1. The thresholds must be
+  // within [0.0, 1.0].
+  repeated float iou_thresholds = 6;
+  optional Label.Box.Type box_type = 7;
+
+  // Desired recall delta when sampling the P/R curve to compute mean average
+  // precision.
+  optional float desired_recall_delta = 8 [default = 0.05];
+}
+
+message DetectionMeasurement {
+  // Number of false positives.
+  optional int32 num_fps = 1;
+  // Number of true positives.
+  optional int32 num_tps = 2;
+  // Number of false negatives.
+  optional int32 num_fns = 3;
+
+  // Sum of heading accuracy (ha) for all TPs.
+  optional float sum_ha = 4;
+
+  // The score cutoff used to compute this measurement. Optional.
+  optional float score_cutoff = 5;
+}
+
+message DetectionMeasurements {
+  repeated DetectionMeasurement measurements = 1;
+  // The breakdown the detection measurements are computed for.
+  optional Breakdown breakdown = 2;
+}
+
+message DetectionMetrics {
+  optional float mean_average_precision = 1;
+  // Heading accuracy weighted mean average precision.
+  optional float mean_average_precision_ha_weighted = 2;
+
+  repeated float precisions = 3;
+  repeated float recalls = 4;
+  repeated float precisions_ha_weighted = 5;
+  repeated float recalls_ha_weighted = 6;
+  repeated float score_cutoffs = 7;
+
+  // The breakdown the detection metrics are computed for.
+  optional Breakdown breakdown = 8;
+  // Raw measurements.
+  optional DetectionMeasurements measurements = 9;
+}
+
+message TrackingMeasurement {
+  // The number of misses (false negatives).
+  optional int32 num_misses = 1;
+  // The number of false positives.
+  optional int32 num_fps = 2;
+  // The number of mismatches.
+  optional int32 num_mismatches = 3;
+  // The sum of matching costs for all matched objects.
+  optional double matching_cost = 4;
+  // Total number of matched objects.
+  optional int32 num_matches = 5;
+  // Total number of ground truth objects (i.e. labeled objects).
+  optional int32 num_objects_gt = 6;
+
+  // The score cutoff used to compute this measurement.
+  optional float score_cutoff = 7;
+}
+
+message TrackingMeasurements {
+  repeated TrackingMeasurement measurements = 1;
+  // The breakdown this measurements are computed for.
+  optional Breakdown breakdown = 2;
+}
+
+message TrackingMetrics {
+  // Multiple object tracking accuracy (sum of miss, mismatch and fp).
+  optional float mota = 1;
+  // Multiple object tracking precision (matching_cost / num_matches).
+  optional float motp = 2;
+  // Miss ratio (num_misses / num_objects_gt).
+  optional float miss = 3;
+  // Mismatch ratio (num_mismatches / num_objects_gt).
+  optional float mismatch = 4;
+  // False positive ratio (num_fps / num_objects_gt).
+  optional float fp = 5;
+
+  optional float score_cutoff = 6;
+
+  // The breakdown this metrics are computed for.
+  optional Breakdown breakdown = 7;
+  // Raw measurements.
+  optional TrackingMeasurements measurements = 8;
+}

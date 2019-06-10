@@ -1,0 +1,89 @@
+/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+message Label {
+  // Upright box, zero pitch and roll.
+  message Box {
+    // Box coordinates in vehicle frame.
+    optional double center_x = 1;
+    optional double center_y = 2;
+    optional double center_z = 3;
+
+    // Dimensions of the box. length: dim x. width: dim y. height: dim z.
+    optional double length = 5;
+    optional double width = 4;
+    optional double height = 6;
+
+    // The heading of the bounding box (in radians).  The heading is the angle
+    // required to rotate +x to the surface normal of the SDC front face.
+    optional double heading = 7;
+
+    enum Type {
+      TYPE_UNKNOWN = 0;
+      // 7-DOF 3D (a.k.a upright 3D box).
+      TYPE_3D = 1;
+      // 5-DOF 2D. Mostly used for laser top down representation.
+      TYPE_2D = 2;
+      // Axis aligned 2D. Mostly used for image.
+      TYPE_AA_2D = 3;
+    }
+  }
+
+  optional Box box = 1;
+
+  message Metadata {
+    optional double speed_x = 1;
+    optional double speed_y = 2;
+    optional double accel_x = 3;
+    optional double accel_y = 4;
+  }
+  optional Metadata metadata = 2;
+
+  enum Type {
+    TYPE_UNKNOWN = 0;
+    TYPE_VEHICLE = 1;
+    TYPE_PEDESTRIAN = 2;
+    TYPE_SIGN = 3;
+    TYPE_CYCLIST = 4;
+  }
+  optional Type type = 3;
+  // Object ID.
+  optional string id = 4;
+
+  // The difficulty level of this label. The higher the level, the harder it is.
+  enum DifficultyLevel {
+    UNKNOWN = 0;
+    LEVEL_1 = 1;
+    LEVEL_2 = 2;
+  }
+
+  // Difficulty level for detection problem.
+  optional DifficultyLevel detection_difficulty_level = 5;
+  // Difficulty level for tracking problem.
+  optional DifficultyLevel tracking_difficulty_level = 6;
+}
+
+// Non-self-intersecting 2d polygons. This polygon is not necessarily convex.
+message Polygon2dProto {
+  repeated double x = 1;
+  repeated double y = 2;
+
+  // A globally unique ID.
+  optional string id = 3;
+}
