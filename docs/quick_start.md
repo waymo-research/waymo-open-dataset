@@ -1,6 +1,6 @@
 # Quick Start
 
-This Quick Start contains installation instructions for the Open Dataset codebase. Refer to the [Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial.ipynb) for a quick demo of the installation and data format.
+This Quick Start contains installation instructions for the Open Dataset codebase. Refer to the [Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/r1.0/tutorial/tutorial.ipynb) for a quick demo of the installation and data format.
 
 ## System Requirements
 * g++ 6 or higher.
@@ -90,7 +90,7 @@ bazel test waymo_open_dataset/metrics/python/...
 
 ## Python Utilities
 
-We provide a set of TensorFlow libraries in the utils directory to help with building models. Refer to the [Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial.ipynb)
+We provide a set of TensorFlow libraries in the utils directory to help with building models. Refer to the [Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/r1.0/tutorial/tutorial.ipynb)
 for examples of their usage.
 
 ``` bash
