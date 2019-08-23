@@ -170,8 +170,8 @@ ExactFloat::ExactFloat(double v) {
     // by the number of mantissa bits in a double (53, including the leading
     // "1") then the result is always an integer.
     int exp;
-    double f = frexp(fabs(v), &exp);
-    uint64 m = static_cast<uint64>(ldexp(f, kDoubleMantissaBits));
+    double f = std::frexp(std::abs(v), &exp);
+    uint64 m = static_cast<uint64>(std::ldexp(f, kDoubleMantissaBits));
     BN_ext_set_uint64(bn_.get(), m);
     bn_exp_ = exp - kDoubleMantissaBits;
     Canonicalize();
@@ -182,7 +182,7 @@ ExactFloat::ExactFloat(int v) {
   sign_ = (v >= 0) ? 1 : -1;
   // Note that this works even for INT_MIN because the parameter type for
   // BN_set_word() is unsigned.
-  CHECK(BN_set_word(bn_.get(), abs(v)));
+  CHECK(BN_set_word(bn_.get(), std::abs(v)));
   bn_exp_ = 0;
   Canonicalize();
 }
@@ -257,7 +257,7 @@ double ExactFloat::ToDoubleHelper() const {
   uint64 d_mantissa = BN_ext_get_uint64(bn_.get());
   // We rely on ldexp() to handle overflow and underflow.  (It will return a
   // signed zero or infinity if the result is too small or too large.)
-  return sign_ * ldexp(static_cast<double>(d_mantissa), bn_exp_);
+  return sign_ * std::ldexp(static_cast<double>(d_mantissa), bn_exp_);
 }
 
 ExactFloat ExactFloat::RoundToMaxPrec(int max_prec, RoundingMode mode) const {
