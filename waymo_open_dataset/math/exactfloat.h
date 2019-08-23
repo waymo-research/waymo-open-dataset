@@ -115,7 +115,7 @@ limitations under the License.
 #include <string>
 
 #include <glog/logging.h>
-#include "third_party/openssl/bn.h"
+#include "openssl/bn.h"
 
 namespace waymo {
 namespace open_dataset {

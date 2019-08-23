@@ -26,8 +26,8 @@ limitations under the License.
 #include <glog/logging.h>
 #include "absl/base/macros.h"
 #include "absl/container/fixed_array.h"
-#include "third_party/openssl/bn.h"
-#include "third_party/openssl/crypto.h"
+#include "openssl/bn.h"
+#include "openssl/crypto.h"
 #include "waymo_open_dataset/common/integral_types.h"
 
 namespace waymo {
