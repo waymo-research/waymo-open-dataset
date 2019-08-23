@@ -15,8 +15,7 @@ limitations under the License.
 
 #include "waymo_open_dataset/math/exactfloat.h"
 
-#include <math.h>
-
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -54,40 +53,40 @@ double fdim(double a, double b) {
   //
   // Note that ::fdim(inf, inf) does return 0 (the correct result).
   if (a == b) return 0;
-  return ::fdim(a, b);
+  return std::fdim(a, b);
 }
 
 double fmax(double a, double b) {
   // fmax(0, -0) returns -0 rather than +0.  This is technically not a bug,
   // but it is different from (and inferior to) the MPFloat behavior.
   if (a == 0 && b == 0) return a + b;
-  return ::fmax(a, b);
+  return std::fmax(a, b);
 }
 
 double fmin(double a, double b) {
   // fmin(-0, 0) returns +0 rather than -0.  This is technically not a bug,
   // but it is different from (and inferior to) the MPFloat behavior.
-  if (a == 0 && b == 0 && (signbit(a) || signbit(b))) {
+  if (a == 0 && b == 0 && (std::signbit(a) || std::signbit(b))) {
     return copysign(0, -1);
   }
-  return ::fmin(a, b);
+  return std::fmin(a, b);
 }
 
 double logb(double a) {
   // If "a" is denormalized, logb() is supposed to return the exponent that
   // "a" would have if it were normalized.  (But it doesn't.)
-  if (a != 0 && fabs(a) < std::numeric_limits<double>::min()) {
-    return ::logb(scalbn(a, 100)) - 100;
+  if (a != 0 && std::abs(a) < std::numeric_limits<double>::min()) {
+    return std::logb(std::scalbn(a, 100)) - 100;
   }
-  return ::logb(a);
+  return std::logb(a);
 }
 
 double ldexp(double a, int exp) {
   // ldexp() incorrectly returns infinity rather than zero when the
   // "a" is finite and "exp" is a very large negative value.
-  double r = ::ldexp(a, exp);
-  if (isinf(r) && !isinf(a) && exp < 0) {
-    return copysign(0, r);
+  double r = std::ldexp(a, exp);
+  if (std::isinf(r) && !std::isinf(a) && exp < 0) {
+    return std::copysign(0, r);
   }
   return r;
 }
@@ -115,14 +114,14 @@ double scalbln(double a, long exp) {
 // Here we fix the rounding functions to match MPFloat, which clamps out of
 // range values and returns the maximum possible value for NaN.
 
-#define FIX_INT_ROUNDING(T, fname)                      \
-  T fname(double a) {                                   \
-    if (isnan(a)) return std::numeric_limits<T>::max(); \
-    if (a <= std::numeric_limits<T>::min())             \
-      return std::numeric_limits<T>::min();             \
-    if (a >= std::numeric_limits<T>::max())             \
-      return std::numeric_limits<T>::max();             \
-    return ::fname(a);                                  \
+#define FIX_INT_ROUNDING(T, fname)                           \
+  T fname(double a) {                                        \
+    if (std::isnan(a)) return std::numeric_limits<T>::max(); \
+    if (a <= std::numeric_limits<T>::min())                  \
+      return std::numeric_limits<T>::min();                  \
+    if (a >= std::numeric_limits<T>::max())                  \
+      return std::numeric_limits<T>::max();                  \
+    return ::fname(a);                                       \
   }
 
 FIX_INT_ROUNDING(long, lrint)
@@ -198,7 +197,7 @@ class ExactFloatTest : public ::testing::Test {
       kSpecialDoubleValues.push_back(d);
       // Glibc and MPFloat handle negative NaN values differently.  To avoid
       // discrepancies, we only test positively-signed NaN values.
-      if (!isnan(d)) {
+      if (!std::isnan(d)) {
         kSpecialDoubleValues.push_back(-d);
       }
     }
@@ -213,8 +212,8 @@ class ExactFloatTest : public ::testing::Test {
   // and that the smallest positive and negative values differ by 2 ulps.
   // Infinity is one ulp larger than the largest finite number.
   static uint64 GetErrorUlps(double a, double b) {
-    if (isnan(a) && isnan(b)) return 0;
-    if (isnan(a) || isnan(b)) {
+    if (std::isnan(a) && std::isnan(b)) return 0;
+    if (std::isnan(a) || std::isnan(b)) {
       return std::numeric_limits<uint64>::max();
     }
 
@@ -223,7 +222,7 @@ class ExactFloatTest : public ::testing::Test {
     // numbers viewed as 64-bit unsigned integers.
     uint64 a_bits = absl::bit_cast<uint64>(a);
     uint64 b_bits = absl::bit_cast<uint64>(b);
-    if (signbit(a) == signbit(b)) {
+    if (std::signbit(a) == std::signbit(b)) {
       return (a_bits > b_bits) ? (a_bits - b_bits) : (b_bits - a_bits);
     }
     // For numbers of opposite sign, we take the difference in ulps between
@@ -238,7 +237,10 @@ class ExactFloatTest : public ::testing::Test {
   // example, +0 and -0 are not equivalent.)
   static bool IsExpected(double expected, double actual, uint64 ulps) {
     // We require the sign bit to match unless the values are NaN.
-    if (!isnan(expected) && signbit(expected) != signbit(actual)) return false;
+    if (!std::isnan(expected) &&
+        std::signbit(expected) != std::signbit(actual)) {
+      return false;
+    }
     return GetErrorUlps(expected, actual) <= ulps;
   }
 
@@ -247,12 +249,12 @@ class ExactFloatTest : public ::testing::Test {
   // they are both NaN.  (So for example, +0 and -0 are not equivalent.)
   void ExpectSame(double expected, const ExactFloat &xf_actual) {
     double actual = xf_actual.ToDouble();
-    if (isnan(expected)) {
-      EXPECT_TRUE(isnan(actual));
+    if (std::isnan(expected)) {
+      EXPECT_TRUE(std::isnan(actual));
     } else {
       // Keep the ugly signbit() macro out of the error messages.
-      bool expected_sign = signbit(expected);
-      bool actual_sign = signbit(actual);
+      bool expected_sign = std::signbit(expected);
+      bool actual_sign = std::signbit(actual);
       EXPECT_EQ(expected_sign, actual_sign);
       EXPECT_EQ(expected, actual);
     }
@@ -538,7 +540,7 @@ TEST_F(ExactFloatTest, ToDouble) {
   EXPECT_EQ(M_PI, ExactFloat(M_PI).ToDouble());
   EXPECT_EQ(INFINITY, ExactFloat(INFINITY).ToDouble());
   EXPECT_EQ(-INFINITY, ExactFloat(-INFINITY).ToDouble());
-  EXPECT_TRUE(isnan(ExactFloat(NAN).ToDouble()));
+  EXPECT_TRUE(std::isnan(ExactFloat(NAN).ToDouble()));
 }
 
 TEST_F(ExactFloatTest, ToString) {
@@ -756,8 +758,10 @@ TEST_LDEXP_CALL(long, scalbln);
 
 // "Reference versions" of various zero-argument methods.
 bool ref_is_zero(double a) { return a == 0; }
-bool ref_is_normal(double a) { return (a != 0) && !isinf(a) && !isnan(a); }
-bool ref_sign_bit(double a) { return signbit(a); }
+bool ref_is_normal(double a) {
+  return (a != 0) && !std::isinf(a) && !std::isnan(a);
+}
+bool ref_sign_bit(double a) { return std::signbit(a); }
 int ref_sgn(double a) { return (a > 0) ? 1 : (a < 0) ? -1 : 0; }
 
 TEST_METHOD0_VS_FUNCTION(bool, is_zero, ref_is_zero)
@@ -768,7 +772,7 @@ TEST_METHOD0_VS_FUNCTION(int, sgn, ref_sgn)
 // Test a zero-argument ExactFloat member function against a corresponding
 // one-argument reference macro.
 #define TEST_METHOD0_VS_MACRO(ResultType, method, macro) \
-  ResultType ref_##macro(double a) { return macro(a); }  \
+  ResultType ref_##macro(double a) { return std::macro(a); }  \
   TEST_METHOD0_VS_FUNCTION(ResultType, method, ref_##macro)
 
 TEST_METHOD0_VS_MACRO(bool, is_inf, isinf)
