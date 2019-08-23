@@ -115,7 +115,7 @@ limitations under the License.
 #include <string>
 
 #include <glog/logging.h>
-#include <openssl/bn.h>
+#include "openssl/bn.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -498,12 +498,6 @@ class ExactFloat {
   friend ExactFloat logb(const ExactFloat& a);
 
  protected:
-  // OpenSSL >= 1.1 does not have BN_init, and does not support stack-
-  // allocated BIGNUMS.  We use BN_init when possible, but BN_new otherwise.
-  // If the performance penalty is too high, an object pool can be added
-  // in the future.
-#if defined(OPENSSL_IS_BORINGSSL) || OPENSSL_VERSION_NUMBER < 0x10100000L
-  // BoringSSL and OpenSSL < 1.1 support stack allocated BIGNUMs and BN_init.
   class BigNum {
    public:
     BigNum() { BN_init(&bn_); }
@@ -517,20 +511,6 @@ class ExactFloat {
    private:
     BIGNUM bn_;
   };
-#else
-  class BigNum {
-   public:
-    BigNum() : bn_(BN_new()) {}
-    BigNum(const BigNum&) = delete;
-    BigNum& operator=(const BigNum&) = delete;
-    ~BigNum() { BN_free(bn_); }
-    BIGNUM* get() { return bn_; }
-    const BIGNUM* get() const { return bn_; }
-
-   private:
-    BIGNUM* bn_;
-  };
-#endif
 
   // Non-normal numbers are represented using special exponent values and a
   // mantissa of zero.  Do not change these values; methods such as

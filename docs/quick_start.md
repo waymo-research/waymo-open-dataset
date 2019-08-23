@@ -5,7 +5,7 @@ This Quick Start contains installation instructions for the Open Dataset codebas
 ## System Requirements
 * g++ 6 or higher.
 * Python 3.
-* TensorFlow 1.4.0 or higher.
+* TensorFlow 1.14.0 or higher.
 
 The code has two main parts. One is a utility written in C++ to compute the evaluation metrics. The other part is a set of [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model training.
 
@@ -77,7 +77,7 @@ pip3 install numpy tensorflow
 ./configure.sh
 ```
 
-We have configured our build system to work with TensorFlow 1.4.0. For a higher
+We have configured our build system to work with TensorFlow 1.14.0. For a higher
 version, you might need to update the proto version in WORKSPACE to match
 your TensorFlow version.
 

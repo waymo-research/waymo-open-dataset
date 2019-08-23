@@ -38,10 +38,10 @@ cc_library(
     hdrs = ["exactfloat.h"],
     deps = [
         "//waymo_open_dataset/common:integral_types",
+        "@boringssl//:crypto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:fixed_array",
         "@com_google_glog//:glog",
-        "@openssl//:crypto",
     ],
 )
 
