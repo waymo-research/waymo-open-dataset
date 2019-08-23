@@ -26,8 +26,8 @@ limitations under the License.
 #include <glog/logging.h>
 #include "absl/base/macros.h"
 #include "absl/container/fixed_array.h"
-#include <openssl/bn.h>
-#include <openssl/crypto.h>  // for OPENSSL_free
+#include "third_party/openssl/bn.h"
+#include "third_party/openssl/crypto.h"
 #include "waymo_open_dataset/common/integral_types.h"
 
 namespace waymo {
@@ -58,8 +58,6 @@ static_assert(ExactFloat::kMaxExp <= INT_MAX / 2 &&
 // require tweaking if the BIGNUM implementation changes significantly.
 // These are just thin wrappers for BoringSSL.
 
-#ifdef OPENSSL_IS_BORINGSSL
-
 inline static void BN_ext_set_uint64(BIGNUM* bn, uint64 v) {
   CHECK(BN_set_u64(bn, v));
 }
@@ -78,83 +76,6 @@ inline static uint64 BN_ext_get_uint64(const BIGNUM* bn) {
 static int BN_ext_count_low_zero_bits(const BIGNUM* bn) {
   return BN_count_low_zero_bits(bn);
 }
-
-#else  // !defined(OPENSSL_IS_BORINGSSL)
-
-// Set a BIGNUM to the given unsigned 64-bit value.
-inline static void BN_ext_set_uint64(BIGNUM* bn, uint64 v) {
-#if BN_BITS2 == 64
-  CHECK(BN_set_word(bn, v));
-#else
-  static_assert(BN_BITS2 == 32, "at least 32 bit openssl build needed");
-  CHECK(BN_set_word(bn, static_cast<uint32>(v >> 32)));
-  CHECK(BN_lshift(bn, bn, 32));
-  CHECK(BN_add_word(bn, static_cast<uint32>(v)));
-#endif
-}
-
-// Return the absolute value of a BIGNUM as a 64-bit unsigned integer.
-// Requires that BIGNUM fits into 64 bits.
-inline static uint64 BN_ext_get_uint64(const BIGNUM* bn) {
-  DCHECK_LE(BN_num_bytes(bn), sizeof(uint64));
-#if BN_BITS2 == 64
-  return BN_get_word(bn);
-#else
-  static_assert(BN_BITS2 == 32, "at least 32 bit openssl build needed");
-  if (bn->top == 0) return 0;
-  if (bn->top == 1) return BN_get_word(bn);
-  DCHECK_EQ(bn->top, 2);
-  return (static_cast<uint64>(bn->d[1]) << 32) + bn->d[0];
-#endif
-}
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-
-// Count the number of low-order zero bits in the given BIGNUM (ignoring its
-// sign).  Returns 0 if the argument is zero.
-static int BN_ext_count_low_zero_bits(const BIGNUM* bn) {
-  int count = 0;
-  for (int i = 0; i < bn->top; ++i) {
-    BN_ULONG w = bn->d[i];
-    if (w == 0) {
-      count += 8 * sizeof(BN_ULONG);
-    } else {
-      for (; (w & 1) == 0; w >>= 1) {
-        ++count;
-      }
-      break;
-    }
-  }
-  return count;
-}
-
-#else  // OPENSSL_VERSION_NUMBER >= 0x10100000L
-
-static int BN_ext_count_low_zero_bits(const BIGNUM* bn) {
-  // In OpenSSL >= 1.1, BIGNUM is an opaque type, so d and top
-  // cannot be accessed.  The bytes must be copied out at a ~25%
-  // performance penalty.
-  absl::FixedArray<unsigned char> bytes(BN_num_bytes(bn));
-  // "le" indicates little endian.
-  CHECK_EQ(BN_bn2lebinpad(bn, bytes.data(), bytes.size()), bytes.size());
-
-  int count = 0;
-  for (unsigned char c : bytes) {
-    if (c == 0) {
-      count += 8;
-    } else {
-      for (; (c & 1) == 0; c >>= 1) {
-        ++count;
-      }
-      break;
-    }
-  }
-  return count;
-}
-
-#endif  // OPENSSL_VERSION_NUMBER >= 0x10100000L
-
-#endif  // !defined(OPENSSL_IS_BORINGSSL)
 
 ExactFloat::ExactFloat(double v) {
   sign_ = std::signbit(v) ? -1 : 1;

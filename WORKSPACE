@@ -72,67 +72,15 @@ http_archive(
     ],
 )
 
-# openssl
-http_archive(
-    name = "openssl",
-    build_file_content = """
-config_setting(
-    name = "darwin",
-    values = {
-        "cpu": "darwin_x86_64",
-    },
-)
-
-cc_library(
-    name = "crypto",
-    srcs = ["libcrypto.a"],
-    hdrs = glob(["include/openssl/*.h"]) + ["include/openssl/opensslconf.h"],
-    includes = ["include"],
-    linkopts = select({
-        ":darwin": [],
-        "//conditions:default": [
-            "-lpthread",
-            "-ldl",
-        ],
-    }),
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "ssl",
-    srcs = ["libssl.a"],
-    hdrs = glob(["include/openssl/*.h"]) + ["include/openssl/opensslconf.h"],
-    includes = ["include"],
-    visibility = ["//visibility:public"],
-    deps = [":crypto"],
-)
-
-genrule(
-    name = "openssl-build",
-    srcs = glob(
-        ["**/*"],
-        exclude = ["bazel-*"],
-    ),
-    outs = [
-        "libcrypto.a",
-        "libssl.a",
-        "include/openssl/opensslconf.h",
+tf_http_archive(
+    name = "boringssl",
+    sha256 = "1188e29000013ed6517168600fc35a010d58c5d321846d6a6dfee74e4c788b45",
+    strip_prefix = "boringssl-7f634429a04abc48e2eb041c81c5235816c96514",
+    system_build_file = clean_dep("//third_party/systemlibs:boringssl.BUILD"),
+    urls = [
+        "http://mirror.tensorflow.org/github.com/google/boringssl/archive/7f634429a04abc48e2eb041c81c5235816c96514.tar.gz",
+        "https://github.com/google/boringssl/archive/7f634429a04abc48e2eb041c81c5235816c96514.tar.gz",
     ],
-    cmd = \"\"\"
-        OPENSSL_ROOT=$$(dirname $(location config))
-        pushd $$OPENSSL_ROOT
-            ./config
-            make
-        popd
-        cp $$OPENSSL_ROOT/libcrypto.a $(location libcrypto.a)
-        cp $$OPENSSL_ROOT/libssl.a $(location libssl.a)
-        cp $$OPENSSL_ROOT/include/openssl/opensslconf.h $(location include/openssl/opensslconf.h)
-    \"\"\",
-)
-""",
-    sha256 = "f56dd7d81ce8d3e395f83285bd700a1098ed5a4cb0a81ce9522e41e6db7e0389",
-    strip_prefix = "openssl-OpenSSL_1_1_0h",
-    url = "https://github.com/openssl/openssl/archive/OpenSSL_1_1_0h.tar.gz",
 )
 
 # bazel-skylib
