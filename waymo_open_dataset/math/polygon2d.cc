@@ -481,8 +481,8 @@ std::string Polygon2d::PrintPointsToString(const std::vector<Vec2d>& points,
   std::string result;
   for (const Vec2d point : points) {
     if (full_precision) {
-      ::absl::StrAppendFormat(&result, "{%.*e, %.*e},\n", DECIMAL_DIG,
-                              point.x(), DECIMAL_DIG, point.y());
+      ::absl::StrAppendFormat(&result, "{%.*e, %.*e},\n", 21, point.x(), 21,
+                              point.y());
     } else {
       ::absl::StrAppendFormat(&result, "{%f, %f},\n", point.x(), point.y());
     }
