@@ -32,6 +32,10 @@ wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-${BAZEL_
 sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 sudo apt install build-essential
 
+pip install --upgrade setuptools
+pip3 install --upgrade setuptools
+
+rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
 cd waymo-od
 git checkout remotes/origin/${GITHUB_BRANCH}
@@ -49,7 +53,7 @@ bazel clean
 bazel build ...
 bazel test ...
 
-rm /tmp/od/package/*
+rm -rf /tmp/od/package || true
 ./pip_pkg_scripts/build_pip_pkg.sh /tmp/od/package ${PYTHON_VERSION}
 # Comment the following line if you run this outside of the container.
 ./third_party/auditwheel.sh repair --plat manylinux2010_x86_64 -w /tmp/od/package /tmp/od/package/*
