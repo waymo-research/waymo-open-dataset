@@ -42,6 +42,7 @@ pip3 install tensorflow==1.14.0
 
 pip3 install --upgrade auditwheel
 
+export PIP_MANYLINUX2010="1"
 ./configure.sh ${PYTHON_VERSION}
 
 bazel clean

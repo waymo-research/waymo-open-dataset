@@ -77,5 +77,7 @@ write_action_env_to_bazelrc "TF_SHARED_LIBRARY_DIR" ${SHARED_LIBRARY_DIR}
 write_action_env_to_bazelrc "TF_SHARED_LIBRARY_NAME" ${SHARED_LIBRARY_NAME}
 write_action_env_to_bazelrc "TF_NEED_CUDA" ${TF_NEED_CUDA}
 write_to_bazelrc "build:manylinux2010 --crosstool_top=//third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010-nvcc-cuda10.0:toolchain"
-write_to_bazelrc "build --config=manylinux2010"
-write_to_bazelrc "test --config=manylinux2010"
+
+if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
+  write_to_bazelrc "build --config=manylinux2010"
+  write_to_bazelrc "test --config=manylinux2010"
