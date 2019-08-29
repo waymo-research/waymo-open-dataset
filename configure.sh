@@ -81,3 +81,4 @@ write_to_bazelrc "build:manylinux2010 --crosstool_top=//third_party/toolchains/p
 if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
   write_to_bazelrc "build --config=manylinux2010"
   write_to_bazelrc "test --config=manylinux2010"
+fi
