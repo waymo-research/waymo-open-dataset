@@ -27,6 +27,16 @@ function main() {
     exit 1
   fi
 
+  PYTHON_VERSION="$2"
+  if [[ "${PYTHON_VERSION}" -eq "2" ]]; then
+    echo "Using python2."
+    PYTHON_VERSION=""
+  else
+    echo "Using python3."
+    PYTHON_VERSION="3"
+  fi
+  PYTHON="python${PYTHON_VERSION}"
+
   # Create the directory, then do dirname on a non-existent file inside it to
   # give us an absolute paths with tilde characters resolved to the destination
   # directory.
@@ -44,14 +54,14 @@ function main() {
   cp ${PIP_FILE_PREFIX}MANIFEST.in "${TMPDIR}"
   cp LICENSE "${TMPDIR}"
   rsync -avm -L --exclude="*_test.py" waymo_open_dataset "${TMPDIR}"
-  rsync -avm -L  --include="*.so" --include="*_pb2.py" --exclude="*.runfiles" \
-        --exclude="*_obj" --include="*/" --exclude="*" \
-        bazel-bin/waymo_open_dataset "${TMPDIR}"
+  rsync -avm -L  --include="*detection_metrics_ops.so" --include="*_pb2.py" \
+    --exclude="*.runfiles" --exclude="*_obj" --include="*/" --exclude="*" \
+    bazel-bin/waymo_open_dataset "${TMPDIR}"
 
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
 
-  python3 setup.py bdist_wheel > /dev/null
+  ${PYTHON} setup.py bdist_wheel > /dev/null
   cp dist/*.whl "${DEST}"
   popd
   rm -rf ${TMPDIR}

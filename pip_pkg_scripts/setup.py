@@ -15,6 +15,7 @@
 """Setup script for pip package."""
 from setuptools import find_packages
 from setuptools import setup
+from setuptools.command.install import install
 from setuptools.dist import Distribution
 
 __version__ = '1.0.1'
@@ -31,6 +32,19 @@ class BinaryDistribution(Distribution):
     return True
 
 
+class InstallCommand(install):
+  """Override install command.
+
+  Following:
+  https://github.com/bigartm/bigartm/issues/840.
+  """
+
+  def finalize_options(self):
+    install.finalize_options(self)
+    if self.distribution.has_ext_modules():
+      self.install_lib = self.install_platlib
+
+
 setup(
     name=project_name,
     version=__version__,
@@ -40,9 +54,12 @@ setup(
     url='https://waymo.com/open',
     packages=find_packages(include=['waymo_open_dataset*'], exclude=[]),
     include_package_data=True,
-    python_requires='>=3',
+    python_requires='>=2',
     install_requires=REQUIRED_PACKAGES,
     zip_safe=False,
+    cmdclass={
+        'install': InstallCommand,
+    },
     distclass=BinaryDistribution,
     # PyPI package information.
     classifiers=[
