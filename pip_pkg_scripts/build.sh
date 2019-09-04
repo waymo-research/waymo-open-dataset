@@ -17,34 +17,24 @@
 # This script uses custom-op docker, downloads code, builds and tests and then
 # builds a pip package.
 
-# Execute this in docker container: tensorflow/tensorflow:custom-op-ubuntu16
-# docker pull tensorflow/tensorflow:custom-op-ubuntu16
-# docker run -it tensorflow/tensorflow:custom-op-ubuntu16 /bin/bash
+# See README.md for instructions to use this script.
 
-set -e
+set -e -x
 
-GITHUB_BRANCH=$1
-PYTHON_VERSION=$2
+# If you need to override the default values for the GITHUB_BRANCH and
+# PYTHON_VERSION you need to provide both arguments, e.g.
+# ./build.sh my_branch 2
+# the default is equivalent to ./build.sh master 3
+GITHUB_BRANCH="${1-master}"
+PYTHON_VERSION="${2-3}"
+DST_DIR="/tmp/pip_pkg_build"
 
-# Install bazel 0.28.0
-BAZEL_VERSION=0.28.0
-wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
-sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
-sudo apt install build-essential
-
-pip install --upgrade setuptools
-pip3 install --upgrade setuptools
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
 cd waymo-od
+
 git checkout remotes/origin/${GITHUB_BRANCH}
-
-# Install tensorflow
-pip install tensorflow==1.14.0
-pip3 install tensorflow==1.14.0
-
-pip3 install --upgrade auditwheel
 
 export PIP_MANYLINUX2010="1"
 ./configure.sh ${PYTHON_VERSION}
@@ -53,7 +43,7 @@ bazel clean
 bazel build ...
 bazel test ...
 
-rm -rf /tmp/od/package || true
-./pip_pkg_scripts/build_pip_pkg.sh /tmp/od/package ${PYTHON_VERSION}
+rm -rf "$DST_DIR" || true
+./pip_pkg_scripts/build_pip_pkg.sh "$DST_DIR" ${PYTHON_VERSION}
 # Comment the following line if you run this outside of the container.
-./third_party/auditwheel.sh repair --plat manylinux2010_x86_64 -w /tmp/od/package /tmp/od/package/*
+find "$DST_DIR" -name *.whl | xargs ./third_party/auditwheel.sh repair --plat manylinux2010_x86_64 -w "$DST_DIR"
