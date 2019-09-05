@@ -10,8 +10,10 @@ RUN pip install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
 
 # Install tensorflow
-RUN pip install tensorflow==1.14.0
-RUN pip3 install tensorflow==1.14.0
+RUN pip uninstall -y tensorflow
+RUN pip3 uninstall -y tensorflow
+RUN pip install tf-nightly
+RUN pip3 install tf-nightly
 
 RUN pip3 install --upgrade auditwheel
 COPY pip_pkg_scripts/build.sh /
@@ -21,4 +23,4 @@ VOLUME /tmp/pip_pkg_build
 ENTRYPOINT ["/build.sh"]
 
 # The default parameters for the build.sh
-CMD ["master", "3"]
+CMD ["rc1.0.tf1.5.0", "3"]

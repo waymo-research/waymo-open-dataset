@@ -18,10 +18,8 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.0.1'
-REQUIRED_PACKAGES = [
-    'tensorflow >= 1.14.0',
-]
+__version__ = '1.0.1.tf1.15.0.rc0'
+REQUIRED_PACKAGES = []
 project_name = 'waymo-open-dataset'
 
 

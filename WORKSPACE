@@ -64,7 +64,7 @@ http_archive(
 )
 
 http_archive(
-    name = "zlib_archive",
+    name = "zlib",
     build_file = "//third_party:zlib.BUILD",
     sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
     strip_prefix = "zlib-1.2.11",
@@ -91,24 +91,23 @@ bind(
     actual = "@six_archive//:six",
 )
 
-bind(
-    name = "zlib",
-    actual = "@zlib_archive//:zlib",
-)
+# bind(
+#     name = "zlib",
+#     actual = "@zlib_archive//:zlib",
+# )
 
-# This proto version is the same as tensorflow 1.14.0. If you are using a
+# This proto version is the same as tensorflow 1.15.0. If you are using a
 # different tensorflow version, update these based on
 # https://github.com/tensorflow/tensorflow/blob/{YOUR_TF_VERSION}/tensorflow/workspace.bzl
-#
-# 5902e759108d14ee8e6b0b07653dac2f4e70ac73 is based on 3.7.1 with a fix for BUILD file.
+# 310ba5ee72661c081129eb878c1bbcec936b20f0 is based on 3.8.0 with a fix for protobuf.bzl.
 PROTOBUF_URLS = [
-    "http://mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/5902e759108d14ee8e6b0b07653dac2f4e70ac73.tar.gz",
-    "https://github.com/protocolbuffers/protobuf/archive/5902e759108d14ee8e6b0b07653dac2f4e70ac73.tar.gz",
+    "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
+    "https://github.com/protocolbuffers/protobuf/archive/310ba5ee72661c081129eb878c1bbcec936b20f0.tar.gz",
 ]
 
-PROTOBUF_SHA256 = "1c020fafc84acd235ec81c6aac22d73f23e85a700871466052ff231d69c1b17a"
+PROTOBUF_SHA256 = "b9e92f9af8819bbbc514e2902aec860415b70209f31dfc8c4fa72515a5df9d59"
 
-PROTOBUF_STRIP_PREFIX = "protobuf-5902e759108d14ee8e6b0b07653dac2f4e70ac73"
+PROTOBUF_STRIP_PREFIX = "protobuf-310ba5ee72661c081129eb878c1bbcec936b20f0"
 
 # We need to import the protobuf library under the names com_google_protobuf
 # and com_google_protobuf_cc to enable proto_library support in bazel.
