@@ -20,7 +20,7 @@ from setuptools.dist import Distribution
 
 __version__ = '1.0.1.rc0'
 REQUIRED_PACKAGES = []
-project_name = 'waymo-open-dataset-tf1-15'
+project_name = 'waymo-od-tf1-15'
 
 
 class BinaryDistribution(Distribution):
