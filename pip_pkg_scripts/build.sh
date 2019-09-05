@@ -25,7 +25,7 @@ set -e -x
 # PYTHON_VERSION you need to provide both arguments, e.g.
 # ./build.sh my_branch 2
 # the default is equivalent to ./build.sh master 3
-GITHUB_BRANCH="${1-'rc1.0-tf1.15'}"
+GITHUB_BRANCH="${1-r1.0-tf1.15}"
 PYTHON_VERSION="${2-3}"
 DST_DIR="/tmp/pip_pkg_build"
 

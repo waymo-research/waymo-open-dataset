@@ -23,4 +23,4 @@ VOLUME /tmp/pip_pkg_build
 ENTRYPOINT ["/build.sh"]
 
 # The default parameters for the build.sh
-CMD ["rc1.0.tf1.5.0", "3"]
+CMD ["r1.0-tf1.15", "3"]
