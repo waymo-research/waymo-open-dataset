@@ -18,18 +18,16 @@
 # https://github.com/tensorflow/custom-op.
 # This script writes to .bazelrc to tensorflow libs.
 
-PYTHON_VERSION="$1"
+export PYTHON_VERSION="${PYTHON_VERSION:-3}"
+export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
+export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-1}"
 
-if [[ "${PYTHON_VERSION}" -eq "2" ]]; then
-  echo "Using python2."
-  PYTHON_VERSION=""
+if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
+  PYTHON="python${PYTHON_VERSION}"
 else
-  echo "Using python3."
-  PYTHON_VERSION="3"
+  PYTHON="python${PYTHON_VERSION}.${PYTHON_MINOR_VERSION}"
 fi
-
-PIP="pip${PYTHON_VERSION}"
-PYTHON="python${PYTHON_VERSION}"
+PIP="$PYTHON -m pip"
 
 function write_to_bazelrc() {
   echo "$1" >> .bazelrc
