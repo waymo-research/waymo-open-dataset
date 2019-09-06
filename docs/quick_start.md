@@ -99,7 +99,7 @@ bazel test waymo_open_dataset/utils/...
 ```
 
 ## Use pre-compiled pip/pip3 packages
-We only pre-compiled the package for Python 2.7, 3.4, 3.5, 3.6. If you need the
+We only pre-compiled the package for Python 2.7, 3.5, 3.6. If you need the
 lib for a different python version, follow steps in pip_pkg_scripts to build pip
 package on your own.
 ``` bash
