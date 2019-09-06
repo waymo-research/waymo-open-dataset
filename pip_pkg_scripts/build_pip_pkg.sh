@@ -20,22 +20,21 @@ PLATFORM="$(uname -s | tr 'A-Z' 'a-z')"
 
 PIP_FILE_PREFIX="pip_pkg_scripts/"
 
+export PYTHON_VERSION="${PYTHON_VERSION:-3}"
+export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
+
+if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
+  PYTHON="python${PYTHON_VERSION}"
+else
+  PYTHON="python${PYTHON_VERSION}.${PYTHON_MINOR_VERSION}"
+fi
+
 function main() {
   DEST=${1}
   if [[ -z "${DEST}" ]]; then
     echo "No destination directory provided."
     exit 1
   fi
-
-  PYTHON_VERSION="$2"
-  if [[ "${PYTHON_VERSION}" -eq "2" ]]; then
-    echo "Using python2."
-    PYTHON_VERSION=""
-  else
-    echo "Using python3."
-    PYTHON_VERSION="3"
-  fi
-  PYTHON="python${PYTHON_VERSION}"
 
   # Create the directory, then do dirname on a non-existent file inside it to
   # give us an absolute paths with tilde characters resolved to the destination
