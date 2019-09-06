@@ -1,6 +1,6 @@
 FROM tensorflow/tensorflow:custom-op-ubuntu16
 
-ENV GITHUB_BRANCH="master"
+ENV GITHUB_BRANCH="r1.0-tf1.15"
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"

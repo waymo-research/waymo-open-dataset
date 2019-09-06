@@ -18,7 +18,7 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.0.1.rc0'
+__version__ = '1.0.1'
 REQUIRED_PACKAGES = []
 project_name = 'waymo-od-tf1-15'
 
@@ -67,7 +67,6 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering',
