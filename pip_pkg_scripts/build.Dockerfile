@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y && \
     apt-get update && apt-get install -y bazel && \
     rm -rf /usr/local/bin/bazel && hash -r
 
+RUN apt-get install python3.4
 RUN apt-get install python3.5
 RUN apt-get install python3.6
 
