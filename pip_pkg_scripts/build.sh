@@ -22,7 +22,7 @@
 set -e -x
 
 # Override the following env variables if necessary.
-export GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
+export GITHUB_BRANCH="${GITHUB_BRANCH:-r1.0}"
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"

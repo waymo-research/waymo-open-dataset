@@ -13,6 +13,7 @@ RUN pip3 install jupyter matplotlib jupyter_http_over_ws &&\
 
 RUN git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
 WORKDIR /waymo-od
+RUN git checkout remotes/origin/r1.0
 
 RUN bash ./configure.sh && \
     bash bazel query ... | xargs bazel build -c opt && \
