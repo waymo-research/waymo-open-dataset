@@ -13,6 +13,7 @@ github repository, builds the library and outputs `.whl` packages under
 
 ## Build a pip package locally without docker container
 First follow quick start to install all the depdencies such as bazel. Then run
+
 ```
 export GITHUB_BRANCH=r1.0-tf.1.15
 export PYTHON_VERSION=3
