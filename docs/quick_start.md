@@ -3,8 +3,10 @@
 This Quick Start contains installation instructions for the Open Dataset codebase. Refer to the [Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial.ipynb) for a quick demo of the installation and data format.
 
 ## System Requirements
-* g++ 6 or higher.
-* TensorFlow 1.14.0 or higher.
+* g++ 5 or higher.
+* TensorFlow 1.14.0
+* TensorFlow 1.15.0 (the upcoming tf release is supported in r1.0-tf.1.15
+  branch)
 
 The code has two main parts. One is a utility written in C++ to compute the evaluation metrics. The other part is a set of [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model training.
 
@@ -97,8 +99,10 @@ bazel test waymo_open_dataset/utils/...
 ```
 
 ## Use pre-compiled pip/pip3 packages
-If you only need Python libraries (including the TensorFlow op) in this repo,
-you can install the Python package with
+We only pre-compiled the package for Python 2.7, 3.4, 3.5, 3.6. If you need the
+lib for a different python version, follow steps in pip_pkg_scripts to build pip
+package on your own.
 ``` bash
-pip install waymo-open-dataset --user
+pip3 install upgrade --pip
+pip3 install waymo-open-dataset==1.0.1 --user
 ```
