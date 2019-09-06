@@ -18,6 +18,17 @@
 # https://github.com/tensorflow/custom-op.
 # This script writes to .bazelrc to tensorflow libs.
 
+export PYTHON_VERSION="${PYTHON_VERSION:-3}"
+export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
+export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
+
+if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
+  PYTHON="python${PYTHON_VERSION}"
+else
+  PYTHON="python${PYTHON_VERSION}.${PYTHON_MINOR_VERSION}"
+fi
+PIP="$PYTHON -m pip"
+
 function write_to_bazelrc() {
   echo "$1" >> .bazelrc
 }
@@ -34,6 +45,7 @@ write_to_bazelrc 'build --cxxopt="-std=c++11"'
 write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0"'
 write_to_bazelrc 'build --auto_output_filter=subpackages'
 write_to_bazelrc 'build --copt="-Wall" --copt="-Wno-sign-compare"'
+write_to_bazelrc 'build --linkopt="-lrt -lm"'
 write_to_bazelrc 'build --incompatible_bzl_disallow_load_after_statement=false'
 write_to_bazelrc 'query --incompatible_bzl_disallow_load_after_statement=false'
 
@@ -41,12 +53,12 @@ TF_NEED_CUDA=0
 # Check if it's installed
 TF_CFLAGS=""
 TF_LFLAGS=""
-if [[ $(pip3 show tensorflow) == *tensorflow* ]] || [[ $(pip3 show tf-nightly) == *tf-nightly* ]] ; then
+if [[ $(${PIP} show tensorflow) == *tensorflow* ]] || [[ $(${PIP} show tf-nightly) == *tf-nightly* ]] ; then
   echo 'Using installed tensorflow'
-  TF_CFLAGS=( $(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
-  TF_LFLAGS="$(python3 -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
+  TF_CFLAGS=( $(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
+  TF_LFLAGS="$(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
 else
-  echo 'CPU Tensorflow is not installed'
+  echo 'Tensorflow is not installed. Code still works.'
 fi
 
 write_action_env_to_bazelrc "TF_HEADER_DIR" ${TF_CFLAGS:2}
@@ -62,3 +74,9 @@ fi
 write_action_env_to_bazelrc "TF_SHARED_LIBRARY_DIR" ${SHARED_LIBRARY_DIR}
 write_action_env_to_bazelrc "TF_SHARED_LIBRARY_NAME" ${SHARED_LIBRARY_NAME}
 write_action_env_to_bazelrc "TF_NEED_CUDA" ${TF_NEED_CUDA}
+write_to_bazelrc "build:manylinux2010 --crosstool_top=//third_party/toolchains/preconfig/ubuntu16.04/gcc7_manylinux2010-nvcc-cuda10.0:toolchain"
+
+if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
+  write_to_bazelrc "build --config=manylinux2010"
+  write_to_bazelrc "test --config=manylinux2010"
+fi

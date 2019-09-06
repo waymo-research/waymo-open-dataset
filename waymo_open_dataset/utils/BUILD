@@ -47,6 +47,18 @@ py_library(
     ],
 )
 
+py_library(
+    name = "frame_utils",
+    srcs = ["frame_utils.py"],
+    deps = [
+        ":range_image_utils",
+        ":transform_utils",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+    ],
+)
+
 # Tests
 py_test(
     name = "box_utils_test",

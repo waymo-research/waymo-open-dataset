@@ -4,7 +4,6 @@ This Quick Start contains installation instructions for the Open Dataset codebas
 
 ## System Requirements
 * g++ 6 or higher.
-* Python 3.
 * TensorFlow 1.14.0 or higher.
 
 The code has two main parts. One is a utility written in C++ to compute the evaluation metrics. The other part is a set of [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model training.
@@ -95,4 +94,11 @@ for examples of their usage.
 
 ``` bash
 bazel test waymo_open_dataset/utils/...
+```
+
+## Use pre-compiled pip/pip3 packages
+If you only need Python libraries (including the TensorFlow op) in this repo,
+you can install the Python package with
+``` bash
+pip install waymo-open-dataset --user
 ```

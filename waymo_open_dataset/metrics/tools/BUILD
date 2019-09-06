@@ -6,6 +6,14 @@ package(
 
 licenses(["notice"])  # Apache 2.0
 
+filegroup(
+    name = "fakedata",
+    srcs = [
+        "fake_ground_truths.bin",
+        "fake_predictions.bin",
+    ],
+)
+
 cc_binary(
     name = "compute_detection_metrics_main",
     srcs = ["compute_detection_metrics_main.cc"],

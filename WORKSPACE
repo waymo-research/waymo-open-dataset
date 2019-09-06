@@ -96,7 +96,7 @@ bind(
     actual = "@zlib_archive//:zlib",
 )
 
-# This proto version is the same as tensorflow 1.4.0. If you are using a
+# This proto version is the same as tensorflow 1.14.0. If you are using a
 # different tensorflow version, update these based on
 # https://github.com/tensorflow/tensorflow/blob/{YOUR_TF_VERSION}/tensorflow/workspace.bzl
 #

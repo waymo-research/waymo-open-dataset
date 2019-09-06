@@ -1,0 +1,1 @@
+recursive-include waymo_open_dataset/ *.so
