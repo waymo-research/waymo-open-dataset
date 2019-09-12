@@ -21,18 +21,8 @@
 
 set -e -x
 
-<<<<<<< HEAD
-# If you need to override the default values for the GITHUB_BRANCH and
-# PYTHON_VERSION you need to provide both arguments, e.g.
-# ./build.sh my_branch 2
-# the default is equivalent to ./build.sh master 3
-GITHUB_BRANCH="${1-r1.0-tf1.15}"
-PYTHON_VERSION="${2-3}"
-export PIP_MANYLINUX2010="${3-1}"
-DST_DIR="/tmp/pip_pkg_build"
-=======
 # Override the following env variables if necessary.
-export GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
+export GITHUB_BRANCH="${GITHUB_BRANCH:-r1.0-tf1.15}"
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
@@ -45,12 +35,11 @@ fi
 
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 $PYTHON get-pip.py
->>>>>>> master
 
 PIP="$PYTHON -m pip"
 
 ${PIP} install --upgrade setuptools
-${PIP} install tensorflow==1.14.0
+${PIP} install tf-nightly
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
@@ -58,11 +47,7 @@ cd waymo-od
 
 git checkout remotes/origin/${GITHUB_BRANCH}
 
-<<<<<<< HEAD
-./configure.sh ${PYTHON_VERSION}
-=======
 ./configure.sh
->>>>>>> master
 
 bazel clean
 bazel build ...
@@ -72,10 +57,6 @@ DST_DIR="/tmp/pip_pkg_build"
 rm -rf "$DST_DIR" || true
 ./pip_pkg_scripts/build_pip_pkg.sh "$DST_DIR" ${PYTHON_VERSION}
 # Comment the following line if you run this outside of the container.
-<<<<<<< HEAD
-if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
-=======
 if [[ "${PIP_MANYLINUX2010}" == "1" ]]; then
->>>>>>> master
   find "$DST_DIR" -name *.whl | xargs ./third_party/auditwheel.sh repair --plat manylinux2010_x86_64 -w "$DST_DIR"
 fi
