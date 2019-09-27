@@ -98,7 +98,7 @@ message CameraCalibration {
   // https://en.wikipedia.org/wiki/Distortion_(optics)
   // https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
   repeated double intrinsic = 2;
-  // Vehicle frame to camera frame.
+  // Camera frame to vehicle frame.
   optional Transform extrinsic = 3;
   // Camera image size.
   optional int32 width = 4;
