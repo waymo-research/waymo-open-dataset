@@ -22,7 +22,10 @@ import tensorflow as tf
 
 from waymo_open_dataset.utils import transform_utils
 
-__all__ = ['is_within_box_3d', 'compute_num_points_in_box_3d']
+__all__ = [
+    'is_within_box_3d', 'compute_num_points_in_box_3d',
+    'get_upright_3d_box_corners'
+]
 
 
 def is_within_box_3d(point, box, name=None):
@@ -84,3 +87,44 @@ def compute_num_points_in_box_3d(point, box, name=None):
     point_in_box = tf.cast(is_within_box_3d(point, box, name), dtype=tf.int32)
     num_points_in_box = tf.reduce_sum(point_in_box, axis=0)
     return num_points_in_box
+
+
+def get_upright_3d_box_corners(boxes, name=None):
+  """Given a set of upright boxes, return its 8 corners.
+
+  Given a set of boxes, returns its 8 corners. The corners are ordered layers
+  (bottom, top) first and then counter-clockwise within each layer.
+
+  Args:
+    boxes: tf Tensor [N, 7]. The inner dims are [center{x,y,z}, length, width,
+      height, heading].
+    name: the name scope.
+
+  Returns:
+    corners: tf Tensor [N, 8, 3].
+  """
+  with tf.name_scope(name, 'GetUpright3dBoxCorners', [boxes]):
+    center_x, center_y, center_z, length, width, height, heading = tf.unstack(
+        boxes, axis=-1)
+
+    # [N, 3, 3]
+    rotation = transform_utils.get_yaw_rotation(heading)
+    # [N, 3]
+    translation = tf.stack([center_x, center_y, center_z], axis=-1)
+
+    l2 = length * 0.5
+    w2 = width * 0.5
+    h2 = height * 0.5
+
+    # [N, 8, 3]
+    corners = tf.reshape(
+        tf.stack([
+            l2, w2, -h2, -l2, w2, -h2, -l2, -w2, -h2, l2, -w2, -h2, l2, w2, h2,
+            -l2, w2, h2, -l2, -w2, h2, l2, -w2, h2
+        ],
+                 axis=-1), [-1, 8, 3])
+    # [N, 8, 3]
+    corners = tf.einsum('nij,nkj->nki', rotation, corners) + tf.expand_dims(
+        translation, axis=-2)
+
+    return corners
