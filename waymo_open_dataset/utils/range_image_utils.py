@@ -223,7 +223,7 @@ def build_camera_depth_image(range_image_cartesian,
                              camera_projection,
                              camera_image_size,
                              camera_name,
-                             pool_method=tf.unsorted_segment_min,
+                             pool_method=tf.math.unsorted_segment_min,
                              scope=None):
   """Builds camera depth image given camera projections.
 
@@ -413,7 +413,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
         ri_index = ri_index[0:num_point, :]
         ri_value = ri_value[0:num_point]
         range_image = _scatter_nd_with_pool(ri_index, ri_value, [height, width],
-                                            tf.unsorted_segment_max)
+                                            tf.math.unsorted_segment_max)
         return range_image
 
       range_images = tf.map_fn(
