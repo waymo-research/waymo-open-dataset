@@ -120,4 +120,15 @@ http_archive(
     urls = PROTOBUF_URLS,
 )
 
+http_archive(
+    name = "eigen_archive",
+    build_file = "//third_party:eigen.BUILD",
+    sha256 = "b3e1c3df05377d22bb960f54acce8d7018bc9477f37e8f39f9d3c784f5aaa87f",
+    strip_prefix = "eigen-eigen-49177915a14a",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
+        "https://bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
+    ],
+)
+
 tf_configure(name = "local_config_tf")

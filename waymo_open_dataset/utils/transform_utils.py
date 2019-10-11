@@ -35,7 +35,7 @@ def get_yaw_rotation(yaw, name=None):
     A rotation tensor with the same data type of the input. Its shape is
       [input_shape, 3 ,3].
   """
-  with tf.name_scope(name, 'GetYawRotation', [yaw]):
+  with tf.compat.v1.name_scope(name, 'GetYawRotation', [yaw]):
     cos_yaw = tf.cos(yaw)
     sin_yaw = tf.sin(yaw)
     ones = tf.ones_like(yaw)
@@ -68,7 +68,7 @@ def get_rotation_matrix(roll, pitch, yaw, name=None):
     A rotation tensor with the same data type of the input. Its shape is
       [input_shape_of_yaw, 3 ,3].
   """
-  with tf.name_scope(name, 'GetRotationMatrix', [yaw, pitch, roll]):
+  with tf.compat.v1.name_scope(name, 'GetRotationMatrix', [yaw, pitch, roll]):
     cos_roll = tf.cos(roll)
     sin_roll = tf.sin(roll)
     cos_yaw = tf.cos(yaw)
@@ -113,7 +113,7 @@ def get_transform(rotation, translation, name=None):
   Returns:
     transform: [..., 4, 4] transform tensor. This has the same type as rotation.
   """
-  with tf.name_scope(name, 'GetTransform', [rotation, translation]):
+  with tf.compat.v1.name_scope(name, 'GetTransform', [rotation, translation]):
     # [..., 3, 1]
     translation_3_1 = translation[..., tf.newaxis]
     # [..., 3, 4]

@@ -98,7 +98,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
         range_image_polar, extrinsic)
     # Transform to sensor frame.
     range_image_cartesian_sensor_frame = _transform_range_image(
-        range_image_cartesian, tf.matrix_inverse(extrinsic))
+        range_image_cartesian, tf.linalg.inv(extrinsic))
 
     with self.test_session() as sess:
       ri_polar, ri_cartesian = sess.run(
@@ -144,7 +144,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
         frame_pose=frame_pose)
     # Transform to sensor frame.
     range_image_cartesian_sensor_frame = _transform_range_image(
-        range_image_cartesian, tf.matrix_inverse(extrinsic))
+        range_image_cartesian, tf.linalg.inv(extrinsic))
 
     with self.test_session() as sess:
       ri_polar, ri_cartesian = sess.run(
@@ -221,7 +221,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
 
     range_image, _, _ = range_image_utils.build_range_image_from_point_cloud(
         points, num_points, extrinsic, inclination, [num_rows, num_cols])
-    range_image_mask = tf.where(range_image > 1e-5)
+    range_image_mask = tf.compat.v1.where(range_image > 1e-5)
 
     polar = range_image_utils.compute_range_image_polar(range_image, extrinsic,
                                                         inclination)

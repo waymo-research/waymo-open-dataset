@@ -34,15 +34,16 @@ def _update(name, update, init_shape, dtype):
     v: the variable ref.
     v_assign: tensor that hold the new value of the variable after the update.
   """
-  with tf.variable_scope('detection_metrics', reuse=tf.AUTO_REUSE):
-    v = tf.get_local_variable(
+  with tf.compat.v1.variable_scope(
+      'detection_metrics', reuse=tf.compat.v1.AUTO_REUSE):
+    v = tf.compat.v1.get_local_variable(
         name,
         dtype=dtype,
         # init_shape is required to pass the shape inference check.
         initializer=tf.constant([], shape=init_shape, dtype=dtype))
-    shape = tf.concat([[-1], tf.shape(update)[1:]], axis=0)
+    shape = tf.concat([[-1], tf.shape(input=update)[1:]], axis=0)
     v_reshape = tf.reshape(v.value(), shape)
-    v_assign = tf.assign(
+    v_assign = tf.compat.v1.assign(
         v, tf.concat([v_reshape, update], axis=0), validate_shape=False)
   return v, v_assign
 
