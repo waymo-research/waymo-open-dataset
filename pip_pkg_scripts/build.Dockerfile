@@ -5,11 +5,8 @@ ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
 
-RUN apt-get update && apt-get install -y && \
-    echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list && \
-    curl https://bazel.build/bazel-release.pub.gpg | apt-key add - && \
-    apt-get update && apt-get install -y bazel && \
-    rm -rf /usr/local/bin/bazel && hash -r
+RUN wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-0.28.0-installer-linux-x86_64.sh > /dev/null
+RUN bash bazel-0.28.0-installer-linux-x86_64.sh
 
 RUN apt-get install -y python3.5
 RUN apt-get install -y python3.6
