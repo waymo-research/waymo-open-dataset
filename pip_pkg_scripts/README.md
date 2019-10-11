@@ -15,7 +15,7 @@ github repository, builds the library and outputs `.whl` packages under
 First follow quick start to install all the depdencies such as bazel. Then run
 
 ```
-export GITHUB_BRANCH=r1.0-tf.1.15
+export GITHUB_BRANCH=r1.0-tf1.15
 export PYTHON_VERSION=3
 export PYTHON_MINOR_VERSION=5
 export PIP_MANYLINUX2010=0
