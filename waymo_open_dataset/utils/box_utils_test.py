@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """Tests for waymo_open_dataset.utils.box_utils."""
 
 from __future__ import absolute_import
@@ -67,4 +66,5 @@ class BoxUtilsTest(tf.test.TestCase):
 
 
 if __name__ == "__main__":
+  tf.compat.v1.disable_eager_execution()
   tf.test.main()

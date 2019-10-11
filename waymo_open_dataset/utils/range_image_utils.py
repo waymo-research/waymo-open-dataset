@@ -18,11 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import numpy as np
 
 import tensorflow as tf
 
 __all__ = [
+    'encode_lidar_features', 'decode_lidar_features', 'scatter_nd_with_pool',
     'compute_range_image_polar', 'compute_range_image_cartesian',
     'build_range_image_from_point_cloud', 'build_camera_depth_image',
     'extract_point_cloud_from_range_image', 'crop_range_image',
@@ -53,10 +55,172 @@ def _combined_static_and_dynamic_shape(tensor):
   return combined_shape
 
 
-def _scatter_nd_with_pool(index,
-                          value,
-                          shape,
-                          pool_method=tf.math.unsorted_segment_max):
+# A magic number that provides a good resolution we need for lidar range after
+# quantization from float to uint16.
+_RANGE_TO_METERS = 0.00585532144
+
+
+def _encode_range(r):
+  """Encodes lidar range from float to uint16.
+
+  Args:
+    r: A float tensor represents lidar range.
+
+  Returns:
+    Encoded range with type as uint16.
+  """
+  encoded_r = r / _RANGE_TO_METERS
+  with tf.control_dependencies([
+      tf.assert_non_negative(encoded_r),
+      tf.assert_less(encoded_r,
+                     math.pow(2, 16) - 1.001)
+  ]):
+    return tf.cast(encoded_r, dtype=tf.uint16)
+
+
+def _decode_range(r):
+  """Decodes lidar range from integers to float32.
+
+  Args:
+    r: A integer tensor.
+
+  Returns:
+    Decoded range.
+  """
+  return tf.cast(r, dtype=tf.float32) * _RANGE_TO_METERS
+
+
+def _encode_intensity(intensity):
+  """Encodes lidar intensity from float to uint16.
+
+  The integer value stored here is the upper 16 bits of a float. This
+  preserves the exponent and truncates the mantissa to 7bits, which gives
+  plenty of dynamic range and preserves about 3 decimal places of
+  precision.
+
+  Args:
+    intensity: A float tensor represents lidar intensity.
+
+  Returns:
+    Encoded intensity with type as uint32.
+  """
+  if intensity.dtype != tf.float32:
+    raise TypeError('intensity must be of type float32')
+
+  intensity_uint32 = tf.bitcast(intensity, tf.uint32)
+  intensity_uint32_shifted = tf.bitwise.right_shift(intensity_uint32, 16)
+  return tf.cast(intensity_uint32_shifted, dtype=tf.uint16)
+
+
+def _decode_intensity(intensity):
+  """Decodes lidar intensity from uint16 to float32.
+
+  The given intensity is encoded with _encode_intensity.
+
+  Args:
+    intensity: A uint16 tensor represents lidar intensity.
+
+  Returns:
+    Decoded intensity with type as float32.
+  """
+  if intensity.dtype != tf.uint16:
+    raise TypeError('intensity must be of type uint16')
+
+  intensity_uint32 = tf.cast(intensity, dtype=tf.uint32)
+  intensity_uint32_shifted = tf.bitwise.left_shift(intensity_uint32, 16)
+  return tf.bitcast(intensity_uint32_shifted, tf.float32)
+
+
+def _encode_elongation(elongation):
+  """Encodes lidar elongation from float to uint8.
+
+  Args:
+    elongation: A float tensor represents lidar elongation.
+
+  Returns:
+    Encoded lidar elongation.
+  """
+  encoded_elongation = elongation / _RANGE_TO_METERS
+  with tf.control_dependencies([
+      tf.assert_non_negative(encoded_elongation),
+      tf.assert_less(encoded_elongation,
+                     math.pow(2, 8) - 1.001)
+  ]):
+    return tf.cast(encoded_elongation, dtype=tf.uint8)
+
+
+def _decode_elongation(elongation):
+  """Decodes lidar elongation from uint8 to float.
+
+  Args:
+    elongation: A uint8 tensor represents lidar elongation.
+
+  Returns:
+    Decoded lidar elongation.
+  """
+  return tf.cast(elongation, dtype=tf.float32) * _RANGE_TO_METERS
+
+
+def encode_lidar_features(lidar_point_feature):
+  """Encodes lidar features (range, intensity, enlongation).
+
+  This function encodes lidar point features such that all features have the
+  same ordering as lidar range.
+
+  Args:
+    lidar_point_feature: [N, 3] float32 tensor.
+
+  Returns:
+    [N, 3] int64 tensors that encodes lidar_point_feature.
+  """
+  if lidar_point_feature.dtype != tf.float32:
+    raise TypeError('lidar_point_feature must be of type float32.')
+
+  r, intensity, elongation = tf.unstack(lidar_point_feature, axis=-1)
+  encoded_r = tf.cast(_encode_range(r), dtype=tf.uint32)
+  encoded_intensity = tf.cast(_encode_intensity(intensity), dtype=tf.uint32)
+  encoded_elongation = tf.cast(_encode_elongation(elongation), dtype=tf.uint32)
+
+  encoded_r_shifted = tf.bitwise.left_shift(encoded_r, 16)
+
+  encoded_intensity = tf.cast(
+      tf.bitwise.bitwise_or(encoded_r_shifted, encoded_intensity),
+      dtype=tf.int64)
+  encoded_elongation = tf.cast(
+      tf.bitwise.bitwise_or(encoded_r_shifted, encoded_elongation),
+      dtype=tf.int64)
+  encoded_r = tf.cast(encoded_r, dtype=tf.int64)
+
+  return tf.stack([encoded_r, encoded_intensity, encoded_elongation], axis=-1)
+
+
+def decode_lidar_features(lidar_point_feature):
+  """Decodes lidar features (range, intensity, enlongation).
+
+  This function decodes lidar point features encoded by 'encode_lidar_features'.
+
+  Args:
+    lidar_point_feature: [N, 3] int64 tensor.
+
+  Returns:
+    [N, 3] float tensors that encodes lidar_point_feature.
+  """
+
+  r, intensity, elongation = tf.unstack(lidar_point_feature, axis=-1)
+
+  decoded_r = _decode_range(r)
+  intensity = tf.bitwise.bitwise_and(intensity, int(0xFFFF))
+  decoded_intensity = _decode_intensity(tf.cast(intensity, dtype=tf.uint16))
+  elongation = tf.bitwise.bitwise_and(elongation, int(0xFF))
+  decoded_elongation = _decode_elongation(tf.cast(elongation, dtype=tf.uint8))
+
+  return tf.stack([decoded_r, decoded_intensity, decoded_elongation], axis=-1)
+
+
+def scatter_nd_with_pool(index,
+                         value,
+                         shape,
+                         pool_method=tf.unsorted_segment_max):
   """Similar as tf.scatter_nd but allows custom pool method.
 
   tf.scatter_nd accumulates (sums) values if there are duplicate indices.
@@ -64,7 +228,7 @@ def _scatter_nd_with_pool(index,
   Args:
     index: [N, 2] tensor. Inner dims are coordinates along height (row) and then
       width (col).
-    value: [N] tensor. Values to be scattered.
+    value: [N, ...] tensor. Values to be scattered.
     shape: (height,width) list that specifies the shape of the output tensor.
     pool_method: pool method when there are multiple points scattered to one
       location.
@@ -82,15 +246,19 @@ def _scatter_nd_with_pool(index,
   index_unique = tf.stack(
       [index_encoded // width,
        tf.math.mod(index_encoded, width)], axis=-1)
+  shape = [height, width]
+  value_shape = _combined_static_and_dynamic_shape(value)
+  if len(value_shape) > 1:
+    shape = shape + value_shape[1:]
 
-  image = tf.scatter_nd(index_unique, value_pooled, [height, width])
+  image = tf.scatter_nd(index_unique, value_pooled, shape)
   return image
 
 
 def compute_range_image_polar(range_image,
                               extrinsic,
                               inclination,
-                              dtype=tf.float64,
+                              dtype=tf.float32,
                               scope=None):
   """Computes range image polar coordinates.
 
@@ -109,9 +277,9 @@ def compute_range_image_polar(range_image,
   # pylint: disable=unbalanced-tuple-unpacking
   _, height, width = _combined_static_and_dynamic_shape(range_image)
   range_image_dtype = range_image.dtype
-  range_image = tf.cast(range_image, dtype)
-  extrinsic = tf.cast(extrinsic, dtype)
-  inclination = tf.cast(inclination, dtype)
+  range_image = tf.cast(range_image, dtype=dtype)
+  extrinsic = tf.cast(extrinsic, dtype=dtype)
+  inclination = tf.cast(inclination, dtype=dtype)
 
   with tf.compat.v1.name_scope(scope, 'ComputeRangeImagePolar',
                                [range_image, extrinsic, inclination]):
@@ -120,7 +288,7 @@ def compute_range_image_polar(range_image,
       az_correction = tf.atan2(extrinsic[..., 1, 0], extrinsic[..., 0, 0])
       # [W].
       ratios = (tf.cast(tf.range(width, 0, -1), dtype=dtype) - .5) / tf.cast(
-          width, dtype)
+          width, dtype=dtype)
       # [B, W].
       azimuth = (ratios * 2. - 1.) * np.pi - tf.expand_dims(az_correction, -1)
 
@@ -137,7 +305,7 @@ def compute_range_image_cartesian(range_image_polar,
                                   extrinsic,
                                   pixel_pose=None,
                                   frame_pose=None,
-                                  dtype=tf.float64,
+                                  dtype=tf.float32,
                                   scope=None):
   """Computes range image cartesian coordinates from polar ones.
 
@@ -157,12 +325,12 @@ def compute_range_image_cartesian(range_image_polar,
     range_image_cartesian: [B, H, W, 3] cartesian coordinates.
   """
   range_image_polar_dtype = range_image_polar.dtype
-  range_image_polar = tf.cast(range_image_polar, dtype)
-  extrinsic = tf.cast(extrinsic, dtype)
+  range_image_polar = tf.cast(range_image_polar, dtype=dtype)
+  extrinsic = tf.cast(extrinsic, dtype=dtype)
   if pixel_pose is not None:
-    pixel_pose = tf.cast(pixel_pose, dtype)
+    pixel_pose = tf.cast(pixel_pose, dtype=dtype)
   if frame_pose is not None:
-    frame_pose = tf.cast(frame_pose, dtype)
+    frame_pose = tf.cast(frame_pose, dtype=dtype)
 
   with tf.compat.v1.name_scope(
       scope, 'ComputeRangeImageCartesian',
@@ -293,7 +461,7 @@ def build_camera_depth_image(range_image_cartesian,
       index = tf.gather_nd(
           tf.stack([cp[..., 1], cp[..., 0]], axis=-1), mask_ids)
       value = tf.gather_nd(ri_range, mask_ids)
-      return _scatter_nd_with_pool(index, value, camera_image_size, pool_method)
+      return scatter_nd_with_pool(index, value, camera_image_size, pool_method)
 
     images = tf.map_fn(
         fn,
@@ -311,7 +479,8 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
                                        extrinsic,
                                        inclination,
                                        range_image_size,
-                                       dtype=tf.float64,
+                                       point_features=None,
+                                       dtype=tf.float32,
                                        scope=None):
   """Build virtual range image from point cloud assuming uniform azimuth.
 
@@ -323,11 +492,13 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
       row. sorted from highest value to lowest.
     range_image_size: a size 2 [height, width] list that configures the size of
       the range image.
+    point_features: If not None, it is a tf tensor with shape [B, N, 2] that
+      represents lidar 'intensity' and 'elongation'.
     dtype: the data type to use.
     scope: tf name scope.
 
   Returns:
-    range_images : [B, H, W, ?] or [B, H, W] tensor. Range images built from the
+    range_images : [B, H, W, 3] or [B, H, W] tensor. Range images built from the
       given points. Data type is the same as that of points_vehicle_frame. 0.0
       is populated when a pixel is missing.
     ri_indices: tf int32 tensor [B, N, 2]. It represents the range image index
@@ -378,15 +549,16 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
 
     point_azimuth_gt_pi_mask = point_azimuth > np.pi
     point_azimuth_lt_minus_pi_mask = point_azimuth < -np.pi
-    point_azimuth = point_azimuth - tf.cast(point_azimuth_gt_pi_mask,
-                                            dtype) * 2 * np.pi
-    point_azimuth = point_azimuth + tf.cast(point_azimuth_lt_minus_pi_mask,
-                                            dtype) * 2 * np.pi
+    point_azimuth = point_azimuth - tf.cast(
+        point_azimuth_gt_pi_mask, dtype=dtype) * 2 * np.pi
+    point_azimuth = point_azimuth + tf.cast(
+        point_azimuth_lt_minus_pi_mask, dtype=dtype) * 2 * np.pi
 
     # [B, N].
     point_ri_col_indices = width - 1.0 + 0.5 - (point_azimuth +
                                                 np.pi) / (2.0 * np.pi) * width
-    point_ri_col_indices = tf.cast(tf.round(point_ri_col_indices), tf.int32)
+    point_ri_col_indices = tf.cast(
+        tf.round(point_ri_col_indices), dtype=tf.int32)
 
     with tf.control_dependencies([
         tf.compat.v1.assert_non_negative(point_ri_col_indices),
@@ -403,26 +575,36 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
 
         Args:
           args: a tuple containing:
-            - ri_index: [N, 2]
-            - ri_value: [N]
+            - ri_index: [N, 2] int tensor.
+            - ri_value: [N] float tensor.
             - num_point: scalar tensor
+            - point_feature: [N, 2] float tensor.
 
         Returns:
           range_image: [H, W]
         """
-        ri_index, ri_value, num_point = args
+        if len(args) == 3:
+          ri_index, ri_value, num_point = args
+        else:
+          ri_index, ri_value, num_point, point_feature = args
+          ri_value = tf.concat([ri_value[..., tf.newaxis], point_feature],
+                               axis=-1)
+          ri_value = encode_lidar_features(ri_value)
+
         # pylint: disable=unbalanced-tuple-unpacking
         ri_index = ri_index[0:num_point, :]
-        ri_value = ri_value[0:num_point]
-        range_image = _scatter_nd_with_pool(ri_index, ri_value, [height, width],
-                                            tf.math.unsorted_segment_max)
+        ri_value = ri_value[0:num_point, ...]
+        range_image = scatter_nd_with_pool(ri_index, ri_value, [height, width],
+                                           tf.math.unsorted_segment_min)
+        if len(args) != 3:
+          range_image = decode_lidar_features(range_image)
         return range_image
 
+      elems = [ri_indices, ri_ranges, num_points]
+      if point_features is not None:
+        elems.append(point_features)
       range_images = tf.map_fn(
-          fn,
-          elems=[ri_indices, ri_ranges, num_points],
-          dtype=points_vehicle_frame_dtype,
-          back_prop=False)
+          fn, elems=elems, dtype=points_vehicle_frame_dtype, back_prop=False)
 
       return range_images, ri_indices, ri_ranges
 
@@ -432,7 +614,7 @@ def extract_point_cloud_from_range_image(range_image,
                                          inclination,
                                          pixel_pose=None,
                                          frame_pose=None,
-                                         dtype=tf.float64,
+                                         dtype=tf.float32,
                                          scope=None):
   """Extracts point cloud from range image.
 
@@ -502,7 +684,7 @@ def crop_range_image(range_images, new_width, scope=None):
 
 
 def compute_inclination(inclination_range, height, scope=None):
-  """Compute uniform inclination range based the given range and height.
+  """Computes uniform inclination range based the given range and height.
 
   Args:
     inclination_range: [..., 2] tensor. Inner dims are [min inclination, max
@@ -518,6 +700,6 @@ def compute_inclination(inclination_range, height, scope=None):
     diff = inclination_range[..., 1] - inclination_range[..., 0]
     inclination = (
         (.5 + tf.cast(tf.range(0, height), dtype=inclination_range.dtype)) /
-        tf.cast(height, inclination_range.dtype) *
+        tf.cast(height, dtype=inclination_range.dtype) *
         tf.expand_dims(diff, axis=-1) + inclination_range[..., 0:1])
     return inclination
