@@ -58,9 +58,9 @@ def generate_boxes(center_x, batch=1):
       [batch, 1])
   num_boxes = np.ones([batch]) * len(center_x)
 
-  return (tf.convert_to_tensor(boxes, dtype=tf.float32),
-          tf.convert_to_tensor(box_classes, dtype=tf.uint8),
-          tf.convert_to_tensor(num_boxes, dtype=tf.int32))
+  return (tf.convert_to_tensor(value=boxes, dtype=tf.float32),
+          tf.convert_to_tensor(value=box_classes, dtype=tf.uint8),
+          tf.convert_to_tensor(value=num_boxes, dtype=tf.int32))
 
 
 def generate_range_image(indices, values, shape, batch=1):

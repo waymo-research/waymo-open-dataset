@@ -21,5 +21,6 @@ from __future__ import print_function
 import tensorflow as tf
 
 detection_metrics_module = tf.load_op_library(
-    tf.resource_loader.get_path_to_datafile('detection_metrics_ops.so'))
+    tf.compat.v1.resource_loader.get_path_to_datafile(
+        'detection_metrics_ops.so'))
 detection_metrics = detection_metrics_module.detection_metrics

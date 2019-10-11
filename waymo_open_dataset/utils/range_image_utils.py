@@ -43,7 +43,7 @@ def _combined_static_and_dynamic_shape(tensor):
     A list of size tensor.shape.ndims containing integers or a scalar tensor.
   """
   static_tensor_shape = tensor.shape.as_list()
-  dynamic_tensor_shape = tf.shape(tensor)
+  dynamic_tensor_shape = tf.shape(input=tensor)
   combined_shape = []
   for index, dim in enumerate(static_tensor_shape):
     if dim is not None:
@@ -56,7 +56,7 @@ def _combined_static_and_dynamic_shape(tensor):
 def _scatter_nd_with_pool(index,
                           value,
                           shape,
-                          pool_method=tf.unsorted_segment_max):
+                          pool_method=tf.math.unsorted_segment_max):
   """Similar as tf.scatter_nd but allows custom pool method.
 
   tf.scatter_nd accumulates (sums) values if there are duplicate indices.
@@ -78,10 +78,10 @@ def _scatter_nd_with_pool(index,
   width = shape[1]
   # idx: [N]
   index_encoded, idx = tf.unique(index[:, 0] * width + index[:, 1])
-  value_pooled = pool_method(value, idx, tf.size(index_encoded))
+  value_pooled = pool_method(value, idx, tf.size(input=index_encoded))
   index_unique = tf.stack(
       [index_encoded // width,
-       tf.mod(index_encoded, width)], axis=-1)
+       tf.math.mod(index_encoded, width)], axis=-1)
 
   image = tf.scatter_nd(index_unique, value_pooled, [height, width])
   return image
@@ -113,9 +113,9 @@ def compute_range_image_polar(range_image,
   extrinsic = tf.cast(extrinsic, dtype)
   inclination = tf.cast(inclination, dtype)
 
-  with tf.name_scope(scope, 'ComputeRangeImagePolar',
-                     [range_image, extrinsic, inclination]):
-    with tf.name_scope('Azimuth'):
+  with tf.compat.v1.name_scope(scope, 'ComputeRangeImagePolar',
+                               [range_image, extrinsic, inclination]):
+    with tf.compat.v1.name_scope('Azimuth'):
       # [B].
       az_correction = tf.atan2(extrinsic[..., 1, 0], extrinsic[..., 0, 0])
       # [W].
@@ -164,8 +164,9 @@ def compute_range_image_cartesian(range_image_polar,
   if frame_pose is not None:
     frame_pose = tf.cast(frame_pose, dtype)
 
-  with tf.name_scope(scope, 'ComputeRangeImageCartesian',
-                     [range_image_polar, extrinsic, pixel_pose, frame_pose]):
+  with tf.compat.v1.name_scope(
+      scope, 'ComputeRangeImageCartesian',
+      [range_image_polar, extrinsic, pixel_pose, frame_pose]):
     azimuth, inclination, range_image_range = tf.unstack(
         range_image_polar, axis=-1)
 
@@ -204,7 +205,7 @@ def compute_range_image_cartesian(range_image_polar,
         raise ValueError('frame_pose must be set when pixel_pose is set.')
       # To vehicle frame corresponding to the given frame_pose
       # [B, 4, 4]
-      world_to_vehicle = tf.matrix_inverse(frame_pose)
+      world_to_vehicle = tf.linalg.inv(frame_pose)
       world_to_vehicle_rotation = world_to_vehicle[:, 0:3, 0:3]
       world_to_vehicle_translation = world_to_vehicle[:, 0:3, 3]
       # [B, H, W, 3]
@@ -223,7 +224,7 @@ def build_camera_depth_image(range_image_cartesian,
                              camera_projection,
                              camera_image_size,
                              camera_name,
-                             pool_method=tf.unsorted_segment_min,
+                             pool_method=tf.math.unsorted_segment_min,
                              scope=None):
   """Builds camera depth image given camera projections.
 
@@ -249,10 +250,11 @@ def build_camera_depth_image(range_image_cartesian,
   Returns:
     image: [B, width, height] depth image generated.
   """
-  with tf.name_scope(scope, 'BuildCameraDepthImage',
-                     [range_image_cartesian, extrinsic, camera_projection]):
+  with tf.compat.v1.name_scope(
+      scope, 'BuildCameraDepthImage',
+      [range_image_cartesian, extrinsic, camera_projection]):
     # [B, 4, 4]
-    vehicle_to_camera = tf.matrix_inverse(extrinsic)
+    vehicle_to_camera = tf.linalg.inv(extrinsic)
     # [B, 3, 3]
     vehicle_to_camera_rotation = vehicle_to_camera[:, 0:3, 0:3]
     # [B, 3]
@@ -263,20 +265,20 @@ def build_camera_depth_image(range_image_cartesian,
         range_image_cartesian) + vehicle_to_camera_translation[:, tf.newaxis,
                                                                tf.newaxis, :]
     # [B, H, W]
-    range_image_camera_norm = tf.norm(range_image_camera, axis=-1)
+    range_image_camera_norm = tf.norm(tensor=range_image_camera, axis=-1)
     camera_projection_mask_1 = tf.tile(
         tf.equal(camera_projection[..., 0:1], camera_name), [1, 1, 1, 2])
     camera_projection_mask_2 = tf.tile(
         tf.equal(camera_projection[..., 3:4], camera_name), [1, 1, 1, 2])
     camera_projection_selected = tf.ones_like(
         camera_projection[..., 1:3], dtype=camera_projection.dtype) * -1
-    camera_projection_selected = tf.where(camera_projection_mask_2,
-                                          camera_projection[..., 4:6],
-                                          camera_projection_selected)
+    camera_projection_selected = tf.compat.v1.where(camera_projection_mask_2,
+                                                    camera_projection[..., 4:6],
+                                                    camera_projection_selected)
     # [B, H, W, 2]
-    camera_projection_selected = tf.where(camera_projection_mask_1,
-                                          camera_projection[..., 1:3],
-                                          camera_projection_selected)
+    camera_projection_selected = tf.compat.v1.where(camera_projection_mask_1,
+                                                    camera_projection[..., 1:3],
+                                                    camera_projection_selected)
     # [B, H, W]
     camera_projection_mask = tf.logical_or(camera_projection_mask_1,
                                            camera_projection_mask_2)[..., 0]
@@ -287,7 +289,7 @@ def build_camera_depth_image(range_image_cartesian,
       # NOTE: Do not use ri_range > 0 as mask as missing range image pixels are
       # not necessarily populated as range = 0.
       mask, ri_range, cp = args
-      mask_ids = tf.where(mask)
+      mask_ids = tf.compat.v1.where(mask)
       index = tf.gather_nd(
           tf.stack([cp[..., 1], cp[..., 0]], axis=-1), mask_ids)
       value = tf.gather_nd(ri_range, mask_ids)
@@ -334,7 +336,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
       sensor frame origin of each point.
   """
 
-  with tf.name_scope(
+  with tf.compat.v1.name_scope(
       scope,
       'BuildRangeImageFromPointCloud',
       values=[points_vehicle_frame, extrinsic, inclination]):
@@ -347,7 +349,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
     height, width = range_image_size
 
     # [B, 4, 4]
-    vehicle_to_laser = tf.matrix_inverse(extrinsic)
+    vehicle_to_laser = tf.linalg.inv(extrinsic)
     # [B, 3, 3]
     rotation = vehicle_to_laser[:, 0:3, 0:3]
     # [B, 1, 3]
@@ -357,7 +359,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
     points = tf.einsum('bij,bkj->bik', points_vehicle_frame,
                        rotation) + translation
     # [B, N]
-    xy_norm = tf.norm(points[..., 0:2], axis=-1)
+    xy_norm = tf.norm(tensor=points[..., 0:2], axis=-1)
     # [B, N]
     point_inclination = tf.atan2(points[..., 2], xy_norm)
     # [B, N, H]
@@ -366,7 +368,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
         tf.expand_dims(inclination, axis=1))
     # [B, N]
     point_ri_row_indices = tf.argmin(
-        point_inclination_diff, axis=-1, output_type=tf.int32)
+        input=point_inclination_diff, axis=-1, output_type=tf.int32)
 
     # [B, 1], within [-pi, pi]
     az_correction = tf.expand_dims(
@@ -387,14 +389,14 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
     point_ri_col_indices = tf.cast(tf.round(point_ri_col_indices), tf.int32)
 
     with tf.control_dependencies([
-        tf.assert_non_negative(point_ri_col_indices),
-        tf.assert_less(point_ri_col_indices, tf.cast(width, tf.int32))
+        tf.compat.v1.assert_non_negative(point_ri_col_indices),
+        tf.compat.v1.assert_less(point_ri_col_indices, tf.cast(width, tf.int32))
     ]):
       # [B, N, 2]
       ri_indices = tf.stack([point_ri_row_indices, point_ri_col_indices], -1)
       # [B, N]
       ri_ranges = tf.cast(
-          tf.norm(points, axis=-1), dtype=points_vehicle_frame_dtype)
+          tf.norm(tensor=points, axis=-1), dtype=points_vehicle_frame_dtype)
 
       def fn(args):
         """Builds a range image for each frame.
@@ -413,7 +415,7 @@ def build_range_image_from_point_cloud(points_vehicle_frame,
         ri_index = ri_index[0:num_point, :]
         ri_value = ri_value[0:num_point]
         range_image = _scatter_nd_with_pool(ri_index, ri_value, [height, width],
-                                            tf.unsorted_segment_max)
+                                            tf.math.unsorted_segment_max)
         return range_image
 
       range_images = tf.map_fn(
@@ -451,7 +453,7 @@ def extract_point_cloud_from_range_image(range_image,
     range_image_cartesian: [B, H, W, 3] with {x, y, z} as inner dims in vehicle
     frame.
   """
-  with tf.name_scope(
+  with tf.compat.v1.name_scope(
       scope, 'ExtractPointCloudFromRangeImage',
       [range_image, extrinsic, inclination, pixel_pose, frame_pose]):
     range_image_polar = compute_range_image_polar(
@@ -489,8 +491,8 @@ def crop_range_image(range_images, new_width, scope=None):
     raise ValueError('new_width {} should be < the old width {}.'.format(
         new_width, width))
 
-  with tf.control_dependencies([tf.assert_less(new_width, width)]):
-    with tf.name_scope(scope, 'CropRangeImage', [range_images]):
+  with tf.control_dependencies([tf.compat.v1.assert_less(new_width, width)]):
+    with tf.compat.v1.name_scope(scope, 'CropRangeImage', [range_images]):
       diff = width - new_width
 
       left = diff // 2
@@ -511,7 +513,8 @@ def compute_inclination(inclination_range, height, scope=None):
   Returns:
     inclination: [..., height] tensor. Inclinations computed.
   """
-  with tf.name_scope(scope, 'ComputeInclination', [inclination_range]):
+  with tf.compat.v1.name_scope(scope, 'ComputeInclination',
+                               [inclination_range]):
     diff = inclination_range[..., 1] - inclination_range[..., 0]
     inclination = (
         (.5 + tf.cast(tf.range(0, height), dtype=inclination_range.dtype)) /
