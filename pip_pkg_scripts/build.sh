@@ -22,7 +22,7 @@
 set -e -x
 
 # Override the following env variables if necessary.
-export GITHUB_BRANCH="${GITHUB_BRANCH:-r1.0-tf1.15}"
+export GITHUB_BRANCH="${GITHUB_BRANCH:-r1.0-tf2.0}"
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
@@ -39,7 +39,7 @@ $PYTHON get-pip.py --user
 PIP="$PYTHON -m pip"
 
 ${PIP} install --upgrade setuptools --user
-${PIP} install tensorflow==1.15.0.rc3 --user
+${PIP} install tensorflow==2.0.0 --user
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od

@@ -10,6 +10,7 @@ RUN bash bazel-0.28.0-installer-linux-x86_64.sh
 
 RUN apt-get install -y python3.5
 RUN apt-get install -y python3.6
+RUN apt-get install -y python3.7
 
 RUN pip install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
@@ -17,8 +18,8 @@ RUN pip3 install --upgrade setuptools
 # Install tensorflow
 RUN pip uninstall -y tensorflow
 RUN pip3 uninstall -y tensorflow
-RUN pip install tensorflow==1.15.0.rc3
-RUN pip3 install tensorflow==1.15.0.rc3
+RUN pip install tensorflow==2.0.0
+RUN pip3 install tensorflow==2.0.0
 
 RUN pip3 install --upgrade auditwheel
 COPY pip_pkg_scripts/build.sh /
