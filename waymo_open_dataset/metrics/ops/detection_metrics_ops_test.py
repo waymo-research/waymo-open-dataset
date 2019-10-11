@@ -134,4 +134,5 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
 
 
 if __name__ == '__main__':
+  tf.compat.v1.disable_eager_execution()
   tf.test.main()
