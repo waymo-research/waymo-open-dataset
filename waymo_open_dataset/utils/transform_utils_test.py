@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
 """Tests for waymo_open_dataset.utils.transform_utils."""
 
 from __future__ import absolute_import
@@ -42,7 +41,7 @@ class TransformUtilsTest(tf.test.TestCase):
     point_transformed = tf.einsum('ij,kj->ki', transform[0:3, 0:3],
                                   point) + transform[0:3, 3]
 
-    transform = tf.matrix_inverse(transform)
+    transform = tf.linalg.inv(transform)
     point_transformed_back = tf.einsum('ij,kj->ki', transform[0:3, 0:3],
                                        point_transformed) + transform[0:3, 3]
 
@@ -52,4 +51,5 @@ class TransformUtilsTest(tf.test.TestCase):
 
 
 if __name__ == '__main__':
+  tf.compat.v1.disable_eager_execution()
   tf.test.main()

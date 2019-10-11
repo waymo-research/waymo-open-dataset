@@ -41,7 +41,7 @@ def is_within_box_3d(point, box, name=None):
     point_in_box; [N, M] boolean tensor.
   """
 
-  with tf.name_scope(name, 'IsWithinBox3D', [point, box]):
+  with tf.compat.v1.name_scope(name, 'IsWithinBox3D', [point, box]):
     center = box[:, 0:3]
     dim = box[:, 3:6]
     heading = box[:, 6]
@@ -50,7 +50,7 @@ def is_within_box_3d(point, box, name=None):
     # [M, 4, 4]
     transform = transform_utils.get_transform(rotation, center)
     # [M, 4, 4]
-    transform = tf.matrix_inverse(transform)
+    transform = tf.linalg.inv(transform)
     # [M, 3, 3]
     rotation = transform[:, 0:3, 0:3]
     # [M, 3]
@@ -63,7 +63,8 @@ def is_within_box_3d(point, box, name=None):
                                   point_in_box_frame >= -dim * 0.5)
     # [N, M]
     point_in_box = tf.cast(
-        tf.reduce_prod(tf.cast(point_in_box, dtype=tf.uint8), axis=-1),
+        tf.reduce_prod(
+            input_tensor=tf.cast(point_in_box, dtype=tf.uint8), axis=-1),
         dtype=tf.bool)
 
     return point_in_box
@@ -82,10 +83,10 @@ def compute_num_points_in_box_3d(point, box, name=None):
     num_points_in_box: [M] int32 tensor.
   """
 
-  with tf.name_scope(name, 'ComputeNumPointsInBox3D', [point, box]):
+  with tf.compat.v1.name_scope(name, 'ComputeNumPointsInBox3D', [point, box]):
     # [N, M]
     point_in_box = tf.cast(is_within_box_3d(point, box, name), dtype=tf.int32)
-    num_points_in_box = tf.reduce_sum(point_in_box, axis=0)
+    num_points_in_box = tf.reduce_sum(input_tensor=point_in_box, axis=0)
     return num_points_in_box
 
 
@@ -103,7 +104,7 @@ def get_upright_3d_box_corners(boxes, name=None):
   Returns:
     corners: tf Tensor [N, 8, 3].
   """
-  with tf.name_scope(name, 'GetUpright3dBoxCorners', [boxes]):
+  with tf.compat.v1.name_scope(name, 'GetUpright3dBoxCorners', [boxes]):
     center_x, center_y, center_z, length, width, height, heading = tf.unstack(
         boxes, axis=-1)
 

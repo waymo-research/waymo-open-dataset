@@ -8,7 +8,6 @@ http_archive(
     sha256 = "56cd3fbbbd94468a5fff58f5df2b6f9de7a0272870c61f6ca05b869934f4802a",
     strip_prefix = "abseil-cpp-daf381e8535a1f1f1b8a75966a74e7cca63dee89",
     urls = [
-        "http://mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/daf381e8535a1f1f1b8a75966a74e7cca63dee89.tar.gz",
         "https://github.com/abseil/abseil-cpp/archive/daf381e8535a1f1f1b8a75966a74e7cca63dee89.tar.gz",
     ],
 )
@@ -124,6 +123,17 @@ http_archive(
     sha256 = PROTOBUF_SHA256,
     strip_prefix = PROTOBUF_STRIP_PREFIX,
     urls = PROTOBUF_URLS,
+)
+
+http_archive(
+    name = "eigen_archive",
+    build_file = "//third_party:eigen.BUILD",
+    sha256 = "b3e1c3df05377d22bb960f54acce8d7018bc9477f37e8f39f9d3c784f5aaa87f",
+    strip_prefix = "eigen-eigen-49177915a14a",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
+        "https://bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
+    ],
 )
 
 tf_configure(name = "local_config_tf")

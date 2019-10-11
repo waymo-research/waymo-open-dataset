@@ -69,9 +69,9 @@ limitations under the License.
 #include "absl/strings/str_cat.h"
 #include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/label.pb.h"
-#include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/metrics/config_util.h"
 #include "waymo_open_dataset/metrics/detection_metrics.h"
+#include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
 namespace waymo {
@@ -117,26 +117,36 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
 
   std::map<std::pair<std::string, int64>, std::vector<Object>> pd_map;
   std::map<std::pair<std::string, int64>, std::vector<Object>> gt_map;
+  std::set<std::pair<std::string, int64>> all_example_keys;
   for (auto& o : *pd_objects.mutable_objects()) {
     const auto key =
         std::make_pair(o.context_name(), o.frame_timestamp_micros());
     pd_map[key].push_back(std::move(o));
+    all_example_keys.insert(key);
   }
   for (auto& o : *gt_objects.mutable_objects()) {
     const auto key =
         std::make_pair(o.context_name(), o.frame_timestamp_micros());
     gt_map[key].push_back(std::move(o));
+    all_example_keys.insert(key);
   }
+
+  std::cout << all_example_keys.size() << " examples found.\n";
 
   std::vector<std::vector<Object>> pds;
   std::vector<std::vector<Object>> gts;
-  for (auto& kv : gt_map) {
-    gts.push_back(std::move(kv.second));
-    auto it = pd_map.find(kv.first);
-    if (it == pd_map.end()) {
+  for (auto& example_key : all_example_keys) {
+    auto gt_it = gt_map.find(example_key);
+    if (gt_it == gt_map.end()) {
+      gts.push_back({});
+    } else {
+      gts.push_back(std::move(gt_it->second));
+    }
+    auto pd_it = pd_map.find(example_key);
+    if (pd_it == pd_map.end()) {
       pds.push_back({});
     } else {
-      pds.push_back(std::move(it->second));
+      pds.push_back(std::move(pd_it->second));
     }
   }
 

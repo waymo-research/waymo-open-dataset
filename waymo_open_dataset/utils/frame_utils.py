@@ -45,32 +45,32 @@ def parse_range_image_and_camera_projection(frame):
   range_image_top_pose = None
   for laser in frame.lasers:
     if len(laser.ri_return1.range_image_compressed) > 0:  # pylint: disable=g-explicit-length-test
-      range_image_str_tensor = tf.decode_compressed(
+      range_image_str_tensor = tf.io.decode_compressed(
           laser.ri_return1.range_image_compressed, 'ZLIB')
       ri = dataset_pb2.MatrixFloat()
       ri.ParseFromString(bytearray(range_image_str_tensor.numpy()))
       range_images[laser.name] = [ri]
 
       if laser.name == dataset_pb2.LaserName.TOP:
-        range_image_top_pose_str_tensor = tf.decode_compressed(
+        range_image_top_pose_str_tensor = tf.io.decode_compressed(
             laser.ri_return1.range_image_pose_compressed, 'ZLIB')
         range_image_top_pose = dataset_pb2.MatrixFloat()
         range_image_top_pose.ParseFromString(
             bytearray(range_image_top_pose_str_tensor.numpy()))
 
-      camera_projection_str_tensor = tf.decode_compressed(
+      camera_projection_str_tensor = tf.io.decode_compressed(
           laser.ri_return1.camera_projection_compressed, 'ZLIB')
       cp = dataset_pb2.MatrixInt32()
       cp.ParseFromString(bytearray(camera_projection_str_tensor.numpy()))
       camera_projections[laser.name] = [cp]
     if len(laser.ri_return2.range_image_compressed) > 0:  # pylint: disable=g-explicit-length-test
-      range_image_str_tensor = tf.decode_compressed(
+      range_image_str_tensor = tf.io.decode_compressed(
           laser.ri_return2.range_image_compressed, 'ZLIB')
       ri = dataset_pb2.MatrixFloat()
       ri.ParseFromString(bytearray(range_image_str_tensor.numpy()))
       range_images[laser.name].append(ri)
 
-      camera_projection_str_tensor = tf.decode_compressed(
+      camera_projection_str_tensor = tf.io.decode_compressed(
           laser.ri_return2.camera_projection_compressed, 'ZLIB')
       cp = dataset_pb2.MatrixInt32()
       cp.ParseFromString(bytearray(camera_projection_str_tensor.numpy()))
@@ -105,10 +105,10 @@ def convert_range_image_to_point_cloud(frame,
   cp_points = []
 
   frame_pose = tf.convert_to_tensor(
-      np.reshape(np.array(frame.pose.transform), [4, 4]))
+      value=np.reshape(np.array(frame.pose.transform), [4, 4]))
   # [H, W, 6]
   range_image_top_pose_tensor = tf.reshape(
-      tf.convert_to_tensor(range_image_top_pose.data),
+      tf.convert_to_tensor(value=range_image_top_pose.data),
       range_image_top_pose.shape.dims)
   # [H, W, 3, 3]
   range_image_top_pose_tensor_rotation = transform_utils.get_rotation_matrix(
@@ -131,7 +131,7 @@ def convert_range_image_to_point_cloud(frame,
     extrinsic = np.reshape(np.array(c.extrinsic.transform), [4, 4])
 
     range_image_tensor = tf.reshape(
-        tf.convert_to_tensor(range_image.data), range_image.shape.dims)
+        tf.convert_to_tensor(value=range_image.data), range_image.shape.dims)
     pixel_pose_local = None
     frame_pose_local = None
     if c.name == dataset_pb2.LaserName.TOP:
@@ -142,17 +142,18 @@ def convert_range_image_to_point_cloud(frame,
     range_image_cartesian = range_image_utils.extract_point_cloud_from_range_image(
         tf.expand_dims(range_image_tensor[..., 0], axis=0),
         tf.expand_dims(extrinsic, axis=0),
-        tf.expand_dims(tf.convert_to_tensor(beam_inclinations), axis=0),
+        tf.expand_dims(tf.convert_to_tensor(value=beam_inclinations), axis=0),
         pixel_pose=pixel_pose_local,
         frame_pose=frame_pose_local)
 
     range_image_cartesian = tf.squeeze(range_image_cartesian, axis=0)
     points_tensor = tf.gather_nd(range_image_cartesian,
-                                 tf.where(range_image_mask))
+                                 tf.compat.v1.where(range_image_mask))
 
     cp = camera_projections[c.name][0]
-    cp_tensor = tf.reshape(tf.convert_to_tensor(cp.data), cp.shape.dims)
-    cp_points_tensor = tf.gather_nd(cp_tensor, tf.where(range_image_mask))
+    cp_tensor = tf.reshape(tf.convert_to_tensor(value=cp.data), cp.shape.dims)
+    cp_points_tensor = tf.gather_nd(cp_tensor,
+                                    tf.compat.v1.where(range_image_mask))
     points.append(points_tensor.numpy())
     cp_points.append(cp_points_tensor.numpy())
 

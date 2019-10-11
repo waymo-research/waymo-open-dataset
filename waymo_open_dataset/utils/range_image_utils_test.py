@@ -98,7 +98,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
         range_image_polar, extrinsic)
     # Transform to sensor frame.
     range_image_cartesian_sensor_frame = _transform_range_image(
-        range_image_cartesian, tf.matrix_inverse(extrinsic))
+        range_image_cartesian, tf.linalg.inv(extrinsic))
 
     with self.test_session() as sess:
       ri_polar, ri_cartesian = sess.run(
@@ -144,7 +144,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
         frame_pose=frame_pose)
     # Transform to sensor frame.
     range_image_cartesian_sensor_frame = _transform_range_image(
-        range_image_cartesian, tf.matrix_inverse(extrinsic))
+        range_image_cartesian, tf.linalg.inv(extrinsic))
 
     with self.test_session() as sess:
       ri_polar, ri_cartesian = sess.run(
@@ -191,12 +191,13 @@ class RangeImageUtilsTest(tf.test.TestCase):
             num_points,
             extrinsic,
             inclination,
+            point_features=points[..., 0:2] / 100.0,
             range_image_size=[5, width]))
 
     with self.test_session() as sess:
       ri, _, _ = sess.run(
           [range_images, range_image_indices, range_image_ranges])
-      self.assertAllClose(ri, range_image)
+      self.assertAllClose(ri[..., 0], range_image, atol=0.01)
 
   def test_build_range_image_from_point_cloud_from_points(self):
     """Builds range image from points directly."""
@@ -221,7 +222,7 @@ class RangeImageUtilsTest(tf.test.TestCase):
 
     range_image, _, _ = range_image_utils.build_range_image_from_point_cloud(
         points, num_points, extrinsic, inclination, [num_rows, num_cols])
-    range_image_mask = tf.where(range_image > 1e-5)
+    range_image_mask = tf.compat.v1.where(range_image > 1e-5)
 
     polar = range_image_utils.compute_range_image_polar(range_image, extrinsic,
                                                         inclination)
@@ -316,6 +317,29 @@ class RangeImageUtilsTest(tf.test.TestCase):
           -1.0 + 3.5 * 2 / 4
       ])
 
+  def test_encode_lidar_features(self):
+    lidar_features = tf.constant(
+        [[1.0, 4.0, 0.9], [2.0, 1.5, 0.8], [3.0, 5.5, 1.4]], dtype=tf.float32)
+    lidar_features_encoded = range_image_utils.encode_lidar_features(
+        lidar_features)
+    lidar_features_decoded = range_image_utils.decode_lidar_features(
+        lidar_features_encoded)
+
+    index = tf.constant([[0, 0], [0, 0], [0, 0]], dtype=tf.int32)
+    scatter_feature = range_image_utils.decode_lidar_features(
+        range_image_utils.scatter_nd_with_pool(index, lidar_features_encoded,
+                                               [2, 2], tf.unsorted_segment_min))
+
+    with self.test_session():
+      self.assertAllClose(
+          lidar_features.eval(), lidar_features_decoded.eval(), atol=0.1)
+
+      self.assertAllClose(
+          scatter_feature.eval()[0, 0, :],
+          lidar_features_decoded.eval()[0, :],
+          atol=0.001)
+
 
 if __name__ == "__main__":
+  tf.compat.v1.disable_eager_execution()
   tf.test.main()
