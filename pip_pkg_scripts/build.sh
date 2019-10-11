@@ -34,12 +34,12 @@ else
 fi
 
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-$PYTHON get-pip.py
+$PYTHON get-pip.py --user
 
 PIP="$PYTHON -m pip"
 
-${PIP} install --upgrade setuptools
-${PIP} install tf-nightly
+${PIP} install --upgrade setuptools --user
+${PIP} install tensorflow==1.15.0.rc3 --user
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
