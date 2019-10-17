@@ -31,7 +31,8 @@ message Label {
     optional double height = 6;
 
     // The heading of the bounding box (in radians).  The heading is the angle
-    // required to rotate +x to the surface normal of the SDC front face.
+    // required to rotate +x to the surface normal of the box front face. It is
+    // normalized to [-pi, pi).
     optional double heading = 7;
 
     enum Type {
@@ -77,6 +78,9 @@ message Label {
   optional DifficultyLevel detection_difficulty_level = 5;
   // Difficulty level for tracking problem.
   optional DifficultyLevel tracking_difficulty_level = 6;
+
+  // The total number of lidar points in this box.
+  optional int32 num_lidar_points_in_box = 7;
 }
 
 // Non-self-intersecting 2d polygons. This polygon is not necessarily convex.

@@ -328,7 +328,8 @@ class RangeImageUtilsTest(tf.test.TestCase):
     index = tf.constant([[0, 0], [0, 0], [0, 0]], dtype=tf.int32)
     scatter_feature = range_image_utils.decode_lidar_features(
         range_image_utils.scatter_nd_with_pool(index, lidar_features_encoded,
-                                               [2, 2], tf.unsorted_segment_min))
+                                               [2, 2],
+                                               tf.math.unsorted_segment_min))
 
     with self.test_session():
       self.assertAllClose(

@@ -27,3 +27,16 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_binary(
+    name = "compute_tracking_metrics_main",
+    srcs = ["compute_tracking_metrics_main.cc"],
+    deps = [
+        "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/common:integral_types",
+        "//waymo_open_dataset/metrics:config_util",
+        "//waymo_open_dataset/metrics:tracking_metrics",
+        "//waymo_open_dataset/protos:breakdown_cc_proto",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
+    ],
+)

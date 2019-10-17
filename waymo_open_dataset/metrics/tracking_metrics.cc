@@ -49,11 +49,6 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
   std::vector<std::unique_ptr<Matcher>>& matchers = *matcher_ptrs;
   const int num_frames = pd_subsets.size();
   if (num_frames <= 0) return {};
-  for (int i = 0; i < num_frames; ++i) {
-    // All score cutoffs share the same ground truth subset in a frame.
-    matchers[i]->SetGroundTruthSubset(
-        gt_subsets[i][breakdown_shard_index].indices[0]);
-  }
   const int breakdown_generator_id_index =
       pd_subsets[0][breakdown_shard_index].breakdown_generator_id_index;
 
@@ -65,10 +60,10 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
   for (int i = 0, sz = difficulty_levels.size(); i < sz; ++i) {
     auto* breakdown = measurements[i].mutable_breakdown();
     breakdown->set_generator_id(config.breakdown_generator_ids(
-        pd_subsets[0][breakdown_generator_id_index]
+        pd_subsets[0][breakdown_shard_index]
             .breakdown_generator_id_index));
     breakdown->set_shard(
-        pd_subsets[0][breakdown_generator_id_index].breakdown_shard);
+        pd_subsets[0][breakdown_shard_index].breakdown_shard);
     breakdown->set_difficulty_level(difficulty_levels[i]);
   }
 
@@ -81,8 +76,12 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
       MOT mot;
       for (int frame_index = 0; frame_index < num_frames; ++frame_index) {
         matchers[frame_index]->SetPredictionSubset(
-            pd_subsets[frame_index][breakdown_generator_id_index]
+            pd_subsets[frame_index][breakdown_shard_index]
                 .indices[score_idx]);
+        // All score cutoffs share the same ground truth subset in a frame.
+        matchers[frame_index]->SetGroundTruthSubset(
+            gt_subsets[frame_index][breakdown_shard_index].indices[0]);
+
         mot.Eval(matchers[frame_index].get(), difficulty_levels[dl_idx]);
       }
       *measurements[dl_idx].add_measurements() = mot.measurement();
@@ -139,6 +138,9 @@ void MergeTrackingMeasurementsVector(
   CHECK(m != nullptr);
   if (m->empty()) {
     *m = new_m;
+    return;
+  }
+  if (new_m.empty()) {
     return;
   }
   CHECK_EQ(new_m.size(), m->size());
