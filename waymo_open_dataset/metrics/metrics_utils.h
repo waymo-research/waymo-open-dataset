@@ -23,6 +23,7 @@ limitations under the License.
 
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/matcher.h"
+#include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
 namespace waymo {
@@ -84,12 +85,14 @@ struct BreakdownShardSubset {
 // Builds all breakdown subsets for the given objects (either prediction or
 // ground truths) based on the config.
 // Set is_gt if 'objects' are ground truths.
+// Set is_detection if this function is called when computing detection metrics.
 // Output ordering:
 // [{generator_i_shard_j}].
 // i \in [0, num_breakdown_generators).
 // j \in [0, num_shards for the i-th breakdown generator).
 std::vector<BreakdownShardSubset> BuildSubsets(
-    const Config& config, const std::vector<Object>& objects, bool is_gt);
+    const Config& config, const std::vector<Object>& objects, bool is_gt,
+    bool is_detection);
 
 // Returns a vector of difficulty levels for the given breakdown generator ID
 // index of Config::breakdown_generator_ids based on the config.
@@ -118,6 +121,30 @@ std::vector<float> DecideScoreCutoffs(const std::vector<float>& scores,
 float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
                                   const std::vector<float>& recalls,
                                   float max_recall_delta);
+
+// Estimates predicted object speed by looking for the nearest groundtruth
+// object.
+std::vector<Object> EstimateObjectSpeed(const std::vector<Object>& pds,
+                                        const std::vector<Object>& gts);
+
+// Similar as above but takes multiple frames prediction as input.
+std::vector<std::vector<Object>> EstimateObjectSpeed(
+    const std::vector<std::vector<Object>>& pds,
+    const std::vector<std::vector<Object>>& gts);
+
+// Returns true if velocity breakdown is enabled.
+bool HasVelocityBreakdown(const Config& config);
+
+// Finds the ground truth that has the largest IoU with the given prediction
+// represented by its subset ID within the given matcher.
+int FindGTWithLargestIoU(const Matcher& matcher, int pd_subset_id,
+                         double iou_threshold);
+
+// Returns true if the object is in the given breakdown.
+bool IsInBreakdown(const Object& object, const Breakdown& breakdown);
+
+// Returns true if the breakdown is a ground truth only breakdown.
+bool IsGroundTruthOnlyBreakdown(const Breakdown& breakdown);
 
 }  // namespace internal
 }  // namespace open_dataset

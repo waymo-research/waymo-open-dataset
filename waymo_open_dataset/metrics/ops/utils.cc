@@ -96,7 +96,8 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     const absl::optional<const tensorflow::Tensor>& score,
     const absl::optional<const tensorflow::Tensor>& overlap_nlz,
     const absl::optional<const tensorflow::Tensor>& detection_difficulty,
-    const absl::optional<const tensorflow::Tensor>& tracking_difficulty) {
+    const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
+    const absl::optional<const tensorflow::Tensor>& object_speed) {
   CHECK_EQ(bbox.dim_size(0), type.dim_size(0));
   CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0));
   if (score.has_value()) {
@@ -110,6 +111,9 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
   }
   if (tracking_difficulty.has_value()) {
     CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0));
+  }
+  if (object_speed.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0));
   }
 
   absl::flat_hash_map<int64, std::vector<Object>> objects;
@@ -146,6 +150,12 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
       object.mutable_object()->set_tracking_difficulty_level(
           static_cast<Label::DifficultyLevel>(
               detection_difficulty.value().vec<uint8>()(i)));
+    }
+    if (object_speed.has_value()) {
+      object.mutable_object()->mutable_metadata()->set_speed_x(
+          object_speed.value().matrix<float>()(i, 0));
+      object.mutable_object()->mutable_metadata()->set_speed_y(
+          object_speed.value().matrix<float>()(i, 1));
     }
     const int64 id = frame_id.vec<int64>()(i);
     objects[id].emplace_back(std::move(object));

@@ -39,6 +39,9 @@ message Breakdown {
     LOCATION = 5;
     // Shard by the weather of the scene.
     WEATHER = 6;
+
+    // Shard by object velocity.
+    VELOCITY = 7;
   }
 
   // The breakdown generator ID.

@@ -72,6 +72,8 @@ class DetectionMetricsOp final : public OpKernel {
         ctx, ctx->input("ground_truth_frame_id", &input.ground_truth_frame_id));
     OP_REQUIRES_OK(ctx, ctx->input("ground_truth_difficulty",
                                    &input.ground_truth_difficulty));
+    OP_REQUIRES_OK(ctx, ctx->input("ground_truth_speed",
+                                   &input.ground_truth_speed));
     OutputTensors output = ComputeImpl(input, ctx);
     ctx->set_output(0, output.average_precision);
     ctx->set_output(1, output.average_precision_ha_weighted);
@@ -93,6 +95,7 @@ class DetectionMetricsOp final : public OpKernel {
     const Tensor* ground_truth_type = nullptr;
     const Tensor* ground_truth_frame_id = nullptr;
     const Tensor* ground_truth_difficulty = nullptr;
+    const Tensor* ground_truth_speed = nullptr;
   };
 
   // Wrapper of all outputs.
@@ -156,12 +159,14 @@ class DetectionMetricsOp final : public OpKernel {
         co::ParseObjectFromTensors(
             *input.prediction_bbox, *input.prediction_type,
             *input.prediction_frame_id, *input.prediction_score,
-            *input.prediction_overlap_nlz, absl::nullopt, absl::nullopt);
+            *input.prediction_overlap_nlz, absl::nullopt, absl::nullopt,
+            absl::nullopt);
     absl::flat_hash_map<int64, std::vector<co::Object>> gts_map =
         co::ParseObjectFromTensors(
             *input.ground_truth_bbox, *input.ground_truth_type,
             *input.ground_truth_frame_id, absl::nullopt, absl::nullopt,
-            *input.ground_truth_difficulty, absl::nullopt);
+            *input.ground_truth_difficulty, absl::nullopt,
+            *input.ground_truth_speed);
     std::set<int64> frame_ids;
     for (const auto& kv : pds_map) {
       frame_ids.insert(kv.first);

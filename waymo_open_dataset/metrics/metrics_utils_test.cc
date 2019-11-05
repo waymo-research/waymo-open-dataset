@@ -128,7 +128,7 @@ TEST(MetricsUtilsTest, BuildSubsetsGroundTruth) {
   }
 
   std::vector<BreakdownShardSubset> subsets =
-      BuildSubsets(config, objects, /*is_gt=*/true);
+      BuildSubsets(config, objects, /*is_gt=*/true, /*is_detection=*/false);
 
   EXPECT_EQ(subsets.size(), 1 + Label::Type_MAX);
   for (int i = 0; i <= Label::Type_MAX; ++i) {
@@ -174,7 +174,7 @@ TEST(MetricsUtilsTest, BuildSubsetsPredictions) {
   }
 
   std::vector<BreakdownShardSubset> subsets =
-      BuildSubsets(config, objects, /*is_gt=*/false);
+      BuildSubsets(config, objects, /*is_gt=*/false, /*is_detection=*/false);
 
   EXPECT_EQ(subsets.size(), 1 + Label::Type_MAX);
   for (int i = 0; i <= Label::Type_MAX; ++i) {
@@ -235,6 +235,37 @@ TEST(MetricsUtilsTest, ComputeMeanAveragePrecision) {
   EXPECT_NEAR(
       ComputeMeanAveragePrecision({0.1, 0.0, 0.05}, {0.2, 0.4, 1.0}, 0.05),
       0.05 * 0.8 + 0.1 * 0.2 + (0.1 - 0.05) * 0.5 * 0.05, 1e-6);
+}
+
+TEST(MetricsUtilsTest, EstimateObjectSpeed) {
+  Config config;
+  config.add_breakdown_generator_ids(Breakdown::VELOCITY);
+  auto build_object = [](const std::vector<float>& center_and_speed) {
+    Object o;
+    int i = 0;
+    o.mutable_object()->mutable_box()->set_center_x(center_and_speed[i++]);
+    o.mutable_object()->mutable_box()->set_center_y(center_and_speed[i++]);
+    o.mutable_object()->mutable_box()->set_center_z(center_and_speed[i++]);
+    if (center_and_speed.size() > 3) {
+      o.mutable_object()->mutable_metadata()->set_speed_x(
+          center_and_speed[i++]);
+      o.mutable_object()->mutable_metadata()->set_speed_y(
+          center_and_speed[i++]);
+    }
+    return o;
+  };
+  std::vector<Object> pds{
+      build_object({0, 0, 0}),
+      build_object({1, 0, 0}),
+  };
+  std::vector<Object> gts{
+      build_object({0.1, 0, 0, 1, 0}),
+      build_object({1.1, 0, 0, 2, 0}),
+      build_object({1.2, 0, 0, 3, 0}),
+  };
+  auto pds_cp = EstimateObjectSpeed(pds, gts);
+  EXPECT_DOUBLE_EQ(pds_cp[0].object().metadata().speed_x(), 1);
+  EXPECT_DOUBLE_EQ(pds_cp[1].object().metadata().speed_x(), 2);
 }
 
 }  // namespace

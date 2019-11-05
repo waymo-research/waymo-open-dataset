@@ -20,7 +20,6 @@ limitations under the License.
 
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
-#include "waymo_open_dataset/metrics/tracking_metrics.h"
 
 namespace waymo {
 namespace open_dataset {

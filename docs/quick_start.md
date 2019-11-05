@@ -4,9 +4,7 @@ This Quick Start contains installation instructions for the Open Dataset codebas
 
 ## System Requirements
 * g++ 5 or higher.
-* TensorFlow 1.14.0
-* TensorFlow 1.15.0 (the upcoming tf release is supported in r1.0-tf.1.15
-  branch)
+* TensorFlow 1.14.0, 1.15.0, 2.0.0
 
 The code has two main parts. One is a utility written in C++ to compute the evaluation metrics. The other part is a set of [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model training.
 
@@ -14,7 +12,7 @@ First, download the code and enter the base directory.
 ``` bash
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od
 cd waymo-od
-git checkout remotes/origin/r1.0
+git checkout remotes/origin/master
 ```
 
 We use the [Bazel](https://www.bazel.build/) build system. These commands should

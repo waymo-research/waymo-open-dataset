@@ -29,6 +29,7 @@ limitations under the License.
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/breakdown_generator.h"
 #include "waymo_open_dataset/metrics/matcher.h"
+#include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
 namespace waymo {
@@ -97,7 +98,8 @@ float ComputeHeadingAccuracy(const Matcher& matcher, int prediction_index,
 }
 
 std::vector<BreakdownShardSubset> BuildSubsets(
-    const Config& config, const std::vector<Object>& objects, bool is_gt) {
+    const Config& config, const std::vector<Object>& objects, bool is_gt,
+    bool is_detection) {
   std::vector<BreakdownShardSubset> result;
   for (int i = 0, sz = config.breakdown_generator_ids_size(); i < sz; ++i) {
     std::unique_ptr<BreakdownGenerator> breakdown_generator =
@@ -105,10 +107,18 @@ std::vector<BreakdownShardSubset> BuildSubsets(
     const int num_shards = breakdown_generator->NumShards();
     std::vector<std::vector<int>> breakdown_subsets(num_shards);
     for (int i = 0, sz = objects.size(); i < sz; ++i) {
-      const int shard = breakdown_generator->Shard(objects[i]);
-      CHECK_LT(shard, num_shards);
-      if (shard >= 0) {
-        breakdown_subsets[shard].push_back(i);
+      if (is_detection && breakdown_generator->IsGroundTruthOnlyBreakdown()) {
+        const std::vector<int> shards =
+            breakdown_generator->ShardsForMatching(objects[i]);
+        for (int s : shards) {
+          breakdown_subsets[s].push_back(i);
+        }
+      } else {
+        const int shard = breakdown_generator->Shard(objects[i]);
+        CHECK_LT(shard, num_shards);
+        if (shard >= 0) {
+          breakdown_subsets[shard].push_back(i);
+        }
       }
     }
 
@@ -268,6 +278,107 @@ float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
         (precision_recall[i - 1].p + precision_recall[i].p);
   }
   return mean_average_precision;
+}
+
+namespace {
+inline float Sqr(float x) { return x * x; }
+
+int Argmin(const std::vector<float>& nums) {
+  CHECK(!nums.empty());
+  int i = 0;
+  for (int j = 1; j < nums.size(); ++j) {
+    if (nums[j] < nums[i]) {
+      i = j;
+    }
+  }
+  return i;
+}
+}  // namespace
+
+// Find the nearest ground truth for each prediction and use that ground truth's
+// speed as the speed for the prediction.
+std::vector<Object> EstimateObjectSpeed(const std::vector<Object>& pds,
+                                        const std::vector<Object>& gts) {
+  const int pd_size = pds.size();
+  const int gt_size = gts.size();
+  auto d = [](const Object& o1, const Object& o2) {
+    return std::sqrt(
+        Sqr(o1.object().box().center_x() - o2.object().box().center_x()) +
+        Sqr(o1.object().box().center_y() - o2.object().box().center_y()) +
+        Sqr(o1.object().box().center_z() - o2.object().box().center_z()));
+  };
+
+  std::vector<Object> pds_with_velocity(pds);
+  if (gt_size == 0) {
+    for (int i = 0; i < pd_size; ++i) {
+      auto* metadata =
+          pds_with_velocity[i].mutable_object()->mutable_metadata();
+      metadata->set_speed_x(0.0);
+      metadata->set_speed_y(0.0);
+    }
+  } else {
+    std::vector<float> distances(gt_size);
+    for (int i = 0; i < pd_size; ++i) {
+      for (int j = 0; j < gt_size; ++j) {
+        distances[j] = d(pds[i], gts[j]);
+      }
+      const int closest_gt_id = Argmin(distances);
+      auto* metadata =
+          pds_with_velocity[i].mutable_object()->mutable_metadata();
+      metadata->set_speed_x(gts[closest_gt_id].object().metadata().speed_x());
+      metadata->set_speed_y(gts[closest_gt_id].object().metadata().speed_y());
+    }
+  }
+  return pds_with_velocity;
+}
+
+std::vector<std::vector<Object>> EstimateObjectSpeed(
+    const std::vector<std::vector<Object>>& pds,
+    const std::vector<std::vector<Object>>& gts) {
+  CHECK_EQ(pds.size(), gts.size());
+  std::vector<std::vector<Object>> pds_with_velocity(pds.size());
+  for (int i = 0, sz = pds.size(); i < sz; ++i) {
+    pds_with_velocity[i] = EstimateObjectSpeed(pds[i], gts[i]);
+  }
+  return pds_with_velocity;
+}
+
+bool HasVelocityBreakdown(const Config& config) {
+  for (auto id : config.breakdown_generator_ids()) {
+    if (id == Breakdown::VELOCITY) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int FindGTWithLargestIoU(const Matcher& matcher, int pd_subset_id,
+                         double iou_threshold) {
+  const std::vector<int>& gt_subset = matcher.ground_truth_subset();
+  double max_iou = iou_threshold;
+  int gt_subset_id = -1;
+
+  for (int i = 0, sz = gt_subset.size(); i < sz; ++i) {
+    const double iou = matcher.IoU(matcher.prediction_subset()[pd_subset_id],
+                                   matcher.ground_truth_subset()[i]);
+    if (iou >= max_iou) {
+      gt_subset_id = i;
+      max_iou = iou;
+    }
+  }
+  return gt_subset_id;
+}
+
+bool IsInBreakdown(const Object& object, const Breakdown& breakdown) {
+  auto breakdown_generator =
+      BreakdownGenerator::Create(breakdown.generator_id());
+  return breakdown_generator->Shard(object) == breakdown.shard();
+}
+
+bool IsGroundTruthOnlyBreakdown(const Breakdown& breakdown) {
+  auto breakdown_generator =
+      BreakdownGenerator::Create(breakdown.generator_id());
+  return breakdown_generator->IsGroundTruthOnlyBreakdown();
 }
 
 }  // namespace internal

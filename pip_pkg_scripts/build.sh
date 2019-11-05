@@ -26,6 +26,7 @@ export GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
+export TF_VERSION="${TF_VERSION:-1.15.0}"
 
 if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
   PYTHON="python${PYTHON_VERSION}"
@@ -34,12 +35,12 @@ else
 fi
 
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-$PYTHON get-pip.py
+$PYTHON get-pip.py --user
 
 PIP="$PYTHON -m pip"
 
-${PIP} install --upgrade setuptools
-${PIP} install tensorflow==1.14.0
+${PIP} install --upgrade setuptools --user
+${PIP} install tensorflow=="${TF_VERSION}" --user
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od

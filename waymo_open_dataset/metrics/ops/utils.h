@@ -50,7 +50,8 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     const absl::optional<const tensorflow::Tensor>& score,
     const absl::optional<const tensorflow::Tensor>& overlap_nlz,
     const absl::optional<const tensorflow::Tensor>& detection_difficulty,
-    const absl::optional<const tensorflow::Tensor>& tracking_difficulty);
+    const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
+    const absl::optional<const tensorflow::Tensor>& object_speed);
 
 }  // namespace open_dataset
 }  // namespace waymo

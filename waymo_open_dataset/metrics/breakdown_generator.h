@@ -37,6 +37,17 @@ class BreakdownGenerator {
   // Returns -1 if the object does not belong to any shard.
   virtual int Shard(const Object& object) const = 0;
 
+  // Returns a list of shards that this object should be included while
+  // performing matching when computing metrics.
+  //
+  // Some breakdowns require to perform a matching between predictions and
+  // ground truths beyond objects in its own shard (defined by 'Shard' above).
+  // This is only enabled for VELOCITY breakdown in detection metrics
+  // computation for now.
+  virtual std::vector<int> ShardsForMatching(const Object& object) const {
+    return {Shard(object)};
+  }
+
   // The unique ID of this breakdown method.
   virtual Breakdown::GeneratorId Id() const = 0;
 
@@ -45,6 +56,11 @@ class BreakdownGenerator {
 
   // The name of the shard used for UI.
   virtual std::string ShardName(int i) const = 0;
+
+  // Whether this is a groundtruth-only breakdown. A groundtruth-only
+  // breakdown shards on properties that are only available on a groundtruth,
+  // such as velocity in a detection problem.
+  virtual bool IsGroundTruthOnlyBreakdown() const { return false; }
 
   // Creates a breakdown generator given a breadown generator ID.
   static std::unique_ptr<BreakdownGenerator> Create(Breakdown::GeneratorId id);

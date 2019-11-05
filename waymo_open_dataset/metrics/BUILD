@@ -108,6 +108,7 @@ cc_library(
         ":breakdown_generator",
         ":matcher",
         "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_glog//:glog",
     ],

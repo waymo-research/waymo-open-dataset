@@ -203,8 +203,16 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurements(
   for (int i = 0; i < num_frames; ++i) {
     matchers.push_back(Matcher::Create(config));
   }
+  const bool need_to_estimate_speed =
+      internal::HasVelocityBreakdown(config) && !pds.empty() &&
+      !pds[0].empty() && !pds[0][0].object().metadata().has_speed_x();
+  std::vector<std::vector<Object>> pds_with_velocity;
+  if (need_to_estimate_speed) {
+    pds_with_velocity = internal::EstimateObjectSpeed(pds, gts);
+  }
   for (int i = 0; i < num_frames; ++i) {
-    matchers[i]->SetPredictions(pds[i]);
+    matchers[i]->SetPredictions(need_to_estimate_speed ? pds_with_velocity[i]
+                                                       : pds[i]);
     matchers[i]->SetGroundTruths(gts[i]);
   }
 
@@ -214,8 +222,12 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurements(
       num_frames);
   int num_breakdown_shards = -1;
   for (int i = 0; i < num_frames; ++i) {
-    pd_subsets[i] = internal::BuildSubsets(config, pds[i], /*is_gt=*/false);
-    gt_subsets[i] = internal::BuildSubsets(config, gts[i], /*is_gt=*/true);
+    pd_subsets[i] = internal::BuildSubsets(
+        config, (need_to_estimate_speed ? pds_with_velocity[i] : pds[i]),
+        /*is_gt=*/false, /*is_detection=*/false);
+    gt_subsets[i] = internal::BuildSubsets(config, gts[i], /*is_gt=*/true,
+                                           /*is_detection=*/false);
+
     if (num_breakdown_shards < 0) {
       num_breakdown_shards = pd_subsets[i].size();
     }

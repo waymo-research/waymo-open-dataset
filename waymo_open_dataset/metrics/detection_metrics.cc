@@ -39,25 +39,56 @@ namespace {
 // matcher.
 DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
     const Matcher& matcher, const std::vector<int>& pd_matches,
-    const std::vector<int>& gt_matches,
-    Label::DifficultyLevel difficulty_level) {
+    const std::vector<int>& gt_matches, Label::DifficultyLevel difficulty_level,
+    const Breakdown& breakdown) {
   int num_true_positives = 0;
   int num_false_positives = 0;
   int num_false_negatives = 0;
   float sum_heading_accuracy = 0.0;
+  auto is_in_breakdown = [&matcher, &breakdown](int gt_subset_id) {
+    return internal::IsInBreakdown(
+        matcher.ground_truths()[matcher.ground_truth_subset()[gt_subset_id]],
+        breakdown);
+  };
   for (int i = 0, sz = pd_matches.size(); i < sz; ++i) {
-    if (internal::IsTP(pd_matches, i)) {
+    // This is a true positive only if
+    // 1) This prediction matches a ground truth.
+    // 2) The matched ground truth is in the given breakdown.
+    if (internal::IsTP(pd_matches, i) &&
+        (!internal::IsGroundTruthOnlyBreakdown(breakdown) ||
+         is_in_breakdown(pd_matches[i]))) {
       ++num_true_positives;
       sum_heading_accuracy += internal::ComputeHeadingAccuracy(
           matcher, matcher.prediction_subset()[i],
           matcher.ground_truth_subset()[pd_matches[i]]);
     }
+    // This is a false positive only if
+    // 1) This prediction does not match to any ground truth.
+    // 2) The prediction does not overlap with any other ground truth that is
+    //  not inside this breakdown. The threshold of deciding whether there is an
+    //  overlap is set to kOverlapIoUThreshold for now.
     if (internal::IsFP(matcher, pd_matches, i)) {
-      ++num_false_positives;
+      if (internal::IsGroundTruthOnlyBreakdown(breakdown)) {
+        static constexpr double kOverlapIoUThreshold = 0.01;
+        const int gt_subset_id = internal::FindGTWithLargestIoU(
+            matcher, i, /*iou_threshold=*/kOverlapIoUThreshold);
+        const bool overlap_with_gt_in_other_shard =
+            gt_subset_id >= 0 && !is_in_breakdown(gt_subset_id);
+        if (!overlap_with_gt_in_other_shard) {
+          ++num_false_positives;
+        }
+      } else {
+        ++num_false_positives;
+      }
     }
   }
   for (int i = 0, sz = gt_matches.size(); i < sz; ++i) {
-    if (internal::IsDetectionFN(matcher, gt_matches, i, difficulty_level)) {
+    // This is false negative only if
+    // 1) This ground truth is not matched to any prediction.
+    // 2) This ground truth is inside the given breakdown.
+    if (internal::IsDetectionFN(matcher, gt_matches, i, difficulty_level) &&
+        (!internal::IsGroundTruthOnlyBreakdown(breakdown) ||
+         is_in_breakdown(i))) {
       ++num_false_negatives;
     }
   }
@@ -108,7 +139,8 @@ ComputeDetectionMeasurementsPerBreakdownShard(
          ++dl_idx) {
       *measurements[dl_idx].add_measurements() =
           ComputeDetectionMeasurementFromMatchingResult(
-              *matcher, pd_matches, gt_matches, difficulty_levels[dl_idx]);
+              *matcher, pd_matches, gt_matches, difficulty_levels[dl_idx],
+              measurements[dl_idx].breakdown());
       measurements[dl_idx].mutable_measurements()->rbegin()->set_score_cutoff(
           config.score_cutoffs(score_idx));
     }
@@ -242,12 +274,21 @@ std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
       << "config.scores() must be populated: " << config.DebugString();
   std::unique_ptr<Matcher> matcher = Matcher::Create(config);
   matcher->SetGroundTruths(gts);
-  matcher->SetPredictions(pds);
+  // Matcher stores a pointer to pds, so make a copy so pds lives the lifetime
+  // of the matcher.
+  auto pds_copy = pds;
+  if (internal::HasVelocityBreakdown(config) && !pds.empty() &&
+      !pds[0].object().metadata().has_accel_x()) {
+    pds_copy = internal::EstimateObjectSpeed(pds, gts);
+  }
+  matcher->SetPredictions(pds_copy);
   std::vector<DetectionMeasurements> measurements;
   const std::vector<internal::BreakdownShardSubset> pd_subsets =
-      internal::BuildSubsets(config, matcher->predictions(), /*is_gt=*/false);
+      internal::BuildSubsets(config, matcher->predictions(), /*is_gt=*/false,
+                             /*is_detection=*/true);
   const std::vector<internal::BreakdownShardSubset> gt_subsets =
-      internal::BuildSubsets(config, matcher->ground_truths(), /*is_gt=*/true);
+      internal::BuildSubsets(config, matcher->ground_truths(), /*is_gt=*/true,
+                             /*is_detection=*/true);
   CHECK_EQ(pd_subsets.size(), gt_subsets.size());
 
   for (int i = 0, sz = pd_subsets.size(); i < sz; ++i) {

@@ -30,12 +30,14 @@ namespace waymo {
 namespace open_dataset {
 namespace {
 // Builds an object that has an IoU of 'iou' with a 3d box parameterized as:
-// center: (0, 0, 0), length: 100, width: 1, height: 1.
-Object BuildObject(float iou, Label::Type type) {
+// center: (0, 0, 0), length: 100*iou, width: 1, height: 1.
+Object BuildObject(float iou, Label::Type type, double x = 0.0, double vx = 0) {
   Object object;
   *object.mutable_object()->mutable_box() =
-      BuildBox3d(0.0, 0.0, 0.0, iou * 100, 1.0, 1.0, 0.0);
+      BuildBox3d(x, 0.0, 0.0, iou * 100, 1.0, 1.0, 0.0);
   object.mutable_object()->set_type(type);
+  object.mutable_object()->mutable_metadata()->set_speed_x(vx);
+  object.mutable_object()->mutable_metadata()->set_speed_y(0);
   return object;
 }
 
@@ -189,6 +191,69 @@ TEST(DetectionMetricsTest, MultipleShards) {
   const std::vector<DetectionMetrics> metrics =
       ComputeDetectionMetrics(config, {pds, pds}, {gts, gts});
   EXPECT_EQ(metrics.size(), 1 + Label::Type_MAX * /*num difficulties*/ 2);
+}
+
+TEST(DetectionMetricsTest, VelocityBreakdown) {
+  Config config = BuildConfig();
+  config.set_num_desired_score_cutoffs(5);
+  config.clear_score_cutoffs();
+  config.clear_breakdown_generator_ids();
+  config.clear_difficulties();
+  config.add_breakdown_generator_ids(Breakdown::VELOCITY);
+  auto* d = config.add_difficulties();
+  d->add_levels(Label::LEVEL_2);
+  std::vector<Object> pds = {
+      // FP for shard 0, 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, -0.09),
+      // FP for shard 1, ignored for shard 0.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 0),
+      // TP for shrad 0, ignored for shard 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 2),
+      // Ignored for shard 0, TP for shard 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 4),
+  };
+  for (int i = 0, sz = pds.size(); i < sz; ++i) {
+    pds[i].set_score(1.0);
+  }
+  const std::vector<Object> gts = {
+      // Ignored for shard 0. FN for shard 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 0.9, 0.5),
+      // TP for shard 0, ignored for shard 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 2.0, 0),
+      // TP for shard 1, ignored for shrad 0.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 4.0, 0.5),
+      // Ignored for shard 0, FN for shard 1.
+      BuildObject(0.01, Label::TYPE_VEHICLE, 6.0, 0.5),
+  };
+
+  const std::vector<DetectionMetrics> metrics =
+      ComputeDetectionMetrics(config, {pds}, {gts});
+  EXPECT_EQ(metrics.size(), 5 * static_cast<int>(Label::Type_MAX));
+
+  // Shard 0.
+  {
+    const auto& measurement_1 =
+        *metrics[0].measurements().measurements().rbegin();
+    EXPECT_EQ(measurement_1.num_tps(), 1);
+    EXPECT_EQ(measurement_1.num_fps(), 1);
+    EXPECT_EQ(measurement_1.num_fns(), 0);
+  }
+  // Shard 1.
+  {
+    const auto& measurement_1 =
+        *metrics[1].measurements().measurements().rbegin();
+    EXPECT_EQ(measurement_1.num_tps(), 1);
+    EXPECT_EQ(measurement_1.num_fps(), 2);
+    EXPECT_EQ(measurement_1.num_fns(), 2);
+  }
+
+  for (int i = 2; i < metrics.size(); ++i) {
+    const auto& measurement_1 =
+        *metrics[i].measurements().measurements().rbegin();
+    EXPECT_EQ(measurement_1.num_tps(), 0);
+    EXPECT_EQ(measurement_1.num_fps(), (i < 5 ? 1 : 0)) << i;
+    EXPECT_EQ(measurement_1.num_fns(), 0);
+  }
 }
 }  // namespace
 }  // namespace open_dataset

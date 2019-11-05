@@ -56,6 +56,33 @@ TEST(BreakdownGenerator, BreakdownGeneratorRange) {
   EXPECT_EQ(2 + 3 * (Label::TYPE_PEDESTRIAN - 1), generator->Shard(object3));
   EXPECT_EQ(Breakdown::RANGE, generator->Id());
 }
+
+TEST(BreakdownGenerator, BreakdownGeneratorVelocity) {
+  const auto generator = BreakdownGenerator::Create(Breakdown::VELOCITY);
+  EXPECT_EQ(4 * 5, generator->NumShards());
+  Object object;
+  object.mutable_object()->set_type(Label::TYPE_VEHICLE);
+  object.mutable_object()->mutable_metadata()->set_speed_x(0.05);
+  object.mutable_object()->mutable_metadata()->set_speed_y(0.05);
+  EXPECT_EQ(0, generator->Shard(object));
+  object.mutable_object()->set_type(Label::TYPE_PEDESTRIAN);
+  object.mutable_object()->mutable_metadata()->set_speed_x(0.5);
+  object.mutable_object()->mutable_metadata()->set_speed_y(0.5);
+  EXPECT_EQ(5 + 1, generator->Shard(object));
+  object.mutable_object()->set_type(Label::TYPE_SIGN);
+  object.mutable_object()->mutable_metadata()->set_speed_x(2.);
+  object.mutable_object()->mutable_metadata()->set_speed_y(2.);
+  EXPECT_EQ(10 + 2, generator->Shard(object));
+  object.mutable_object()->set_type(Label::TYPE_CYCLIST);
+  object.mutable_object()->mutable_metadata()->set_speed_x(5.);
+  object.mutable_object()->mutable_metadata()->set_speed_y(5.);
+  EXPECT_EQ(15 + 3, generator->Shard(object));
+  object.mutable_object()->set_type(Label::TYPE_VEHICLE);
+  object.mutable_object()->mutable_metadata()->set_speed_x(20.);
+  object.mutable_object()->mutable_metadata()->set_speed_y(15.);
+  EXPECT_EQ(4, generator->Shard(object));
+}
+
 }  // namespace
 }  // namespace open_dataset
 }  // namespace waymo

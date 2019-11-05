@@ -77,12 +77,13 @@ def get_detection_metric_ops(
     ground_truth_bbox,
     ground_truth_type,
     ground_truth_difficulty,
+    ground_truth_speed=None,
 ):
   """Returns dict of metric name to tuples of `(value_op, update_op)`.
 
   Each update_op accumulates the prediction and ground truth tensors to its
   corresponding tf variables. Each value_op computes detection metrics on all
-  prediction and groud truth seen so far. This works similar as `tf.metrics`
+  prediction and ground truth seen so far. This works similar as `tf.metrics`
   code.
 
   Notation:
@@ -104,10 +105,15 @@ def get_detection_metric_ops(
     ground_truth_type: [N] tensor encoding the object type of each ground truth.
     ground_truth_difficulty: [N] tensor encoding the difficulty level of each
       ground truth.
+    ground_truth_speed: [N, 2] tensor with the vx, vy velocity for each object.
 
   Returns:
     A dictionary of metric names to tuple of value_op and update_op.
   """
+  if ground_truth_speed is None:
+    num_gt_boxes = tf.shape(ground_truth_bbox)[0]
+    ground_truth_speed = tf.zeros((num_gt_boxes, 2), tf.float32)
+
   eval_dict = {
       'prediction_frame_id': (prediction_frame_id, [0], tf.int64),
       'prediction_bbox':
@@ -120,6 +126,7 @@ def get_detection_metric_ops(
           (ground_truth_bbox, [0, _get_box_dof(config.box_type)], tf.float32),
       'ground_truth_type': (ground_truth_type, [0], tf.uint8),
       'ground_truth_difficulty': (ground_truth_difficulty, [0], tf.uint8),
+      'ground_truth_speed': (ground_truth_speed, [0, 2], tf.float32),
   }
 
   variable_and_update_ops = {}

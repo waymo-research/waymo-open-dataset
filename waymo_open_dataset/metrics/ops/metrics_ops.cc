@@ -33,6 +33,7 @@ REGISTER_OP("DetectionMetrics")
     .Input("ground_truth_type: uint8")
     .Input("ground_truth_frame_id: int64")
     .Input("ground_truth_difficulty: uint8")
+    .Input("ground_truth_speed: float")
     .Output("average_precision: float")
     .Output("average_precision_ha_weighted: float")
     .Output("precision_recall: float")
@@ -62,6 +63,8 @@ ground_truth_type: [M]. ground truth object type of each bounding box.
 ground_truth_frame_id: [M]. M frame IDs for each ground truth box.
 ground_truth_difficulty: [M] Difficulty level (1 or 2) for each ground truth
   box.
+ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
+  label to use for VELOCITY breakdown.
 average_precision: [B]. average precision for each breakdown.
 average_precision_ha_weighted: [B]. average precision with heading accuracy
   weighted for each breakdown.

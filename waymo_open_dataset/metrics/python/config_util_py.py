@@ -38,6 +38,9 @@ def _get_num_breakdown_shards(breakdown_generator_id):
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "RANGE"):
     return 3 * 4
+  elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
+      "VELOCITY"):
+    return 5 * 4
   else:
     raise ValueError("Unsupported breakdown {}.".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)))
@@ -62,6 +65,24 @@ def _get_breakdown_shard_name(breakdown_generator_id, shard):
     return "{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
         label_pb2.Label.Type.Name(shard + 1))
+  elif breakdown_generator_id == (
+      breakdown_pb2.Breakdown.GeneratorId.Value("VELOCITY")):
+    object_type = shard // 5 + 1
+    velocity_shard = shard % 5
+    velocity_shard_name = ""
+    if velocity_shard == 0:
+      velocity_shard_name = "STATIONARY"
+    elif velocity_shard == 1:
+      velocity_shard_name = "SLOW"
+    elif velocity_shard == 2:
+      velocity_shard_name = "MEDIUM"
+    elif velocity_shard == 3:
+      velocity_shard_name = "FAST"
+    else:
+      velocity_shard_name = "VERY_FAST"
+    return "{}_{}_{}".format(
+        breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
+        label_pb2.Label.Type.Name(object_type), velocity_shard_name)
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "RANGE"):
     object_type = shard // 3 + 1
