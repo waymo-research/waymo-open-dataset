@@ -22,7 +22,7 @@ __version__ = '1.0.1'
 REQUIRED_PACKAGES = [
     'tensorflow >= 1.14.0',
 ]
-project_name = 'waymo-open-dataset-TF_VERSION'
+project_name = 'waymo-open-dataset-tf-TF_VERSION'
 
 
 class BinaryDistribution(Distribution):

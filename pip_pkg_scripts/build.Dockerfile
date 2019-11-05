@@ -15,13 +15,6 @@ RUN apt-get install python3.6
 RUN pip install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
 
-# Install tensorflow
-RUN pip uninstall -y tensorflow
-RUN pip3 uninstall -y tensorflow
-
-RUN pip install tensorflow==${TF_VERSION}
-RUN pip3 install tensorflow==${TF_VERSION}
-
 RUN pip3 install --upgrade auditwheel
 COPY pip_pkg_scripts/build.sh /
 
