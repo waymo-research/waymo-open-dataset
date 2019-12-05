@@ -15,7 +15,16 @@ all_proto_library(
     src = "metrics.proto",
     deps = [
         ":breakdown_proto",
+        "//waymo_open_dataset:dataset_proto",
         "//waymo_open_dataset:label_proto",
+    ],
+)
+
+all_proto_library(
+    src = "submission.proto",
+    deps = [
+        ":metrics_proto",
+        "//waymo_open_dataset:dataset_proto",
     ],
 )
 

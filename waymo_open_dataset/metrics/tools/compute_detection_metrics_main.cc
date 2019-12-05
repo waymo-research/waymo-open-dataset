@@ -36,8 +36,6 @@ limitations under the License.
 //    NOTE: overlap_with_nlz does not need to be populated when you submit to
 //    our leaderboard (not public yet). It will be ignored even if it is
 //    populated.
-// 3. If you want to evaluate on different difficulty level, make sure the
-//    difficult level field in the object is set.
 //
 // Results when running on ground_truths.bin and fake_predictions.bin in the
 // directory gives the following result.
@@ -82,9 +80,13 @@ namespace {
 Config GetConfig() {
   Config config;
   config.add_breakdown_generator_ids(Breakdown::OBJECT_TYPE);
-  config.add_difficulties();
+  auto* d = config.add_difficulties();
+  d->add_levels(Label::LEVEL_1);
+  d->add_levels(Label::LEVEL_2);
   config.add_breakdown_generator_ids(Breakdown::RANGE);
-  config.add_difficulties();
+  d = config.add_difficulties();
+  d->add_levels(Label::LEVEL_1);
+  d->add_levels(Label::LEVEL_2);
 
   config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
   config.add_iou_thresholds(0.0);
@@ -109,24 +111,45 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     std::cerr << "Failed to parse predictions.";
     return;
   }
-  Objects gt_objects;
-  if (!gt_objects.ParseFromString(gt_str)) {
+  Objects gt_objects_ori;
+  if (!gt_objects_ori.ParseFromString(gt_str)) {
     std::cerr << "Failed to parse ground truths.";
     return;
+  }
+
+  // Set detection difficulty.
+  Objects gt_objects;
+  constexpr int kDetectionLevel2NumPointsThreshold = 5;
+  for (auto& o : *gt_objects_ori.mutable_objects()) {
+    if (o.object().num_lidar_points_in_box() <= 0) continue;
+    // Decide detection difficulty by the number of points inside the box if the
+    // boxes don't come with human annotated difficulty.
+    if (!o.object().has_detection_difficulty_level() ||
+        o.object().detection_difficulty_level() == Label::UNKNOWN) {
+      o.mutable_object()->set_detection_difficulty_level(
+          o.object().num_lidar_points_in_box() <=
+                  kDetectionLevel2NumPointsThreshold
+              ? Label::LEVEL_2
+              : Label::LEVEL_1);
+    }
+    *gt_objects.add_objects() = o;
   }
 
   std::map<std::pair<std::string, int64>, std::vector<Object>> pd_map;
   std::map<std::pair<std::string, int64>, std::vector<Object>> gt_map;
   std::set<std::pair<std::string, int64>> all_example_keys;
+  auto get_key = [](const Object& object) {
+    return std::make_pair(
+        absl::StrCat(object.context_name(), "_", object.camera_name()),
+        object.frame_timestamp_micros());
+  };
   for (auto& o : *pd_objects.mutable_objects()) {
-    const auto key =
-        std::make_pair(o.context_name(), o.frame_timestamp_micros());
+    const auto key = get_key(o);
     pd_map[key].push_back(std::move(o));
     all_example_keys.insert(key);
   }
   for (auto& o : *gt_objects.mutable_objects()) {
-    const auto key =
-        std::make_pair(o.context_name(), o.frame_timestamp_micros());
+    const auto key = get_key(o);
     gt_map[key].push_back(std::move(o));
     all_example_keys.insert(key);
   }

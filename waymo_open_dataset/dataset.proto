@@ -242,10 +242,22 @@ message CameraImage {
   optional double pose_timestamp = 5;
 
   // Rolling shutter params.
-
-  // Shutter duration in seconds. Time taken for one shutter.
+  // The following explanation assumes left->right rolling shutter.
+  //
+  // Rolling shutter cameras expose and read the image column by column, offset
+  // by the read out time for each column. The desired timestamp for each column
+  // is the middle of the exposure of that column as outlined below for an image
+  // with 3 columns:
+  // ------time------>
+  // |---- exposure col 1----| read |
+  // -------|---- exposure col 2----| read |
+  // --------------|---- exposure col 3----| read |
+  // ^trigger time                                ^readout end time
+  //             ^time for row 1 (= middle of exposure of row 1)
+  //                    ^time image center (= middle of exposure of middle row)
+  // Shutter duration in seconds. Exposure time per column.
   optional double shutter = 6;
-  // Time when the sensor was triggered and when readout finished.
+  // Time when the sensor was triggered and when last readout finished.
   // The difference between trigger time and readout done time includes
   // the exposure time and the actual sensor readout time.
   optional double camera_trigger_time = 7;

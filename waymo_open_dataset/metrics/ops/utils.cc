@@ -146,10 +146,10 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
           static_cast<Label::DifficultyLevel>(
               detection_difficulty.value().vec<uint8>()(i)));
     }
-    if (tracking_difficulty) {
+    if (tracking_difficulty.has_value()) {
       object.mutable_object()->set_tracking_difficulty_level(
           static_cast<Label::DifficultyLevel>(
-              detection_difficulty.value().vec<uint8>()(i)));
+              tracking_difficulty.value().vec<uint8>()(i)));
     }
     if (object_speed.has_value()) {
       object.mutable_object()->mutable_metadata()->set_speed_x(

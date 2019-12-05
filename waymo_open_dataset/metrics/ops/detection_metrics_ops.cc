@@ -27,11 +27,12 @@ limitations under the License.
 #include "tensorflow/core/framework/types.pb.h"
 #include "tensorflow/core/lib/core/errors.h"
 #include "tensorflow/core/lib/core/threadpool.h"
+#include "tensorflow/core/platform/cpu_info.h"
 #include "waymo_open_dataset/label.pb.h"
-#include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/metrics/detection_metrics.h"
-#include "waymo_open_dataset/protos/metrics.pb.h"
 #include "waymo_open_dataset/metrics/ops/utils.h"
+#include "waymo_open_dataset/protos/breakdown.pb.h"
+#include "waymo_open_dataset/protos/metrics.pb.h"
 
 namespace tensorflow {
 namespace {
@@ -181,7 +182,6 @@ class DetectionMetricsOp final : public OpKernel {
       gts.push_back(std::move(gts_map[id]));
     }
 
-    static constexpr int kNumThreads = 10;
     std::vector<std::vector<co::DetectionMeasurements>> measurements(
         pds.size());
     co::Config config = config_;
@@ -192,7 +192,7 @@ class DetectionMetricsOp final : public OpKernel {
     {
       tensorflow::thread::ThreadPool pool(
           ctx->env(), tensorflow::ThreadOptions(),
-          "ComputeDetectionMetricsPool", kNumThreads,
+          "ComputeDetectionMetricsPool", port::MaxParallelism(),
           /*low_latency_hint=*/false);
       for (int i = 0, sz = pds.size(); i < sz; ++i) {
         pool.Schedule([&config, &pds, &gts, &measurements, i]() {
