@@ -38,9 +38,9 @@ namespace {
 // Note: pd_matches, gt_matches use indices to the *subsets* maintained by
 // matcher.
 DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
-    const Matcher& matcher, const std::vector<int>& pd_matches,
-    const std::vector<int>& gt_matches, Label::DifficultyLevel difficulty_level,
-    const Breakdown& breakdown) {
+    const Config& config, const Matcher& matcher,
+    const std::vector<int>& pd_matches, const std::vector<int>& gt_matches,
+    Label::DifficultyLevel difficulty_level, const Breakdown& breakdown) {
   int num_true_positives = 0;
   int num_false_positives = 0;
   int num_false_negatives = 0;
@@ -57,10 +57,12 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
     if (internal::IsTP(pd_matches, i) &&
         (!internal::IsGroundTruthOnlyBreakdown(breakdown) ||
          is_in_breakdown(pd_matches[i]))) {
-      ++num_true_positives;
-      sum_heading_accuracy += internal::ComputeHeadingAccuracy(
+      const float heading_accuracy = internal::ComputeHeadingAccuracy(
           matcher, matcher.prediction_subset()[i],
           matcher.ground_truth_subset()[pd_matches[i]]);
+      if (heading_accuracy <= config.min_heading_accuracy()) continue;
+      ++num_true_positives;
+      sum_heading_accuracy += heading_accuracy;
     }
     // This is a false positive only if
     // 1) This prediction does not match to any ground truth.
@@ -139,8 +141,8 @@ ComputeDetectionMeasurementsPerBreakdownShard(
          ++dl_idx) {
       *measurements[dl_idx].add_measurements() =
           ComputeDetectionMeasurementFromMatchingResult(
-              *matcher, pd_matches, gt_matches, difficulty_levels[dl_idx],
-              measurements[dl_idx].breakdown());
+              config, *matcher, pd_matches, gt_matches,
+              difficulty_levels[dl_idx], measurements[dl_idx].breakdown());
       measurements[dl_idx].mutable_measurements()->rbegin()->set_score_cutoff(
           config.score_cutoffs(score_idx));
     }
@@ -202,7 +204,8 @@ void MergeDetectionMeasurementsVector(
 }
 
 // Converts detection measurements to detection metrics.
-DetectionMetrics ToDetectionMetrics(DetectionMeasurements&& measurements,
+DetectionMetrics ToDetectionMetrics(const Config& config,
+                                    DetectionMeasurements&& measurements,
                                     float desired_recall_delta) {
   DetectionMetrics metrics;
   *metrics.mutable_measurements() = measurements;
@@ -217,9 +220,14 @@ DetectionMetrics ToDetectionMetrics(DetectionMeasurements&& measurements,
       metrics.add_precisions(0.0);
       metrics.add_precisions_ha_weighted(0.0);
     } else {
-      metrics.add_precisions(static_cast<float>(measurement.num_tps()) /
-                             tp_fp_sum);
-      metrics.add_precisions_ha_weighted(measurement.sum_ha() / tp_fp_sum);
+      const float precision =
+          static_cast<float>(measurement.num_tps()) / tp_fp_sum;
+      const float precision_ha = measurement.sum_ha() / tp_fp_sum;
+
+      metrics.add_precisions(precision < config.min_precision() ? 0.0
+                                                                : precision);
+      metrics.add_precisions_ha_weighted(
+          precision_ha < config.min_precision() ? 0.0 : precision_ha);
     }
 
     const int tp_fn_sum = measurement.num_tps() + measurement.num_fns();
@@ -328,8 +336,8 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
   std::vector<DetectionMetrics> metrics;
   metrics.reserve(measurements.size());
   for (auto& m : measurements) {
-    metrics.emplace_back(
-        ToDetectionMetrics(std::move(m), config.desired_recall_delta()));
+    metrics.emplace_back(ToDetectionMetrics(config, std::move(m),
+                                            config.desired_recall_delta()));
   }
   return metrics;
 }
@@ -346,8 +354,8 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
   std::vector<DetectionMetrics> metrics;
   metrics.reserve(measurements_merged.size());
   for (auto& m : measurements_merged) {
-    metrics.emplace_back(
-        ToDetectionMetrics(std::move(m), config.desired_recall_delta()));
+    metrics.emplace_back(ToDetectionMetrics(config, std::move(m),
+                                            config.desired_recall_delta()));
   }
   return metrics;
 }

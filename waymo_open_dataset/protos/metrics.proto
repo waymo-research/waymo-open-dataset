@@ -113,6 +113,15 @@ message Config {
   // Desired recall delta when sampling the P/R curve to compute mean average
   // precision.
   optional float desired_recall_delta = 8 [default = 0.05];
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Users do not need to modify the following features.
+  ////////////////////////////////////////////////////////////////////////////
+  // If set, all precisions below this value is considered as 0.
+  optional float min_precision = 9 [default = 0.0];
+  // Any matching with an heading accuracy lower than this is considered as
+  // false matching.
+  optional float min_heading_accuracy = 10 [default = -1.0];
 }
 
 message DetectionMeasurement {

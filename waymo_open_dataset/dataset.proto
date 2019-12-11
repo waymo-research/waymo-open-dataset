@@ -228,7 +228,7 @@ message CameraImage {
   // SDC pose.
   optional Transform pose = 3;
   // SDC velocity at 'pose_timestamp' below. The velocity value is represented
-  // at vehicle frame.
+  // at *global* frame.
   // With this velocity, the pose can be extrapolated.
   // r(t+dt) = r(t) + dr/dt * dt where dr/dt = v_{x,y,z}.
   // R(t+dt) = R(t) + R(t)*SkewSymmetric(w_{x,y,z})*dt

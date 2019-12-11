@@ -78,6 +78,7 @@ def get_detection_metric_ops(
     ground_truth_type,
     ground_truth_difficulty,
     ground_truth_speed=None,
+    recall_at_precision=None,
 ):
   """Returns dict of metric name to tuples of `(value_op, update_op)`.
 
@@ -106,6 +107,8 @@ def get_detection_metric_ops(
     ground_truth_difficulty: [N] tensor encoding the difficulty level of each
       ground truth.
     ground_truth_speed: [N, 2] tensor with the vx, vy velocity for each object.
+    recall_at_precision: a float within [0,1]. If set, returns a 3rd metric that
+      reports the recall at the given precision.
 
   Returns:
     A dictionary of metric names to tuple of value_op and update_op.
@@ -141,7 +144,7 @@ def get_detection_metric_ops(
   }
 
   config_str = config.SerializeToString()
-  ap, aph, _, _, _ = py_metrics_ops.detection_metrics(
+  ap, aph, pr, _, _ = py_metrics_ops.detection_metrics(
       config=config_str, **variable_map)
   breakdown_names = config_util.get_breakdown_names_from_config(config)
   metric_ops = {}
@@ -153,4 +156,12 @@ def get_detection_metric_ops(
       # multiple session.run()s.
       metric_ops['{}/AP'.format(name)] = (ap[i], tf.constant([]))
     metric_ops['{}/APH'.format(name)] = (aph[i], tf.constant([]))
+    if recall_at_precision is not None:
+      precision_i_mask = pr[i, :, 0] > recall_at_precision
+      recall_i = tf.reduce_max(
+          tf.where(precision_i_mask, pr[i, :, 1], tf.zeros_like(pr[i, :, 1])))
+      metric_ops['{}/Recall@{}'.format(name,
+                                       recall_at_precision)] = (recall_i,
+                                                                tf.constant([]))
+
   return metric_ops

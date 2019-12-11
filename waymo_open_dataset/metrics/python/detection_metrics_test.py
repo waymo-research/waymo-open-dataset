@@ -80,7 +80,9 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
           ground_truth_type=self._gt_type,
           ground_truth_frame_id=self._gt_frame_id,
           ground_truth_difficulty=tf.ones_like(
-              self._gt_frame_id, dtype=tf.uint8))
+              self._gt_frame_id, dtype=tf.uint8),
+          recall_at_precision=0.95,
+      )
       return metrics
 
   def _EvalUpdateOps(
@@ -133,8 +135,8 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
       self.assertEqual(len(pd_frame_id_accumulated[0]), m * 2)
 
       aps = self._EvalValueOps(sess, graph, metrics)
-      self.assertEqual(len(aps), 8)
-      for i in range(0, 8):
+      self.assertEqual(len(aps), 12)
+      for i in range(0, 12):
         self.assertTrue(-ERROR <= list(aps.values())[i][0] and
                         list(aps.values())[i][0] <= 1.0 + ERROR)
 
@@ -155,8 +157,8 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
       self.assertEqual(len(pd_frame_id_accumulated[0]), m * 2)
 
       aps = self._EvalValueOps(sess, graph, metrics)
-      self.assertEqual(len(aps), 8)
-      for i in range(0, 8):
+      self.assertEqual(len(aps), 12)
+      for i in range(0, 12):
         # Note: 'm' (num_boxes) needs to be large enough such that we have boxes
         # generated for every object type.
         self.assertAlmostEqual(list(aps.values())[i][0], 1.0, places=5)
