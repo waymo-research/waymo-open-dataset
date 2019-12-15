@@ -231,12 +231,14 @@ message CameraImage {
   // at *global* frame.
   // With this velocity, the pose can be extrapolated.
   // r(t+dt) = r(t) + dr/dt * dt where dr/dt = v_{x,y,z}.
-  // R(t+dt) = R(t) + R(t)*SkewSymmetric(w_{x,y,z})*dt
+  // R(t+dt) = to_rot(w_{x,y,z}*dt) * R(t)
+  // to_rot(roll, pitch, yaw) = rot_z(yaw) * rot_y(pitch) * rot_x(roll)
   // r(t) = (x(t), y(t), z(t)) is vehicle location at t in the global frame.
   // R(t) = Rotation Matrix (3x3) from the body frame to the global frame at t.
-  // SkewSymmetric(x,y,z) is defined as the cross-product matrix in the
+  // to_rot(roll, pitch, yaw) is the transformation from euler angle to rotation matrix
+  // in the intrinsic rotation about axes z-y-x
   // following:
-  // https://en.wikipedia.org/wiki/Cross_product#Conversion_to_matrix_multiplication
+  // https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
   optional Velocity velocity = 4;
   // Timestamp of the `pose` above.
   optional double pose_timestamp = 5;
