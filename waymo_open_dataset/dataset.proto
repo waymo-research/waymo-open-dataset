@@ -209,7 +209,7 @@ message RangeImage {
   // This is ONLY populated for the first return. The second return is assumed
   // to have exactly the same range_image_pose_compressed.
   //
-  // The roll, pitch and yaw are specified as 3-2-1 Euler angle rotations,
+  // The roll, pitch and yaw are specified as 1-2-3(x-y-z) Euler angle rotations,
   // meaning that rotating from the navigation to vehicle frame consists of a
   // yaw, then pitch and finally roll rotation about the z, y and x axes
   // respectively. All rotations use the right hand rule and are positive
