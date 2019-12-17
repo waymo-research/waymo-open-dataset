@@ -87,10 +87,8 @@ export TF_VERSION="${TF_VERSION:-1.15.0}"
 export TF_VERSION_UNDERSCORE=$(echo $TF_VERSION | sed 's/\./_/g')
 export TF_VERSION_DASH=$(echo $TF_VERSION | sed 's/\./-/g')
 
-cat WORKSPACE | sed "s/TF_VERSION/${TF_VERSION_UNDERSCORE}/" > .WORKSPACE.tmp
-mv .WORKSPACE.tmp WORKSPACE
-cat pip_pkg_scripts/setup.py | sed "s/TF_VERSION/${TF_VERSION_DASH}/" > pip_pkg_scripts/.setup.py.tmp
-mv pip_pkg_scripts/.setup.py.tmp pip_pkg_scripts/setup.py
+cat WORKSPACE.in | sed "s/TF_VERSION/${TF_VERSION_UNDERSCORE}/" > WORKSPACE
+cat pip_pkg_scripts/setup.py.in | sed "s/TF_VERSION/${TF_VERSION_DASH}/" > pip_pkg_scripts/setup.py
 
 if [[ ${TF_VERSION} == '1.14.0' ]]; then
   write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"'

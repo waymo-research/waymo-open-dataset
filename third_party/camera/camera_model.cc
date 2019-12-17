@@ -313,10 +313,13 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
       vehicle_tfm_cam.rotation().transpose() * vehicle_omega_vehicle;
   rolling_shutter_state_->skew_omega = SkewSymmetric(cam_omega_cam0);
   // Need to compensate velocity lever arm effect.
+  // Lever arm effect:
+  // https://en.wikipedia.org/wiki/Torque
+  // v_1 = v_0 + omega x arm_length.
+  const Eigen::Vector3d n_pos_cam0 =
+      n_tfm_vehicle0.rotation() * vehicle_tfm_cam.translation();
   rolling_shutter_state_->n_vel_cam0 =
-      n_vel_vehicle + SkewSymmetric(n_omega_vehicle) *
-                          n_tfm_vehicle0.rotation() *
-                          vehicle_tfm_cam.translation();
+      n_vel_vehicle + SkewSymmetric(n_omega_vehicle) * n_pos_cam0;
   rolling_shutter_state_->cam0_dcm_n =
       rolling_shutter_state_->n_tfm_cam0.rotation().transpose();
   rolling_shutter_state_->skew_omega_dcm =
