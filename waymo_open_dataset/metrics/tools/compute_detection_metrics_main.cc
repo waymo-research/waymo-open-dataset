@@ -121,7 +121,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   Objects gt_objects;
   constexpr int kDetectionLevel2NumPointsThreshold = 5;
   for (auto& o : *gt_objects_ori.mutable_objects()) {
-    if (o.object().num_lidar_points_in_box() <= 0) continue;
+    // if (o.object().num_lidar_points_in_box() <= 0) continue;
     // Decide detection difficulty by the number of points inside the box if the
     // boxes don't come with human annotated difficulty.
     if (!o.object().has_detection_difficulty_level() ||
