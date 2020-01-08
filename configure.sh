@@ -52,7 +52,7 @@ TF_NEED_CUDA=0
 # Check if it's installed
 TF_CFLAGS=""
 TF_LFLAGS=""
-if [[ $(${PIP} show tensorflow) == *tensorflow* ]] || [[ $(${PIP} show tf-nightly) == *tf-nightly* ]] ; then
+if [[ $(${PIP} show tensorflow) == *tensorflow* ]] || [[ $(${PIP} show tensorflow-gpu) == *tensorflow-gpu* ]] || [[ $(${PIP} show tf-nightly) == *tf-nightly* ]] ; then
   echo 'Using installed tensorflow'
   TF_CFLAGS=( $(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
   TF_LFLAGS="$(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
