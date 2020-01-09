@@ -9,13 +9,23 @@ ENV TF_VERSION="1.15.0"
 RUN wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-0.28.0-installer-linux-x86_64.sh > /dev/null
 RUN bash bazel-0.28.0-installer-linux-x86_64.sh
 
-RUN apt-get install python3.5
-RUN apt-get install python3.6
+# There are some problems with the python3 installation from custom-op-ubuntu16.
+# Remove it and install new ones.
+RUN apt-get remove --purge -y python3.5 python3.6
+RUN rm -f /etc/apt/sources.list.d/jonathonf-ubuntu-python-3_6-xenial.list
+RUN apt-key del F06FC659
 
-RUN pip install --upgrade setuptools
-RUN pip3 install --upgrade setuptools
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA6932366A755776
+RUN echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu xenial main" > /etc/apt/sources.list.d/deadsnakes-ppa-xenial.list
+RUN apt-get update && apt-get install -y python3.5 python3.6 python3.7
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 
-RUN pip3 install --upgrade auditwheel
+RUN for python in python3.5 python3.6 python3.7; do \
+      $python get-pip.py && \
+      $python -m pip install --upgrade pip setuptools auditwheel && \
+      $python -m pip install --upgrade grpcio>=1.24.3; \
+    done
+
 COPY pip_pkg_scripts/build.sh /
 
 VOLUME /tmp/pip_pkg_build

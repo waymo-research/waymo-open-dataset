@@ -24,7 +24,7 @@ from waymo_open_dataset.utils import transform_utils
 
 __all__ = [
     'is_within_box_3d', 'compute_num_points_in_box_3d',
-    'get_upright_3d_box_corners'
+    'get_upright_3d_box_corners', 'transform_point', 'transform_box'
 ]
 
 
@@ -129,3 +129,45 @@ def get_upright_3d_box_corners(boxes, name=None):
         translation, axis=-2)
 
     return corners
+
+
+def transform_point(point, from_frame_pose, to_frame_pose, name=None):
+  """Transforms 3d points from one frame to another.
+
+  Args:
+    point: [..., N, 3] points.
+    from_frame_pose: [..., 4, 4] origin frame poses.
+    to_frame_pose: [..., 4, 4] target frame poses.
+    name: tf name scope.
+
+  Returns:
+    Transformed points of shape [..., N, 3] with the same type as point.
+  """
+  with tf.name_scope(name, 'TransformPoint'):
+    transform = tf.linalg.matmul(tf.linalg.inv(to_frame_pose), from_frame_pose)
+    return tf.einsum('...ij,...nj->...ni', transform[..., 0:3, 0:3],
+                     point) + tf.expand_dims(
+                         transform[..., 0:3, 3], axis=-2)
+
+
+def transform_box(box, from_frame_pose, to_frame_pose, name=None):
+  """Transforms 3d upright boxes from one frame to another.
+
+  Args:
+    box: [..., N, 7] boxes.
+    from_frame_pose: [...,4, 4] origin frame poses.
+    to_frame_pose: [...,4, 4] target frame poses.
+    name: tf name scope.
+
+  Returns:
+    Transformed boxes of shape [..., N, 7] with the same type as box.
+  """
+  with tf.name_scope(name, 'TransformBox'):
+    transform = tf.linalg.matmul(tf.linalg.inv(to_frame_pose), from_frame_pose)
+    heading = box[..., -1] + tf.atan2(transform[..., 1, 0], transform[..., 0,
+                                                                      0])
+    center = tf.einsum('...ij,...nj->...ni', transform[..., 0:3, 0:3],
+                       box[..., 0:3]) + tf.expand_dims(
+                           transform[..., 0:3, 3], axis=-2)
+
+    return tf.concat([center, box[..., 3:6], heading[..., tf.newaxis]], axis=-1)

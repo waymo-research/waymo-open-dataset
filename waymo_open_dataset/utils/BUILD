@@ -67,6 +67,7 @@ py_test(
     deps = [
         ":box_utils",
         ":test_utils",
+        ":transform_utils",
         # Implicit tensorflow dependency.
     ],
 )
