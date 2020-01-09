@@ -44,7 +44,7 @@ ${PIP} install tensorflow=="${TF_VERSION}" --user
 # Hack. Bazel python runtime is not configured. We need to
 # install tensorflow in order to run TF related python tests in
 # bazel.
-pip3 install --upgrade tensorflow=="${TF_VERSION}" --user
+python3 -m pip install --upgrade tensorflow=="${TF_VERSION}" --user
 
 rm -rf waymo-od || true
 git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od

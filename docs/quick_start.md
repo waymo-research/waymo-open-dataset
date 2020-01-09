@@ -97,10 +97,10 @@ bazel test waymo_open_dataset/utils/...
 ```
 
 ## Use pre-compiled pip/pip3 packages
-We only pre-compiled the package for Python 2.7, 3.5, 3.6. If you need the
+We only pre-compiled the package for Python 3.5, 3.6, 3.7. If you need the
 lib for a different python version, follow steps in pip_pkg_scripts to build pip
 package on your own.
 ``` bash
 pip3 install upgrade --pip
-pip3 install waymo-open-dataset==1.0.1 --user
+pip install waymo-open-dataset-tf-2-0-0==1.0.1 --user
 ```

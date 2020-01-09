@@ -156,12 +156,19 @@ class DetectionMetricsOp final : public OpKernel {
   OutputTensors ComputeImpl(const InputTensors& input, OpKernelContext* ctx) {
     LOG(INFO) << "Computing detection metrics for "
               << input.prediction_bbox->dim_size(0) << " predicted boxes.";
+    LOG(INFO) << "Parsing prediction "
+              << input.prediction_bbox->shape().DebugString()
+              << input.prediction_frame_id->shape();
     absl::flat_hash_map<int64, std::vector<co::Object>> pds_map =
         co::ParseObjectFromTensors(
             *input.prediction_bbox, *input.prediction_type,
             *input.prediction_frame_id, *input.prediction_score,
             *input.prediction_overlap_nlz, absl::nullopt, absl::nullopt,
             absl::nullopt);
+    LOG(INFO) << "Parsing ground truth "
+              << input.ground_truth_bbox->shape().DebugString()
+              << input.ground_truth_frame_id->shape();
+
     absl::flat_hash_map<int64, std::vector<co::Object>> gts_map =
         co::ParseObjectFromTensors(
             *input.ground_truth_bbox, *input.ground_truth_type,

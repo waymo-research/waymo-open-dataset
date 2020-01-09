@@ -18,10 +18,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import tensorflow as tf
 
 from waymo_open_dataset.utils import box_utils
 from waymo_open_dataset.utils import test_utils
+from waymo_open_dataset.utils import transform_utils
 
 
 class BoxUtilsTest(tf.test.TestCase):
@@ -63,6 +65,48 @@ class BoxUtilsTest(tf.test.TestCase):
     with self.test_session() as sess:
       num_points_in_box = sess.run(num_points_in_box)
       self.assertAllEqual(num_points_in_box, [2, 2, 1, 0])
+
+  def test_transform_point_among_frames(self):
+    p = tf.constant([[1.0, 0, 0]], dtype=tf.float32)
+    from_frame_pose = transform_utils.get_transform(
+        transform_utils.get_yaw_rotation(math.pi * 0.5),
+        tf.constant([0.0, 0.0, 2.0], dtype=tf.float32))
+    to_frame_pose = transform_utils.get_transform(
+        transform_utils.get_yaw_rotation(math.pi * 0.1),
+        tf.constant([0.0, 0.0, 0.0], dtype=tf.float32))
+
+    p = p[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+    from_frame_pose = from_frame_pose[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+    to_frame_pose = to_frame_pose[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+    pp = box_utils.transform_point(p, from_frame_pose, to_frame_pose)
+
+    with self.test_session():
+      self.assertAllClose(
+          pp[0, 0, 0, ...].eval(),
+          [[math.cos(math.pi * 0.4),
+            math.sin(math.pi * 0.4), 2.0]])
+
+  def test_transform_box_among_frames(self):
+    b = tf.constant([[1.0, 0, 0, 2.0, 2.0, 2.0, math.pi * 0.1]],
+                    dtype=tf.float32)
+    from_frame_pose = transform_utils.get_transform(
+        transform_utils.get_yaw_rotation(math.pi * 0.5),
+        tf.constant([0.0, 0.0, 1.0], dtype=tf.float32))
+    to_frame_pose = transform_utils.get_transform(
+        transform_utils.get_yaw_rotation(math.pi * 0.25),
+        tf.constant([0.0, 0.0, 0.0], dtype=tf.float32))
+
+    b = b[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+    from_frame_pose = from_frame_pose[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+    to_frame_pose = to_frame_pose[tf.newaxis, tf.newaxis, tf.newaxis, ...]
+
+    bb = box_utils.transform_box(b, from_frame_pose, to_frame_pose)
+
+    with self.test_session():
+      self.assertAllClose(bb[0, 0, 0, ...].eval(), [[
+          math.cos(math.pi * 0.25),
+          math.sin(math.pi * 0.25), 1.0, 2.0, 2.0, 2.0, math.pi * 0.35
+      ]])
 
 
 if __name__ == "__main__":
