@@ -83,10 +83,10 @@ Config GetConfig() {
   auto* d = config.add_difficulties();
   d->add_levels(Label::LEVEL_1);
   d->add_levels(Label::LEVEL_2);
-  config.add_breakdown_generator_ids(Breakdown::RANGE);
-  d = config.add_difficulties();
-  d->add_levels(Label::LEVEL_1);
-  d->add_levels(Label::LEVEL_2);
+//  config.add_breakdown_generator_ids(Breakdown::RANGE);
+//  d = config.add_difficulties();
+//  d->add_levels(Label::LEVEL_1);
+//  d->add_levels(Label::LEVEL_2);
 
   config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
   config.add_iou_thresholds(0.0);
@@ -94,7 +94,7 @@ Config GetConfig() {
   config.add_iou_thresholds(0.5);
   config.add_iou_thresholds(0.5);
   config.add_iou_thresholds(0.5);
-  config.set_box_type(Label::Box::TYPE_3D);
+  config.set_box_type(Label::Box::TYPE_2D);
 
   for (int i = 0; i < 100; ++i) {
     config.add_score_cutoffs(i * 0.01);
