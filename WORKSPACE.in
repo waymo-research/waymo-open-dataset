@@ -1,7 +1,7 @@
 """Install dependencies."""
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("//tf:tf_configure.bzl", "tf_configure")
+load("//tf:tf_configure.bzl", "make_eigen_repo", "tf_configure")
 load("//tf:workspace_tfTF_VERSION.bzl", "load_tf_version_specific_dependencies")
 
 http_archive(
@@ -79,16 +79,6 @@ bind(
     actual = "@six_archive//:six",
 )
 
-http_archive(
-    name = "eigen_archive",
-    build_file = "//third_party:eigen.BUILD",
-    sha256 = "b3e1c3df05377d22bb960f54acce8d7018bc9477f37e8f39f9d3c784f5aaa87f",
-    strip_prefix = "eigen-eigen-49177915a14a",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
-        "https://bitbucket.org/eigen/eigen/get/49177915a14a.tar.gz",
-    ],
-)
-
 load_tf_version_specific_dependencies()
 tf_configure(name = "local_config_tf")
+make_eigen_repo(name = "eigen_archive")

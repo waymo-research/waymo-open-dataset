@@ -143,7 +143,7 @@ def transform_point(point, from_frame_pose, to_frame_pose, name=None):
   Returns:
     Transformed points of shape [..., N, 3] with the same type as point.
   """
-  with tf.name_scope(name, 'TransformPoint'):
+  with tf.compat.v1.name_scope(name, 'TransformPoint'):
     transform = tf.linalg.matmul(tf.linalg.inv(to_frame_pose), from_frame_pose)
     return tf.einsum('...ij,...nj->...ni', transform[..., 0:3, 0:3],
                      point) + tf.expand_dims(
@@ -162,7 +162,7 @@ def transform_box(box, from_frame_pose, to_frame_pose, name=None):
   Returns:
     Transformed boxes of shape [..., N, 7] with the same type as box.
   """
-  with tf.name_scope(name, 'TransformBox'):
+  with tf.compat.v1.name_scope(name, 'TransformBox'):
     transform = tf.linalg.matmul(tf.linalg.inv(to_frame_pose), from_frame_pose)
     heading = box[..., -1] + tf.atan2(transform[..., 1, 0], transform[..., 0,
                                                                       0])

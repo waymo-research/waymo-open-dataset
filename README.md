@@ -23,8 +23,8 @@ The Waymo Open Dataset itself is licensed under separate terms. Please visit [ht
 
 ## Citation
     @misc{sun2019scalability,
-      title={Scalability in Perception for Autonomous Driving: Waymo Open Dataset},
-      author={Pei Sun and Henrik Kretzschmar and Xerxes Dotiwalla and Aurelien Chouard and Vijaysai Patnaik and Paul Tsui and James Guo and Yin Zhou and Yuning Chai and Benjamin Caine and Vijay Vasudevan and Wei Han and Jiquan Ngiam and Hang Zhao and Aleksei Timofeev and Scott Ettinger and Maxim Krivokon and Amy Gao and Aditya Joshi and Yu Zhang and Jonathon Shlens and Zhifeng Chen and Dragomir Anguelov},
+      title={Scalability in Perception for Autonomous Driving: An Open Dataset Benchmark},
+      author={Pei Sun and Henrik Kretzschmar and Xerxes Dotiwalla and Aurelien Chouard and Vijaysai Patnaik and Paul Tsui and James Guo and Yin Zhou and Yuning Chai and Benjamin Caine and Vijay Vasudevan and Wei Han and Jiquan Ngiam and Hang Zhao and Aleksei Timofeev and Scott Ettinger and Maxim Krivokon and Amy Gao and Aditya Joshi and Yu Zhang and Jon Shlens and Zhifeng Chen and Dragomir Anguelov},
       year={2019},
       eprint={1912.04838},
       archivePrefix={arXiv},

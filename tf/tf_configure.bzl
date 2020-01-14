@@ -215,3 +215,81 @@ tf_configure = repository_rule(
         _TF_SHARED_LIBRARY_NAME,
     ],
 )
+
+def _eigen_archive_repo_impl(repository_ctx):
+    tf_header_dir = repository_ctx.os.environ[_TF_HEADER_DIR]
+
+    # Do nothing if Tensorflow is not installed
+    if len(tf_header_dir) < 3:
+        pass
+
+    repository_ctx.symlink(tf_header_dir, "")
+    repository_ctx.file(
+        "BUILD",
+        content = """
+# Description:
+#   Eigen is a C++ template library for linear algebra: vectors,
+#   matrices, and related algorithms.
+#
+# This is mostly copied from tensorflow.
+
+licenses([
+    # Note: Eigen is an MPL2 library that includes GPL v3 and LGPL v2.1+ code.
+    #       We've taken special care to not reference any restricted code.
+    "reciprocal",  # MPL2
+    "notice",  # Portions BSD
+])
+
+exports_files(["COPYING.MPL2"])
+
+EIGEN_FILES = [
+    "Eigen/**",
+    "unsupported/Eigen/CXX11/**",
+    "unsupported/Eigen/FFT",
+    "unsupported/Eigen/KroneckerProduct",
+    "unsupported/Eigen/src/FFT/**",
+    "unsupported/Eigen/src/KroneckerProduct/**",
+    "unsupported/Eigen/MatrixFunctions",
+    "unsupported/Eigen/SpecialFunctions",
+    "unsupported/Eigen/src/MatrixFunctions/**",
+    "unsupported/Eigen/src/SpecialFunctions/**",
+]
+
+# Files known to be under MPL2 license.
+EIGEN_MPL2_HEADER_FILES = glob(
+    EIGEN_FILES,
+    exclude = [
+        # Guarantees that any non-MPL2 file added to the list above will fail to
+        # compile.
+        "Eigen/src/Core/util/NonMPL2.h",
+        "Eigen/**/CMakeLists.txt",
+    ],
+)
+
+cc_library(
+    name = "eigen",
+    hdrs = EIGEN_MPL2_HEADER_FILES,
+    defines = [
+        # This define (mostly) guarantees we don't link any problematic
+        # code. We use it, but we do not rely on it, as evidenced above.
+        "EIGEN_MPL2_ONLY",
+        "EIGEN_MAX_ALIGN_BYTES=64",
+        "EIGEN_HAS_TYPE_TRAITS=0",
+    ],
+    includes = ["."],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "eigen_header_files",
+    srcs = EIGEN_MPL2_HEADER_FILES,
+    visibility = ["//visibility:public"],
+)
+""",
+        executable = False,
+    )
+
+make_eigen_repo = repository_rule(
+    implementation = _eigen_archive_repo_impl,
+    environ = [_TF_HEADER_DIR],
+)

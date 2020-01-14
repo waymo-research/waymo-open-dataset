@@ -140,7 +140,6 @@ class CameraModelOpsTest(tf.test.TestCase):
       camera_image_metadata.append(image.shutter)
       camera_image_metadata.append(image.camera_trigger_time)
       camera_image_metadata.append(image.camera_readout_done_time)
-      camera_image_metadata = tf.constant(camera_image_metadata, dtype=tf.float32)
       image_points = tf.constant([[100, 1000, 20], [150, 1000, 20]],
                                  dtype=tf.float32)
 
