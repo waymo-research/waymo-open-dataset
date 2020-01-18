@@ -20,7 +20,7 @@ from setuptools.dist import Distribution
 
 __version__ = '1.0.1'
 REQUIRED_PACKAGES = [
-    'tensorflow >= 1.14.0',
+    'tensorflow-gpu==' + '.'.join('TF_VERSION'.split('-')),
 ]
 project_name = 'waymo-open-dataset-tf-TF_VERSION'
 
