@@ -649,7 +649,7 @@ def extract_point_cloud_from_range_image(range_image,
     return range_image_cartesian
 
 
-def crop_range_image(range_images, new_width, scope=None):
+def crop_range_image(range_images, new_width, shift=None, scope=None):
   """Crops range image by shrinking the width.
 
   Requires: new_width is smaller than the existing width.
@@ -657,6 +657,9 @@ def crop_range_image(range_images, new_width, scope=None):
   Args:
     range_images: [B, H, W, ...]
     new_width: an integer.
+    shift: a list of integer of same size as batch that shifts the crop window.
+      Positive is right shift. Negative is left shift. We assume the shift keeps
+      the window inside the image (i.e. no wrap).
     scope: the name scope.
 
   Returns:
@@ -664,6 +667,7 @@ def crop_range_image(range_images, new_width, scope=None):
   """
   # pylint: disable=unbalanced-tuple-unpacking
   shape = _combined_static_and_dynamic_shape(range_images)
+  batch = shape[0]
   width = shape[2]
   if width == new_width:
     return range_images
@@ -673,14 +677,25 @@ def crop_range_image(range_images, new_width, scope=None):
     raise ValueError('new_width {} should be < the old width {}.'.format(
         new_width, width))
 
-  with tf.control_dependencies([tf.compat.v1.assert_less(new_width, width)]):
-    with tf.compat.v1.name_scope(scope, 'CropRangeImage', [range_images]):
-      diff = width - new_width
+  if shift is None:
+    shift = [0] * batch
 
-      left = diff // 2
-      right = diff - left
-      range_image_crops = range_images[:, :, left:-right, ...]
-      return range_image_crops
+  diff = width - new_width
+  left = [diff // 2 + i for i in shift]
+  right = [i + new_width for i in left]
+
+  for l, r in zip(left, right):
+    if l < 0 or r > width:
+      raise ValueError(
+          'shift {} is invalid given new_width {} and width {}.'.format(
+              shift, new_width, width))
+
+  range_image_crops = []
+  with tf.compat.v1.name_scope(scope, 'CropRangeImage', [range_images]):
+    for i in range(batch):
+      range_image_crop = range_images[i, :, left[i]:right[i], ...]
+      range_image_crops.append(range_image_crop)
+    return tf.stack(range_image_crops, axis=0)
 
 
 def compute_inclination(inclination_range, height, scope=None):

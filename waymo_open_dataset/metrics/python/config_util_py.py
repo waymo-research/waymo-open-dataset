@@ -33,6 +33,9 @@ def _get_num_breakdown_shards(breakdown_generator_id):
       "ONE_SHARD"):
     return 1
   elif breakdown_generator_id == (
+      breakdown_pb2.Breakdown.GeneratorId.Value("ALL_BUT_SIGN")):
+    return 2
+  elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("OBJECT_TYPE")):
     return 4
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
@@ -60,6 +63,12 @@ def _get_breakdown_shard_name(breakdown_generator_id, shard):
   if breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "ONE_SHARD"):
     return breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)
+  elif breakdown_generator_id == (
+      breakdown_pb2.Breakdown.GeneratorId.Value("ALL_BUT_SIGN")):
+    if shard == 0:
+      return "ALL_NS"
+    else:
+      return "SIGN"
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("OBJECT_TYPE")):
     return "{}_{}".format(

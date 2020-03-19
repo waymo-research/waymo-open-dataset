@@ -36,6 +36,30 @@ namespace waymo {
 namespace open_dataset {
 namespace internal {
 
+template <typename T>
+inline typename std::enable_if<std::is_floating_point<T>::value, T>::type
+PositiveModulo(T x, T y) {
+  // Specialize for the case y is a constant (which it most often is). In this
+  // case, the division 1 / y is optimized away.
+  const T x_div_y = x * (1 / y);
+  const T truncated_result = std::trunc(x_div_y);
+  const T modulo = x - truncated_result * y;
+  const T modulo_shifted = y + modulo;
+  return modulo >= 0 ? modulo : (modulo_shifted >= y ? 0 : modulo_shifted);
+}
+
+// Wraps a value to be in [min_val, max_val).
+template <typename T>
+inline T WrapToRange(T min_val, T max_val, T val) {
+  return PositiveModulo(val - min_val, max_val - min_val) + min_val;
+}
+
+// Wraps an angle in radians to be in [-pi, pi).
+template <class T>
+inline T NormalizeAngle(T rad) {
+  return WrapToRange<T>(-M_PI, M_PI, rad);
+}
+
 bool IsTP(const std::vector<int>& pd_matches, int i) {
   CHECK_GE(i, 0);
   CHECK_LE(i, pd_matches.size());
@@ -78,16 +102,10 @@ float ComputeHeadingAccuracy(const Matcher& matcher, int prediction_index,
                              int ground_truth_index) {
   matcher.ValidPredictionIndex(prediction_index);
   matcher.ValidGroundTruthIndex(ground_truth_index);
-  // Numerical error.
-  static constexpr float kError = 1e-6;
-  const float pd_heading =
-      matcher.predictions()[prediction_index].object().box().heading();
-  CHECK_LE(pd_heading, M_PI + kError);
-  CHECK_GE(pd_heading, -M_PI - kError);
-  const float gt_heading =
-      matcher.ground_truths()[ground_truth_index].object().box().heading();
-  CHECK_LE(gt_heading, M_PI + kError);
-  CHECK_GE(gt_heading, -M_PI - kError);
+  const float pd_heading = NormalizeAngle(
+      matcher.predictions()[prediction_index].object().box().heading());
+  const float gt_heading = NormalizeAngle(
+      matcher.ground_truths()[ground_truth_index].object().box().heading());
   float diff_heading = std::abs(pd_heading - gt_heading);
   // Normalize heading error to [0, PI] (+PI and -PI are the same).
   if (diff_heading > M_PI) {

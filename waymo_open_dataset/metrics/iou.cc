@@ -172,13 +172,6 @@ ABSL_CONST_INIT const int kMaxIoU = 1000 * 1000;
 
 double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
                   Label::Box::Type box_type) {
-  CHECK_GE(b1.length(), 0.0);
-  CHECK_GE(b1.width(), 0.0);
-  CHECK_GE(b1.height(), 0.0);
-  CHECK_GE(b2.length(), 0.0);
-  CHECK_GE(b2.width(), 0.0);
-  CHECK_GE(b2.height(), 0.0);
-
   if (b1.length() >= kMaxBoxDim || b1.width() >= kMaxBoxDim ||
       b1.height() >= kMaxBoxDim || b2.length() >= kMaxBoxDim ||
       b2.width() >= kMaxBoxDim || b2.height() >= kMaxBoxDim) {

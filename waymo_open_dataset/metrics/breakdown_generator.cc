@@ -46,6 +46,25 @@ class BreakdownGeneratorOneShard : public BreakdownGenerator {
   std::string ShardName(int shard) const override { return "ONE_SHARD"; }
 };
 
+// This breakdown generator considers everything as one shard.
+class BreakdownGeneratorAllButSign : public BreakdownGenerator {
+ public:
+  ~BreakdownGeneratorAllButSign() override {}
+
+  int Shard(const Object& object) const override {
+    if (object.object().type() != Label::TYPE_SIGN) {
+      return 0;
+    }
+    return 1;
+  }
+
+  Breakdown::GeneratorId Id() const override { return Breakdown::ALL_BUT_SIGN; }
+
+  int NumShards() const override { return 2; }
+
+  std::string ShardName(int shard) const override { return "ALL_BUT_SIGN"; }
+};
+
 // This breakdown generator breaks down the objects based on its object type.
 class BreakdownGeneratorObjectType : public BreakdownGenerator {
  public:
@@ -177,8 +196,8 @@ class BreakdownGeneratorVelocity : public BreakdownGenerator {
     CHECK_LE(object_type, Label::Type_MAX) << shard;
     CHECK_GE(object_type, 1) << shard;
 
-    const std::string prefix = absl::StrCat(
-        Breakdown::GeneratorId_Name(Id()), "_", Label::Type_Name(object_type));
+    const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
+                                            "_", Label::Type_Name(object_type));
     const int velocity_shard = shard % 5;
     switch (velocity_shard) {
       case 0:
@@ -210,6 +229,8 @@ std::unique_ptr<BreakdownGenerator> BreakdownGenerator::Create(
       return absl::make_unique<BreakdownGeneratorRange>();
     case Breakdown::VELOCITY:
       return absl::make_unique<BreakdownGeneratorVelocity>();
+    case Breakdown::ALL_BUT_SIGN:
+      return absl::make_unique<BreakdownGeneratorAllButSign>();
     default:
       LOG(FATAL) << "Unimplemented breakdown generator "
                  << Breakdown::GeneratorId_Name(id);

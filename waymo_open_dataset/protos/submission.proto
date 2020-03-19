@@ -17,11 +17,12 @@ syntax = "proto2";
 
 package waymo.open_dataset;
 
-import "waymo_open_dataset/dataset.proto";
+import "waymo_open_dataset/label.proto";
 import "waymo_open_dataset/protos/metrics.proto";
 
 // If your inference results are too large to fit in one proto, you can shard
 // them to multiple files by sharding the inference_results field.
+// Next ID: 16.
 message Submission {
   // These values correspond to the tasks on the waymo.com/open site.
   enum Task {
@@ -30,6 +31,16 @@ message Submission {
     DETECTION_3D = 2;
     TRACKING_2D = 3;
     TRACKING_3D = 4;
+    DOMAIN_ADAPTATION = 5;
+  }
+
+  enum SensorType {
+    INVALID = 0;
+    LIDAR_ALL = 1;
+    LIDAR_TOP = 2;
+    CAMERA_ALL = 3;
+    CAMERA_LIDAR_TOP = 4;
+    CAMERA_LIDAR_ALL = 5;
   }
 
   // This specifies which task this submission is for.
@@ -47,14 +58,18 @@ message Submission {
   // Link to paper or other link that describes the method.
   optional string method_link = 6;
 
-  // Sensors used.
-  repeated LaserName.Name lidars = 7;
-  repeated CameraName.Name cameras = 8;
-
+  optional SensorType sensor_type = 12;
   // Number of frames used.
   optional int32 number_past_frames_exclude_current = 9;
   optional int32 number_future_frames_exclude_current = 10;
 
   // Inference results.
   optional Objects inference_results = 11;
+
+  // Object types this submission contains. By default, we assume all types.
+  repeated Label.Type object_types = 14;
+
+  // End to end inference latency.
+  optional float latency_second = 15;
+  reserved 7, 8;
 }

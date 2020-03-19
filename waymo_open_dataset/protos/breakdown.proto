@@ -42,6 +42,9 @@ message Breakdown {
 
     // Shard by object velocity.
     VELOCITY = 7;
+
+    // All types except SIGN.
+    ALL_BUT_SIGN = 8;
   }
 
   // The breakdown generator ID.

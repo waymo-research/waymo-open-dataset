@@ -91,7 +91,6 @@ TEST(ComputeIoU, Box3d) {
               kError);
   EXPECT_NEAR(0.0, ComputeIoU(b1, b7, Label::Box::TYPE_3D), kError);
   EXPECT_NEAR(0.0, ComputeIoU(b1, b8, Label::Box::TYPE_3D), kError);
-  EXPECT_DEATH(ComputeIoU(b1, b9, Label::Box::TYPE_3D), ".*");
   EXPECT_NEAR(0.0, ComputeIoU(b1, b10, Label::Box::TYPE_3D), kError);
   EXPECT_NEAR(0.0, ComputeIoU(b10, b10, Label::Box::TYPE_3D), kError);
   EXPECT_NEAR(0.00505, ComputeIoU(b1, b11, Label::Box::TYPE_3D), kError);
