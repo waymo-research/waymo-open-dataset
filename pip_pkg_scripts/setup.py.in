@@ -18,7 +18,7 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.0.1'
+__version__ = '1.2.0'
 REQUIRED_PACKAGES = [
     'tensorflow-gpu==' + '.'.join('TF_VERSION'.split('-')),
 ]
