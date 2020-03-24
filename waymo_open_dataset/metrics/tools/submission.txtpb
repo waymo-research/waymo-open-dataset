@@ -1,0 +1,26 @@
+# Modify this file to fill in your information and then
+# run create_submission to generate a submission file.
+
+task: DETECTION_3D
+account_name: "your_registered_email@gmail.com"
+
+authors: "Author1"
+authors: "Author2"
+
+affiliation: "Your affiliation."
+description: "A detailed description of your method."
+
+method_link: "A link to your method, e.g. paper, code etc."
+
+# See submission.proto for allowed types.
+sensor_type: LIDAR_ALL
+
+number_past_frames_exclude_current: 0
+number_future_frames_exclude_current: 0
+
+object_types: TYPE_VEHICLE
+object_types: TYPE_PEDESTRIAN
+object_types: TYPE_CYCLIST
+
+# Inference latency in seconds.
+latency_second: -1

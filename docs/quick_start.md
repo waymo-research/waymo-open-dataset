@@ -104,3 +104,30 @@ package on your own.
 pip3 install upgrade --pip
 pip install waymo-open-dataset-tf-2-0-0==1.0.1 --user
 ```
+
+## Submit to leaderboard
+
+1.  Run inference and dump the predictions in protos/metrics.proto:Objects
+    format. Example code can be found in
+    metrics/tools/create_submission.cc:example_code_to_create_a_prediction_file.
+    Assume the file you created is in /tmp/preds.bin.
+
+2.  First modify metrics/tools/submission.txtpb to set the metadata information.
+    Then run metrics/tools/create_submission to convert the file above to the
+    submission proto by adding more metadata submission information.
+
+```bash
+metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model' --submission_filename='metrics/tools/submission.txtpb'
+```
+
+3.  Tar and gzip the file.
+
+```bash
+tar cvf /tmp/my_model.tar /tmp/my_model
+gzip /tmp/my_model.tar
+```
+
+4.  Upload to the eval server for the validation set first as there is no limit
+    on how frequently you submit for validation set. You can use this to ensure
+    that your submission is in the right format. Then submit against the test
+    set. Every registered user can only submit 3 times per month for each task.

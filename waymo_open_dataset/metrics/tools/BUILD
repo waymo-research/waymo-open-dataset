@@ -40,3 +40,21 @@ cc_binary(
         "//waymo_open_dataset/protos:metrics_cc_proto",
     ],
 )
+
+cc_binary(
+    name = "create_submission",
+    srcs = ["create_submission.cc"],
+    deps = [
+        "@com_google_glog//:glog",
+        # Implicit proto dependency.
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "//waymo_open_dataset:dataset_cc_proto",
+        "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/common:integral_types",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
+        "//waymo_open_dataset/protos:submission_cc_proto",
+    ],
+)
