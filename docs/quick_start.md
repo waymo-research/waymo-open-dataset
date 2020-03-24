@@ -4,7 +4,7 @@ This Quick Start contains installation instructions for the Open Dataset codebas
 
 ## System Requirements
 * g++ 5 or higher.
-* TensorFlow 1.14.0, 1.15.0, 2.0.0
+* TensorFlow 1.15.0, 2.0.0, 2.1.0
 
 The code has two main parts. One is a utility written in C++ to compute the evaluation metrics. The other part is a set of [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model training.
 
@@ -27,8 +27,7 @@ sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 sudo apt install build-essential
 ```
 
-Configure .bazelrc. This command may output some warnings due to the differences
-between Python 2 and Python 3, which you may safely ignore.
+Configure .bazelrc.
 ```
 ./configure.sh
 ```
@@ -97,12 +96,17 @@ bazel test waymo_open_dataset/utils/...
 ```
 
 ## Use pre-compiled pip/pip3 packages
-We only pre-compiled the package for Python 3.5, 3.6, 3.7. If you need the
+We only pre-compiled the package for Python 3.6, 3.7. If you need the
 lib for a different python version, follow steps in pip_pkg_scripts to build pip
 package on your own.
 ``` bash
 pip3 install upgrade --pip
-pip install waymo-open-dataset-tf-2-0-0==1.0.1 --user
+# tf 2.1.0.
+pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
+# tf 2.0.0
+# pip3 install waymo-open-dataset-tf-2-0-0==1.2.0 --user
+# tf 1.15.0
+# pip3 install waymo-open-dataset-tf-1-15-0==1.2.0 --user
 ```
 
 ## Submit to leaderboard

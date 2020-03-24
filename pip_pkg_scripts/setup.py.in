@@ -18,7 +18,7 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.0.1'
+__version__ = '1.2.0'
 REQUIRED_PACKAGES = [
     'tensorflow-gpu==' + '.'.join('TF_VERSION'.split('-')),
 ]
@@ -54,7 +54,7 @@ setup(
     url='https://waymo.com/open',
     packages=find_packages(include=['waymo_open_dataset*'], exclude=[]),
     include_package_data=True,
-    python_requires='>=2',
+    python_requires='>=3',
     install_requires=REQUIRED_PACKAGES,
     zip_safe=False,
     cmdclass={
@@ -68,7 +68,6 @@ setup(
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Topic :: Scientific/Engineering',
