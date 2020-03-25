@@ -42,7 +42,7 @@ bazel clean
 The core metrics library is written in C++, so it can be wrapped in
 other languages or frameworks. It can compute detection metrics (mAP) and
 tracking metrics (MOTA). See more information about the metrics on the
-[website](https://waymo.com/open/next/).
+[website](https://waymo.com/open/next/). You can also directly submit to our leaderboard to run eval which is much faster than running it locally.
 
 We provide command line tools and TensorFlow ops to call the detection metrics
 library to compute detection metrics. We will provide a similar wrapper for
@@ -74,10 +74,6 @@ Install NumPy and TensorFlow and reconfigure .bazelrc.
 pip3 install numpy tensorflow
 ./configure.sh
 ```
-
-We have configured our build system to work with TensorFlow 1.14.0. For a higher
-version, you might need to update the proto version in WORKSPACE to match
-your TensorFlow version.
 
 Run TensorFlow metrics op related tests. They can serve as examples for usage.
 ``` bash
