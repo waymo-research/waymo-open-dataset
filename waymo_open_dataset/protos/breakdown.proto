@@ -44,6 +44,8 @@ message Breakdown {
     VELOCITY = 7;
 
     // All types except SIGN.
+    // This is NOT the same as ALL_NS in the leaderboard!!
+    // ALL_NS in the leaderboard is the mean of VEHICLE, PED, CYCLIST metrics.
     ALL_BUT_SIGN = 8;
   }
 

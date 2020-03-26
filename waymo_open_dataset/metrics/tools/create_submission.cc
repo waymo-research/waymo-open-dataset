@@ -89,6 +89,8 @@ void example_code_to_create_a_prediction_file() {
   // For tracking, this must be set and it must be unique for each tracked
   // sequence.
   o->mutable_object()->set_id("unique object tracking ID");
+  // Use correct type.
+  o->mutable_object()->set_type(Label::TYPE_PEDESTRIAN);
 
   // Add more objects here.
 
