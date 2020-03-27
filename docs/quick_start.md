@@ -42,7 +42,7 @@ bazel clean
 The core metrics library is written in C++, so it can be wrapped in
 other languages or frameworks. It can compute detection metrics (mAP) and
 tracking metrics (MOTA). See more information about the metrics on the
-[website](https://waymo.com/open/next/). You can also directly submit to our leaderboard to run eval which is much faster than running it locally.
+[website](https://waymo.com/open/next/).
 
 We provide command line tools and TensorFlow ops to call the detection metrics
 library to compute detection metrics. We will provide a similar wrapper for
@@ -74,6 +74,10 @@ Install NumPy and TensorFlow and reconfigure .bazelrc.
 pip3 install numpy tensorflow
 ./configure.sh
 ```
+
+We have configured our build system to work with TensorFlow 1.14.0. For a higher
+version, you might need to update the proto version in WORKSPACE to match
+your TensorFlow version.
 
 Run TensorFlow metrics op related tests. They can serve as examples for usage.
 ``` bash
@@ -117,13 +121,23 @@ pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
     submission proto by adding more metadata submission information.
 
 ```bash
-metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model' --submission_filename='metrics/tools/submission.txtpb'
+mkdir /tmp/my_model
+metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb'
+```
+
+You can try a submission by running the following to the validation server. It
+should work. Make sure you change the fields in metrics/tools/submission.txtpb
+before running the command.
+
+```bash
+mkdir /tmp/my_model
+metrics/tools/create_submission  --input_filenames='metrics/tools/fake_predictions.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb'
 ```
 
 3.  Tar and gzip the file.
 
 ```bash
-tar cvf /tmp/my_model.tar /tmp/my_model
+tar cvf /tmp/my_model.tar /tmp/my_model/
 gzip /tmp/my_model.tar
 ```
 
