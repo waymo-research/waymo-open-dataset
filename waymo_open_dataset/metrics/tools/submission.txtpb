@@ -3,6 +3,8 @@
 
 task: DETECTION_3D
 account_name: "your_registered_email@gmail.com"
+# Change this to your unique method name. Max 25 chars.
+unique_method_name: "Your unique method name."
 
 authors: "Author1"
 authors: "Author2"
