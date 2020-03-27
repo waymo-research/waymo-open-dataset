@@ -117,13 +117,13 @@ pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
     submission proto by adding more metadata submission information.
 
 ```bash
-metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model' --submission_filename='metrics/tools/submission.txtpb'
+metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb'
 ```
 
 3.  Tar and gzip the file.
 
 ```bash
-tar cvf /tmp/my_model.tar /tmp/my_model
+tar cvf /tmp/my_model.tar /tmp/my_model/
 gzip /tmp/my_model.tar
 ```
 
