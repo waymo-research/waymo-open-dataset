@@ -58,3 +58,14 @@ cc_binary(
         "//waymo_open_dataset/protos:submission_cc_proto",
     ],
 )
+
+py_binary(
+    name = "create_prediction_file_example",
+    srcs = ["create_prediction_file_example.py"],
+    python_version = "PY3",
+    deps = [
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
