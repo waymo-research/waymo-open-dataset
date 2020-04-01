@@ -114,7 +114,7 @@ pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
 1.  Run inference and dump the predictions in protos/metrics.proto:Objects
     format. Example code can be found in
     metrics/tools/create_submission.cc:example_code_to_create_a_prediction_file.
-    Or a python version in metrics/tools/create_prediction_file_example.py.
+    There is also a python version in metrics/tools/create_prediction_file_example.py.
     Assume the file you created is in /tmp/preds.bin.
 
 2.  First modify metrics/tools/submission.txtpb to set the metadata information.
