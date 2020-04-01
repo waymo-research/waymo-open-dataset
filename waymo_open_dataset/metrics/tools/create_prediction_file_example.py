@@ -1,5 +1,5 @@
 # Lint as: python3
-# Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2020 The Waymo Open Dataset Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ def _create_pd_file_example():
   # The following 3 fields are used to uniquely identify a frame a prediction
   # is predicted at. Make sure you set them to values exactly the same as what
   # we provided in the raw data. Otherwise your prediction is considered as a
-  # false negative.
+  # false positive.
   o.context_name = ('context_name for the prediction. See Frame::context::name '
                     'in  dataset.proto.')
   # The frame timestamp for the prediction. See Frame::timestamp_micros in
