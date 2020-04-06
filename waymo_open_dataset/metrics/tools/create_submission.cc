@@ -126,6 +126,7 @@ void ValidateFlags() {
 // Read all content in a file to a string.
 std::string ReadFileToString(const std::string& filename) {
   std::ifstream s(filename.c_str());
+  CHECK(s.is_open()) << filename << " does not exist.";
   const std::string content((std::istreambuf_iterator<char>(s)),
                             std::istreambuf_iterator<char>());
   s.close();
@@ -159,6 +160,10 @@ void Run() {
   Submission submission;
   CHECK(google::protobuf::TextFormat::ParseFromString(submission_content, &submission))
       << "Failed to parse " << submission_content;
+  CHECK(!submission.unique_method_name().empty() &&
+        !submission.account_name().empty())
+      << "unique_method_name and account_name must be set in "
+         "--submission_filename.";
 
   std::vector<Submission> submissions(absl::GetFlag(FLAGS_num_shards),
                                       submission);
