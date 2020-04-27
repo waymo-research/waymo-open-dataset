@@ -100,7 +100,7 @@ We only pre-compiled the package for Python 3.6, 3.7. If you need the
 lib for a different python version, follow steps in pip_pkg_scripts to build pip
 package on your own.
 ``` bash
-pip3 install upgrade --pip
+pip3 install --upgrade pip
 # tf 2.1.0.
 pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
 # tf 2.0.0
