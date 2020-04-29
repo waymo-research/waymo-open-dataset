@@ -121,9 +121,9 @@ class CameraModelOpsTest(tf.test.TestCase):
     g = tf.Graph()
     with g.as_default():
       extrinsic = tf.reshape(
-          tf.constant(list(calibration.extrinsic.transform), dtype=tf.float32),
+          tf.constant(list(calibration.extrinsic.transform), dtype=tf.float64),
           [4, 4])
-      intrinsic = tf.constant(list(calibration.intrinsic), dtype=tf.float32)
+      intrinsic = tf.constant(list(calibration.intrinsic), dtype=tf.float64)
       metadata = tf.constant([
           calibration.width, calibration.height,
           calibration.rolling_shutter_direction
@@ -141,7 +141,7 @@ class CameraModelOpsTest(tf.test.TestCase):
       camera_image_metadata.append(image.camera_trigger_time)
       camera_image_metadata.append(image.camera_readout_done_time)
       image_points = tf.constant([[100, 1000, 20], [150, 1000, 20]],
-                                 dtype=tf.float32)
+                                 dtype=tf.float64)
 
       global_points = py_camera_model_ops.image_to_world(
           extrinsic, intrinsic, metadata, camera_image_metadata, image_points)
