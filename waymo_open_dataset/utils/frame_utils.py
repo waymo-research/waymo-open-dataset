@@ -150,7 +150,7 @@ def convert_range_image_to_point_cloud(frame,
     points_tensor = tf.gather_nd(range_image_cartesian,
                                  tf.compat.v1.where(range_image_mask))
 
-    cp = camera_projections[c.name][0]
+    cp = camera_projections[c.name][ri_index]
     cp_tensor = tf.reshape(tf.convert_to_tensor(value=cp.data), cp.shape.dims)
     cp_points_tensor = tf.gather_nd(cp_tensor,
                                     tf.compat.v1.where(range_image_mask))
