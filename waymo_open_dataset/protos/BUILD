@@ -1,3 +1,6 @@
+load("//tf:build_config.bzl", "all_proto_library")
+
+
 package(
     default_visibility = [
         "//visibility:public",
@@ -7,9 +10,6 @@ package(
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["BUILD"])
-
-load("//tf:build_config.bzl", "all_proto_library")
-
 
 all_proto_library(
     src = "metrics.proto",
@@ -35,3 +35,4 @@ all_proto_library(
         "//waymo_open_dataset:label_proto",
     ],
 )
+

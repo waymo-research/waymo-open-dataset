@@ -5,9 +5,9 @@ RUN apt-get update && apt-get install -y \
   pkg-config zip g++ zlib1g-dev unzip python3 python3-pip
 
 RUN apt-get install -y wget
-RUN wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-0.28.0-installer-linux-x86_64.sh 
+RUN wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-0.28.0-installer-linux-x86_64.sh
 RUN chmod +x bazel-0.28.0-installer-linux-x86_64.sh
-RUN bash ./bazel-0.28.0-installer-linux-x86_64.sh 
+RUN bash ./bazel-0.28.0-installer-linux-x86_64.sh
 
 RUN pip3 install jupyter matplotlib jupyter_http_over_ws &&\
   jupyter serverextension enable --py jupyter_http_over_ws

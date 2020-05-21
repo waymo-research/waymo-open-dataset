@@ -53,9 +53,13 @@ function main() {
   cp ${PIP_FILE_PREFIX}MANIFEST.in "${TMPDIR}"
   cp LICENSE "${TMPDIR}"
   rsync -avm -L --exclude="*_test.py" waymo_open_dataset "${TMPDIR}"
+  rsync -avm -L --exclude="*_test.py" third_party/camera "${TMPDIR}/waymo_open_dataset"
   rsync -avm -L  --include="*.so" --include="*_pb2.py" \
     --exclude="*.runfiles" --exclude="*_obj" --include="*/" --exclude="*" \
     bazel-bin/waymo_open_dataset "${TMPDIR}"
+  rsync -avm -L  --include="*.so" --include="*_pb2.py" \
+    --exclude="*.runfiles" --exclude="*_obj" --include="*/" --exclude="*" \
+    bazel-bin/third_party/camera "${TMPDIR}/waymo_open_dataset"
 
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"

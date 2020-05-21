@@ -58,7 +58,19 @@ struct Input {
   const Tensor* input_coordinate = nullptr;
 };
 
+template <typename T>
+DataType GetTensorflowType() {
+  if (std::is_same<absl::remove_const_t<T>, double>::value) {
+    return DT_DOUBLE;
+  }
+  if (std::is_same<absl::remove_const_t<T>, float>::value) {
+    return DT_FLOAT;
+  }
+  CHECK(false) << "Unsupported type.";
+}
+
 // Parse input tensors to protos.
+template <typename T>
 void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
                 co::CameraImage* image_ptr) {
   auto& calibration = *calibration_ptr;
@@ -69,12 +81,12 @@ void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
       calibration.mutable_extrinsic()->add_transform(
-          input.extrinsic->matrix<double>()(i, j));
+          input.extrinsic->matrix<T>()(i, j));
     }
   }
   CHECK_EQ(input.intrinsic->dim_size(0), kIntrinsicLen);
   for (int i = 0; i < kIntrinsicLen; ++i) {
-    calibration.add_intrinsic(input.intrinsic->vec<double>()(i));
+    calibration.add_intrinsic(input.intrinsic->vec<T>()(i));
   }
   CHECK_EQ(input.metadata->dim_size(0), kMetadataLen);
   calibration.set_width(input.metadata->vec<int32>()(0));
@@ -84,7 +96,7 @@ void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
           input.metadata->vec<int32>()(2)));
   CHECK_EQ(input.camera_image_metadata->dim_size(0), kCameraImageMedataLen);
   int idx = 0;
-  const auto& cim = input.camera_image_metadata->vec<double>();
+  const auto& cim = input.camera_image_metadata->vec<T>();
   for (; idx < 16; ++idx) {
     image.mutable_pose()->add_transform(cim(idx));
   }
@@ -100,7 +112,8 @@ void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
   image.set_camera_readout_done_time(cim(idx++));
 }
 
-class WorldToImageOp final : public OpKernel {
+template <typename T>
+class WorldToImageOp : public OpKernel {
  public:
   explicit WorldToImageOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
 
@@ -116,32 +129,38 @@ class WorldToImageOp final : public OpKernel {
 
     co::CameraCalibration calibration;
     co::CameraImage image;
-    ParseInput(input, &calibration, &image);
+    ParseInput<T>(input, &calibration, &image);
 
     co::CameraModel model(calibration);
     model.PrepareProjection(image);
 
     const int num_points = input.input_coordinate->dim_size(0);
     CHECK_EQ(3, input.input_coordinate->dim_size(1));
-    Tensor image_coordinates(DT_DOUBLE, {num_points, 3});
+    Tensor image_coordinates(GetTensorflowType<T>(), {num_points, 3});
     for (int i = 0; i < num_points; ++i) {
       double u_d = 0.0;
       double v_d = 0.0;
       const bool valid =
-          model.WorldToImage(input.input_coordinate->matrix<double>()(i, 0),
-                             input.input_coordinate->matrix<double>()(i, 1),
-                             input.input_coordinate->matrix<double>()(i, 2),
+          model.WorldToImage(input.input_coordinate->matrix<T>()(i, 0),
+                             input.input_coordinate->matrix<T>()(i, 1),
+                             input.input_coordinate->matrix<T>()(i, 2),
                              /*check_image_bounds=*/false, &u_d, &v_d);
-      image_coordinates.matrix<double>()(i, 0) = u_d;
-      image_coordinates.matrix<double>()(i, 1) = v_d;
-      image_coordinates.matrix<double>()(i, 2) = static_cast<double>(valid);
+      image_coordinates.matrix<T>()(i, 0) = u_d;
+      image_coordinates.matrix<T>()(i, 1) = v_d;
+      image_coordinates.matrix<T>()(i, 2) = static_cast<T>(valid);
     }
     ctx->set_output(0, image_coordinates);
   }
 };
-REGISTER_KERNEL_BUILDER(Name("WorldToImage").Device(DEVICE_CPU),
-                        WorldToImageOp);
+REGISTER_KERNEL_BUILDER(
+    Name("WorldToImage").Device(DEVICE_CPU).TypeConstraint<float>("T"),
+    WorldToImageOp<float>);
 
+REGISTER_KERNEL_BUILDER(
+    Name("WorldToImage").Device(DEVICE_CPU).TypeConstraint<double>("T"),
+    WorldToImageOp<double>);
+
+template <typename T>
 class ImageToWorldOp final : public OpKernel {
  public:
   explicit ImageToWorldOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
@@ -158,40 +177,45 @@ class ImageToWorldOp final : public OpKernel {
 
     co::CameraCalibration calibration;
     co::CameraImage image;
-    ParseInput(input, &calibration, &image);
+    ParseInput<T>(input, &calibration, &image);
 
     co::CameraModel model(calibration);
     model.PrepareProjection(image);
 
     const int num_points = input.input_coordinate->dim_size(0);
     CHECK_EQ(3, input.input_coordinate->dim_size(1));
-    Tensor global_coordinates(DT_DOUBLE, {num_points, 3});
+    Tensor global_coordinates(GetTensorflowType<T>(), {num_points, 3});
     for (int i = 0; i < num_points; ++i) {
       double x = 0.0;
       double y = 0.0;
       double z = 0.0;
-      model.ImageToWorld(input.input_coordinate->matrix<double>()(i, 0),
-                         input.input_coordinate->matrix<double>()(i, 1),
-                         input.input_coordinate->matrix<double>()(i, 2), &x, &y,
-                         &z);
-      global_coordinates.matrix<double>()(i, 0) = x;
-      global_coordinates.matrix<double>()(i, 1) = y;
-      global_coordinates.matrix<double>()(i, 2) = z;
+      model.ImageToWorld(input.input_coordinate->matrix<T>()(i, 0),
+                         input.input_coordinate->matrix<T>()(i, 1),
+                         input.input_coordinate->matrix<T>()(i, 2), &x, &y, &z);
+      global_coordinates.matrix<T>()(i, 0) = x;
+      global_coordinates.matrix<T>()(i, 1) = y;
+      global_coordinates.matrix<T>()(i, 2) = z;
     }
     ctx->set_output(0, global_coordinates);
   }
 };
 
-REGISTER_KERNEL_BUILDER(Name("ImageToWorld").Device(DEVICE_CPU),
-                        ImageToWorldOp);
+REGISTER_KERNEL_BUILDER(
+    Name("ImageToWorld").Device(DEVICE_CPU).TypeConstraint<float>("T"),
+    ImageToWorldOp<float>);
+
+REGISTER_KERNEL_BUILDER(
+    Name("ImageToWorld").Device(DEVICE_CPU).TypeConstraint<double>("T"),
+    ImageToWorldOp<double>);
 
 REGISTER_OP("WorldToImage")
-    .Input("extrinsic: double")
-    .Input("intrinsic: double")
+    .Attr("T: {float, double}")
+    .Input("extrinsic: T")
+    .Input("intrinsic: T")
     .Input("metadata: int32")
-    .Input("camera_image_metadata: double")
-    .Input("global_coordinate: double")
-    .Output("image_coordinate: double")
+    .Input("camera_image_metadata: T")
+    .Input("global_coordinate: T")
+    .Output("image_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       return Status::OK();
     })
@@ -205,8 +229,8 @@ metadata: [3] CameraCalibration::[width, height, rolling_shutter_direction].
 camera_image_metadata: [16 + 6 + 1 + 1 + 1 + 1]=[26] tensor.
   CameraImage::[pose(16), velocity(6), pose_timestamp(1), shutter(1),
   camera_trigger_time(1), camera_readout_done_time(1)].
-global_coordinate: [N, 3] float64 tensor. Points in global frame.
-image_coordinate: [N, 3] float64 tensor. [N, 0:2] are points in image frame.
+global_coordinate: [N, 3] float tensor. Points in global frame.
+image_coordinate: [N, 3] float tensor. [N, 0:2] are points in image frame.
   The points can be outside of the image. The last channel [N, 2] tells whether
   a projection is valid or not. 0 means invalid. 1 means valid. A projection
   can be invalid if the point is behind the camera or if the radial distortion
@@ -214,12 +238,13 @@ image_coordinate: [N, 3] float64 tensor. [N, 0:2] are points in image frame.
 )doc");
 
 REGISTER_OP("ImageToWorld")
-    .Input("extrinsic: double")
-    .Input("intrinsic: double")
+    .Attr("T: {float, double}")
+    .Input("extrinsic: T")
+    .Input("intrinsic: T")
     .Input("metadata: int32")
-    .Input("camera_image_metadata: double")
-    .Input("image_coordinate: double")
-    .Output("global_coordinate: double")
+    .Input("camera_image_metadata: T")
+    .Input("image_coordinate: T")
+    .Output("global_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       return Status::OK();
     })
@@ -233,8 +258,8 @@ metadata: [3] CameraCalibration::[width, height, rolling_shutter_direction].
 camera_image_metadata: [16 + 6 + 1 + 1 + 1 + 1]=[26] tensor.
   CameraImage::[pose(16), velocity(6), pose_timestamp(1), shutter(1),
   camera_trigger_time(1), camera_readout_done_time(1)].
-image_coordinate: [N, 3] float64 tensor. Points in image frame with depth.
-global_coordinate: [N, 3] float64 tensor. Points in global frame.
+image_coordinate: [N, 3] float tensor. Points in image frame with depth.
+global_coordinate: [N, 3] float tensor. Points in global frame.
 )doc");
 
 }  // namespace
