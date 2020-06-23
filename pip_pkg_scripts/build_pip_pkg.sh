@@ -60,6 +60,7 @@ function main() {
   rsync -avm -L  --include="*.so" --include="*_pb2.py" \
     --exclude="*.runfiles" --exclude="*_obj" --include="*/" --exclude="*" \
     bazel-bin/third_party/camera "${TMPDIR}/waymo_open_dataset"
+  touch "${TMPDIR}/waymo_open_dataset/camera/__init__.py"
 
   pushd ${TMPDIR}
   echo $(date) : "=== Building wheel"
