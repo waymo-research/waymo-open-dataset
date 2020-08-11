@@ -20,7 +20,10 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-__all__ = ['get_yaw_rotation', 'get_rotation_matrix', 'get_transform']
+__all__ = [
+    'get_yaw_rotation', 'get_yaw_rotation_2d', 'get_rotation_matrix',
+    'get_transform'
+]
 
 
 def get_yaw_rotation(yaw, name=None):
@@ -45,6 +48,28 @@ def get_yaw_rotation(yaw, name=None):
         tf.stack([cos_yaw, -1.0 * sin_yaw, zeros], axis=-1),
         tf.stack([sin_yaw, cos_yaw, zeros], axis=-1),
         tf.stack([zeros, zeros, ones], axis=-1),
+    ],
+                    axis=-2)
+
+
+def get_yaw_rotation_2d(yaw):
+  """Gets a rotation matrix given yaw only for 2d.
+
+  Args:
+    yaw: x-rotation in radians. This tensor can be any shape except an empty
+      one.
+
+  Returns:
+    A rotation tensor with the same data type of the input. Its shape is
+      [input_shape, 2, 2].
+  """
+  with tf.name_scope('GetYawRotation2D'):
+    cos_yaw = tf.cos(yaw)
+    sin_yaw = tf.sin(yaw)
+
+    return tf.stack([
+        tf.stack([cos_yaw, -1.0 * sin_yaw], axis=-1),
+        tf.stack([sin_yaw, cos_yaw], axis=-1),
     ],
                     axis=-2)
 
@@ -101,27 +126,27 @@ def get_rotation_matrix(roll, pitch, yaw, name=None):
     return tf.matmul(r_yaw, tf.matmul(r_pitch, r_roll))
 
 
-def get_transform(rotation, translation, name=None):
-  """Combines 3x3 rotation and 3x1 translation to 4x4 transform.
+def get_transform(rotation, translation):
+  """Combines NxN rotation and Nx1 translation to (N+1)x(N+1) transform.
 
   Args:
-    rotation: [..., 3, 3] rotation tensor.
-    translation: [..., 3] translation tensor. This must have the same type as
+    rotation: [..., N, N] rotation tensor.
+    translation: [..., N] translation tensor. This must have the same type as
       rotation.
-    name: the op name.
 
   Returns:
-    transform: [..., 4, 4] transform tensor. This has the same type as rotation.
+    transform: [..., (N+1), (N+1)] transform tensor. This has the same type as
+      rotation.
   """
-  with tf.compat.v1.name_scope(name, 'GetTransform', [rotation, translation]):
-    # [..., 3, 1]
-    translation_3_1 = translation[..., tf.newaxis]
-    # [..., 3, 4]
-    transform = tf.concat([rotation, translation_3_1], axis=-1)
-    # [..., 3]
+  with tf.name_scope('GetTransform'):
+    # [..., N, 1]
+    translation_n_1 = translation[..., tf.newaxis]
+    # [..., N, N+1]
+    transform = tf.concat([rotation, translation_n_1], axis=-1)
+    # [..., N]
     last_row = tf.zeros_like(translation)
-    # [..., 4]
+    # [..., N+1]
     last_row = tf.concat([last_row, tf.ones_like(last_row[..., 0:1])], axis=-1)
-    # [..., 4, 4]
+    # [..., N+1, N+1]
     transform = tf.concat([transform, last_row[..., tf.newaxis, :]], axis=-2)
     return transform

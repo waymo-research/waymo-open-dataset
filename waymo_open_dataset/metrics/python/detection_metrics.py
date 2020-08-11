@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-""" tf.metrics implementation for detection metrics."""
+"""tf.metrics implementation for detection metrics."""
 
 import tensorflow as tf
 
@@ -36,11 +36,17 @@ def _update(name, update, init_shape, dtype):
   """
   with tf.compat.v1.variable_scope(
       'detection_metrics', reuse=tf.compat.v1.AUTO_REUSE):
+    initializer = lambda: tf.constant([], shape=init_shape, dtype=dtype)
     v = tf.compat.v1.get_local_variable(
         name,
         dtype=dtype,
+        collections=[
+            tf.compat.v1.GraphKeys.LOCAL_VARIABLES,
+            tf.compat.v1.GraphKeys.METRIC_VARIABLES
+        ],
         # init_shape is required to pass the shape inference check.
-        initializer=tf.constant([], shape=init_shape, dtype=dtype))
+        initializer=initializer,
+        validate_shape=False)
     shape = tf.concat([[-1], tf.shape(input=update)[1:]], axis=0)
     v_reshape = tf.reshape(v.value(), shape)
     v_assign = tf.compat.v1.assign(
@@ -89,10 +95,18 @@ def get_detection_metric_ops(
 
   Notation:
     * M: number of predicted boxes.
-    * D: number of box dimensions (4, 5 or 7).
+    * D: number of box dimensions. The number of box dimensions can be one of
+         the following:
+           4: Used for boxes with type TYPE_AA_2D (center_x, center_y, length,
+              width)
+           5: Used for boxes with type TYPE_2D (center_x, center_y, length,
+              width, heading).
+           7: Used for boxes with type TYPE_3D (center_x, center_y, center_z,
+              length, width, height, heading).
     * N: number of ground truth boxes.
 
   Args:
+    config: The metrics config defined in protos/metrics.proto.
     prediction_frame_id: [M] int64 tensor that identifies frame for each
       prediction.
     prediction_bbox: [M, D] tensor encoding the predicted bounding boxes.

@@ -81,6 +81,7 @@ message Label {
 
   // The total number of lidar points in this box.
   optional int32 num_lidar_points_in_box = 7;
+
 }
 
 // Non-self-intersecting 2d polygons. This polygon is not necessarily convex.

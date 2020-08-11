@@ -282,6 +282,11 @@ message Laser {
 }
 
 message Frame {
+  // The following field numbers are reserved for third-party extensions. Users
+  // may declare new fields in that range in their own .proto files without
+  // having to edit the original file.
+  extensions 1000 to max;
+
   // This context is the same for all frames belong to the same driving run
   // segment. Use context.name to identify frames belong to the same driving
   // segment. We do not store all frames from one driving segment in one proto
