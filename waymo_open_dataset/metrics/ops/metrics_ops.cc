@@ -77,5 +77,73 @@ breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
 config: a string serialized proto of metrics configuration protobuf.
 )doc");
 
+REGISTER_OP("TrackingMetrics")
+    .Input("prediction_bbox: float")
+    .Input("prediction_type: uint8")
+    .Input("prediction_score: float")
+    .Input("prediction_frame_id: int64")
+    .Input("prediction_sequence_id: string")
+    .Input("prediction_object_id: int64")
+    .Input("prediction_overlap_nlz: bool")
+    .Input("ground_truth_bbox: float")
+    .Input("ground_truth_type: uint8")
+    .Input("ground_truth_frame_id: int64")
+    .Input("ground_truth_sequence_id: string")
+    .Input("ground_truth_object_id: int64")
+    .Input("ground_truth_difficulty: uint8")
+    .Input("ground_truth_speed: float")
+    .Output("mota: float")
+    .Output("motp: float")
+    .Output("miss: float")
+    .Output("mismatch: float")
+    .Output("fp: float")
+    .Output("score_cutoff: float")
+    .Output("breakdown: uint8")
+    .Attr("config: string")
+    .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+      return Status::OK();
+    })
+    .Doc(R"doc(
+Computes tracking metrics.
+
+prediction_bbox: [N, D]. N predicted bounding boxes of D (4, 5 or 7)
+  dimensions. It is OK to pass boxes with higher D than necessary. For example,
+  you can pass boxes with D = 7 while evaluating BEV metrics by setting
+  box_type in the config as TYPE_2D.
+prediction_type: [N]. Predicted object type of each bounding box.
+prediction_score: [N]. N prediction scores for each predicted box.
+prediction_frame_id: [N]. N frame IDs for each predicted box.
+prediction_overlap_nlz: [N]. Whether each predicted box overlaps with any no
+  label zone.
+prediction_sequence_id: [N]. sequence IDs for each predicted box, e.g.
+  20171001_234201_C00847_2767_300_2787_300-FRONT for video detection/tracking
+  and 20171001_234201_C00847_2767_300_2787_300 for point cloud 3D
+  detection/tracking.
+prediction_object_id: [N]. object IDs for each predicted box.
+
+ground_truth_bbox: [M, D]. M ground truth bounding boxes of D (4, 5 or 7)
+  dimensions. It is OK to pass boxes with higher D than necessary. For example,
+  you can pass boxes with D = 7 while evaluating BEV metrics by setting
+  box_type in the config as TYPE_2D.
+ground_truth_type: [M]. ground truth object type of each bounding box.
+ground_truth_frame_id: [M]. M frame IDs for each ground truth box.
+ground_truth_difficulty: [M] Difficulty level (1 or 2) for each ground truth
+  box.
+ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
+  label to use for VELOCITY breakdown.
+ground_truth_sequence_id: [M]. sequence IDs for each predicted box.
+ground_truth_object_id: [M]. object IDs for each ground truth box.
+
+mota: [B]. Multiple object tracking accuracy (sum of miss, mismatch and fp).
+motp: [B]. Multiple object tracking precision (matching_cost / num_matches).
+miss: [B]. Miss ratio (num_misses / num_objects_gt).
+mismatch: [B]. Mismatch ratio (num_mismatches / num_objects_gt).
+fp: [B]. False positive ratio (num_fps / num_objects_gt).
+score_cutoff: [B]. score cutoff for TrackingMetrics.
+breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
+  breakdown.
+config: a string serialized proto of metrics configuration protobuf.
+)doc");
+
 }  // namespace
 }  // namespace tensorflow

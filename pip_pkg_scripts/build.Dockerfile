@@ -6,8 +6,8 @@ ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
 ENV TF_VERSION="1.15.0"
 
-RUN wget https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-0.28.0-installer-linux-x86_64.sh > /dev/null
-RUN bash bazel-0.28.0-installer-linux-x86_64.sh
+RUN wget https://github.com/bazelbuild/bazel/releases/download/3.1.0/bazel-3.1.0-installer-linux-x86_64.sh > /dev/null
+RUN bash bazel-3.1.0-installer-linux-x86_64.sh
 
 # There are some problems with the python3 installation from custom-op-ubuntu16.
 # Remove it and install new ones.

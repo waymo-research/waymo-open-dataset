@@ -216,6 +216,28 @@ message RangeImage {
   // in the counter clockwise direction.
   optional bytes range_image_pose_compressed = 4;
 
+  // Zlib compressed [H, W, 5] serialized version of MatrixFloat.
+  // To decompress:
+  // string val = ZlibDecompress(range_image_flow_compressed);
+  // MatrixFloat range_image_flow;
+  // range_image_flow.ParseFromString(val);
+  // Inner dimensions are [vx, vy, vz, pointwise class].
+  //
+  // If the point is not annotated with scene flow information, class is set
+  // to -1. A point is not annotated if it is in a no-label zone or if its label
+  // bounding box does not have a corresponding match in the previous frame,
+  // making it infeasible to estimate the motion of the point.
+  // Otherwise, (vx, vy, vz) are velocity along (x, y, z)-axis for this point
+  // and class is set to one of the following values:
+  //  -1: no-flow-label, the point has no flow information.
+  //   0:  unlabeled or "background,", i.e., the point is not contained in a
+  //       bounding box.
+  //   1: vehicle, i.e., the point corresponds to a vehicle label box.
+  //   2: pedestrian, i.e., the point corresponds to a pedestrian label box.
+  //   3: sign, i.e., the point corresponds to a sign label box.
+  //   4: cyclist, i.e., the point corresponds to a cyclist label box.
+  optional bytes range_image_flow_compressed = 5;
+
   // Deprecated, do not use.
   optional MatrixFloat range_image = 1 [deprecated = true];
 }

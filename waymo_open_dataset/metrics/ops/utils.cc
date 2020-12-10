@@ -18,6 +18,7 @@ limitations under the License.
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/types/optional.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/framework/tensor_shape.h"
@@ -74,6 +75,24 @@ Label::Box GetAABox2d(const tensorflow::Tensor& bbox, int box_index) {
   }
   return box;
 }
+
+// Return a Box from the tensor at a given index. This function does not check
+// param validity.
+// Requires:: bbox: [N, M] float tensor. 0 <= box_index < N and M in [4, 5, 7].
+Label::Box GetBoxByDimension(const tensorflow::Tensor& bbox, int box_index) {
+  const int32 box_dof = bbox.dim_size(1);
+  switch (box_dof) {
+    case 4:
+      return GetAABox2d(bbox, box_index);
+    case 5:
+      return GetBox2d(bbox, box_index);
+    case 7:
+      return GetBox3d(bbox, box_index);
+    default:
+      LOG(FATAL) << "Incorrect number of box DOF " << box_dof;
+  }
+}
+
 }  // namespace
 
 int GetDesiredBoxDOF(Label::Box::Type box_type) {
@@ -117,7 +136,6 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
   }
 
   absl::flat_hash_map<int64, std::vector<Object>> objects;
-  const int32 box_dof = bbox.dim_size(1);
   for (int i = 0, n = bbox.dim_size(0); i < n; ++i) {
     Object object;
     object.mutable_object()->set_type(
@@ -125,19 +143,7 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     if (score.has_value()) {
       object.set_score(score.value().vec<float>()(i));
     }
-    switch (box_dof) {
-      case 4:
-        *object.mutable_object()->mutable_box() = GetAABox2d(bbox, i);
-        break;
-      case 5:
-        *object.mutable_object()->mutable_box() = GetBox2d(bbox, i);
-        break;
-      case 7:
-        *object.mutable_object()->mutable_box() = GetBox3d(bbox, i);
-        break;
-      default:
-        LOG(FATAL) << "Incorrect number of box DOF " << box_dof;
-    }
+    *object.mutable_object()->mutable_box() = GetBoxByDimension(bbox, i);
     if (overlap_nlz.has_value()) {
       object.set_overlap_with_nlz(overlap_nlz.value().vec<bool>()(i));
     }
@@ -159,6 +165,97 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     }
     const int64 id = frame_id.vec<int64>()(i);
     objects[id].emplace_back(std::move(object));
+  }
+  return objects;
+}
+
+absl::flat_hash_map<std::string,
+                    absl::flat_hash_map<int64, std::vector<Object>>>
+ParseObjectGroupedBySequenceFromTensors(
+    const tensorflow::Tensor& bbox, const tensorflow::Tensor& type,
+    const tensorflow::Tensor& frame_id, const tensorflow::Tensor& sequence_id,
+    const tensorflow::Tensor& object_id,
+    const absl::optional<const tensorflow::Tensor>& score,
+    const absl::optional<const tensorflow::Tensor>& overlap_nlz,
+    const absl::optional<const tensorflow::Tensor>& detection_difficulty,
+    const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
+    const absl::optional<const tensorflow::Tensor>& object_speed) {
+  CHECK_EQ(bbox.dim_size(0), type.dim_size(0));
+  CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0));
+  CHECK_EQ(bbox.dim_size(0), sequence_id.dim_size(0));
+  CHECK_EQ(bbox.dim_size(0), object_id.dim_size(0));
+  if (score.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), score.value().dim_size(0));
+  }
+  if (overlap_nlz.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), overlap_nlz->dim_size(0));
+  }
+  if (detection_difficulty.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), detection_difficulty->dim_size(0));
+  }
+  if (tracking_difficulty.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0));
+  }
+  if (object_speed.has_value()) {
+    CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0));
+  }
+
+  // Map of sequence ids to (map of frame ids to list of objects in that frame).
+  absl::flat_hash_map<std::string,
+                      absl::flat_hash_map<int64, std::vector<Object>>>
+      objects;
+  // Tracking metrics compuation can fail if inputs are repeated, so
+  // track_object_frame_sequence tracks the uniqueness of (object id, frame id,
+  // sequence id) and logs warning if they are repeated for easier debugging
+  // when tracking metrics fails.
+  absl::flat_hash_set<std::tuple<std::string, int64, std::string>>
+      track_object_frame_sequence;
+
+  for (int i = 0, n = bbox.dim_size(0); i < n; ++i) {
+    Object object;
+    object.mutable_object()->set_type(
+        static_cast<Label::Type>(type.vec<uint8>()(i)));
+    if (score.has_value()) {
+      object.set_score(score.value().vec<float>()(i));
+    }
+    *object.mutable_object()->mutable_box() = GetBoxByDimension(bbox, i);
+    if (overlap_nlz.has_value()) {
+      object.set_overlap_with_nlz(overlap_nlz.value().vec<bool>()(i));
+    }
+    if (detection_difficulty.has_value()) {
+      object.mutable_object()->set_detection_difficulty_level(
+          static_cast<Label::DifficultyLevel>(
+              detection_difficulty.value().vec<uint8>()(i)));
+    }
+    if (tracking_difficulty.has_value()) {
+      object.mutable_object()->set_tracking_difficulty_level(
+          static_cast<Label::DifficultyLevel>(
+              tracking_difficulty.value().vec<uint8>()(i)));
+    }
+    if (object_speed.has_value()) {
+      object.mutable_object()->mutable_metadata()->set_speed_x(
+          object_speed.value().matrix<float>()(i, 0));
+      object.mutable_object()->mutable_metadata()->set_speed_y(
+          object_speed.value().matrix<float>()(i, 1));
+    }
+    const std::string object_id_i = absl::StrCat(object_id.vec<int64>()(i));
+    object.mutable_object()->set_id(object_id_i);
+    const int64 frame_id_i = frame_id.vec<int64>()(i);
+    const std::string sequence_id_i =
+        static_cast<std::string>(sequence_id.vec<tensorflow::tstring>()(i));
+    objects[sequence_id_i][frame_id_i].emplace_back(std::move(object));
+
+    // Tracking metrics computation can fail if the inputs are repeated, e.g.
+    // there are boxes with the same object ids in one frame.
+    const std::tuple<std::string, int64, std::string> object_frame_sequence_i =
+        std::make_tuple(object_id_i, frame_id_i, sequence_id_i);
+    if (track_object_frame_sequence.contains(object_frame_sequence_i)) {
+      LOG(WARNING) << "Saw repeated input of object_id " << object_id_i
+                   << " frame_id " << frame_id_i << " sequence_id "
+                   << sequence_id_i;
+    } else {
+      track_object_frame_sequence.insert(object_frame_sequence_i);
+    }
   }
   return objects;
 }

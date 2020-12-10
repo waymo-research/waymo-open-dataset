@@ -75,6 +75,16 @@ std::vector<TrackingMetrics> ComputeTrackingMetrics(
     const std::vector<std::vector<std::vector<Object>>>& pds,
     const std::vector<std::vector<std::vector<Object>>>& gts);
 
+// Estimates the score cutoffs that evenly sample the P/R curve.
+// pds: the predicted objects.
+// gts: the ground truths.
+// Returns a Config that has Config::scores populated.
+// Requires: config.scores is not populated.
+Config EstimateScoreCutoffs(
+    const Config& config,
+    const std::vector<std::vector<std::vector<Object>>>& pds,
+    const std::vector<std::vector<std::vector<Object>>>& gts);
+
 }  // namespace open_dataset
 }  // namespace waymo
 

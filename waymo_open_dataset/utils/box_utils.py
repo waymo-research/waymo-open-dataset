@@ -205,10 +205,9 @@ def transform_box(box, from_frame_pose, to_frame_pose, name=None):
   """
   with tf.compat.v1.name_scope(name, 'TransformBox'):
     transform = tf.linalg.matmul(tf.linalg.inv(to_frame_pose), from_frame_pose)
-    heading = box[..., -1] + tf.atan2(transform[..., 1, 0], transform[..., 0,
-                                                                      0])
+    heading_offset = tf.atan2(transform[..., 1, 0], transform[..., 0, 0])
+    heading = box[..., -1] + heading_offset[..., tf.newaxis]
     center = tf.einsum('...ij,...nj->...ni', transform[..., 0:3, 0:3],
                        box[..., 0:3]) + tf.expand_dims(
                            transform[..., 0:3, 3], axis=-2)
-
     return tf.concat([center, box[..., 3:6], heading[..., tf.newaxis]], axis=-1)

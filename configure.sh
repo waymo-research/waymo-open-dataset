@@ -45,8 +45,6 @@ write_to_bazelrc 'build --cxxopt="-std=c++11"'
 write_to_bazelrc 'build --auto_output_filter=subpackages'
 write_to_bazelrc 'build --copt="-Wall" --copt="-Wno-sign-compare"'
 write_to_bazelrc 'build --linkopt="-lrt -lm"'
-write_to_bazelrc 'build --incompatible_bzl_disallow_load_after_statement=false'
-write_to_bazelrc 'query --incompatible_bzl_disallow_load_after_statement=false'
 
 TF_NEED_CUDA=0
 # Check if it's installed

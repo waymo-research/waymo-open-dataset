@@ -53,6 +53,33 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
     const absl::optional<const tensorflow::Tensor>& object_speed);
 
+// Parses objects from tensors such that they are grouped by sequence_id and
+// then frame_id.
+// bbox: [N, D] float tensor encodes the boxes.
+// type: [N] uint8 tensor encodes the object types.
+// frame_id: [N] int64 tensor tells which frame the box belongs to.
+// sequence_id: [N] string tensor tells which frame the box belongs to.
+// object_id: [N] int64 tensor tells which frame the box belongs to.
+// score: [N] float tensor encodes the confidence scrore of each box.
+// overlap_nlz: [N] boolean tensor tells whether a box overlaps with any no
+//   label zone.
+// detection_dificulty: [N] uint8 tensor tells the difficulty level of each box
+//   for detection problems.
+// tracking_dificulty: [N] uint8 tensor tells the difficulty level of each box
+//   for tracking problems.
+// object_speed: [N, 2] float tensor that tells the speed in xy of the object.
+absl::flat_hash_map<std::string,
+                    absl::flat_hash_map<int64, std::vector<Object>>>
+ParseObjectGroupedBySequenceFromTensors(
+    const tensorflow::Tensor& bbox, const tensorflow::Tensor& type,
+    const tensorflow::Tensor& frame_id, const tensorflow::Tensor& sequence_id,
+    const tensorflow::Tensor& object_id,
+    const absl::optional<const tensorflow::Tensor>& score,
+    const absl::optional<const tensorflow::Tensor>& overlap_nlz,
+    const absl::optional<const tensorflow::Tensor>& detection_difficulty,
+    const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
+    const absl::optional<const tensorflow::Tensor>& object_speed);
+
 }  // namespace open_dataset
 }  // namespace waymo
 

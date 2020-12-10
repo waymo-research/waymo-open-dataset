@@ -42,3 +42,29 @@ py_test(
     ],
 )
 
+py_library(
+    name = "tracking_metrics",
+    srcs = ["tracking_metrics.py"],
+    deps = [
+        ":config_util_py",
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/metrics/ops:py_metrics_ops",
+    ],
+)
+
+py_test(
+    name = "tracking_metrics_test",
+    srcs = ["tracking_metrics_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":tracking_metrics",
+        # Implicit python proto dependency.
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/metrics/ops:py_metrics_ops",
+        "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+

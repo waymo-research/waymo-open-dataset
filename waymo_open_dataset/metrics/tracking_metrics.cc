@@ -60,10 +60,8 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
   for (int i = 0, sz = difficulty_levels.size(); i < sz; ++i) {
     auto* breakdown = measurements[i].mutable_breakdown();
     breakdown->set_generator_id(config.breakdown_generator_ids(
-        pd_subsets[0][breakdown_shard_index]
-            .breakdown_generator_id_index));
-    breakdown->set_shard(
-        pd_subsets[0][breakdown_shard_index].breakdown_shard);
+        pd_subsets[0][breakdown_shard_index].breakdown_generator_id_index));
+    breakdown->set_shard(pd_subsets[0][breakdown_shard_index].breakdown_shard);
     breakdown->set_difficulty_level(difficulty_levels[i]);
   }
 
@@ -76,8 +74,7 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
       MOT mot;
       for (int frame_index = 0; frame_index < num_frames; ++frame_index) {
         matchers[frame_index]->SetPredictionSubset(
-            pd_subsets[frame_index][breakdown_shard_index]
-                .indices[score_idx]);
+            pd_subsets[frame_index][breakdown_shard_index].indices[score_idx]);
         // All score cutoffs share the same ground truth subset in a frame.
         matchers[frame_index]->SetGroundTruthSubset(
             gt_subsets[frame_index][breakdown_shard_index].indices[0]);
@@ -270,6 +267,30 @@ std::vector<TrackingMetrics> ComputeTrackingMetrics(
     const Config& config,
     const std::vector<std::vector<std::vector<Object>>>& pds,
     const std::vector<std::vector<std::vector<Object>>>& gts) {
+  const int num_scenes = pds.size();
+  const Config config_copy = config.score_cutoffs_size() > 0
+                                 ? config
+                                 : EstimateScoreCutoffs(config, pds, gts);
+
+  std::vector<TrackingMeasurements> measurements;
+  for (int scene_idx = 0; scene_idx < num_scenes; ++scene_idx) {
+    MergeTrackingMeasurementsVector(
+        ComputeTrackingMeasurements(config_copy, pds[scene_idx],
+                                    gts[scene_idx]),
+        &measurements);
+  }
+  std::vector<TrackingMetrics> metrics;
+  metrics.reserve(measurements.size());
+  for (auto& m : measurements) {
+    metrics.emplace_back(ToTrackingMetrics(std::move(m)));
+  }
+  return metrics;
+}
+
+Config EstimateScoreCutoffs(
+    const Config& config,
+    const std::vector<std::vector<std::vector<Object>>>& pds,
+    const std::vector<std::vector<std::vector<Object>>>& gts) {
   CHECK_EQ(pds.size(), gts.size());
   const int num_scenes = pds.size();
   if (num_scenes == 0) return {};
@@ -293,20 +314,7 @@ std::vector<TrackingMetrics> ComputeTrackingMetrics(
       config_copy.add_score_cutoffs(s);
     }
   }
-
-  std::vector<TrackingMeasurements> measurements;
-  for (int scene_idx = 0; scene_idx < num_scenes; ++scene_idx) {
-    MergeTrackingMeasurementsVector(
-        ComputeTrackingMeasurements(config_copy, pds[scene_idx],
-                                    gts[scene_idx]),
-        &measurements);
-  }
-  std::vector<TrackingMetrics> metrics;
-  metrics.reserve(measurements.size());
-  for (auto& m : measurements) {
-    metrics.emplace_back(ToTrackingMetrics(std::move(m)));
-  }
-  return metrics;
+  return config_copy;
 }
 
 }  // namespace open_dataset

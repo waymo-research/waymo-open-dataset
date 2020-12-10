@@ -72,8 +72,7 @@ def _encode_range(r):
   encoded_r = r / _RANGE_TO_METERS
   with tf.control_dependencies([
       tf.compat.v1.assert_non_negative(encoded_r),
-      tf.compat.v1.assert_less(encoded_r,
-                               math.pow(2, 16) - 1.001)
+      tf.compat.v1.assert_less_equal(encoded_r, math.pow(2, 16) - 1.)
   ]):
     return tf.cast(encoded_r, dtype=tf.uint16)
 
@@ -143,8 +142,7 @@ def _encode_elongation(elongation):
   encoded_elongation = elongation / _RANGE_TO_METERS
   with tf.control_dependencies([
       tf.compat.v1.assert_non_negative(encoded_elongation),
-      tf.compat.v1.assert_less(encoded_elongation,
-                               math.pow(2, 8) - 1.001)
+      tf.compat.v1.assert_less_equal(encoded_elongation, math.pow(2, 8) - 1.)
   ]):
     return tf.cast(encoded_elongation, dtype=tf.uint8)
 
