@@ -131,8 +131,6 @@ pip3 install waymo-open-dataset-tf-2-0-0==1.2.0 --user
 
 pip3 install waymo-open-dataset-tf-1-15-0==1.2.0 --user
 
-~~~
-
 ## Submit to leaderboard
 
 1.  Run inference and dump the predictions in protos/metrics.proto:Objects
@@ -149,7 +147,6 @@ pip3 install waymo-open-dataset-tf-1-15-0==1.2.0 --user
 mkdir /tmp/my_model
 metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb
 ```
-~~~
 
 You can try a submission by running the following to the validation server. It
 should work. Make sure you change the fields in metrics/tools/submission.txtpb
