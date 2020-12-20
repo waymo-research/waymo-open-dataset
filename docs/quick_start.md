@@ -19,19 +19,24 @@ evaluation metrics. The other part is a set of
 [TensorFlow](https://www.tensorflow.org/) functions in Python to help with model
 training.
 
-First, download the code and enter the base directory. `bash git clone
-https://github.com/waymo-research/waymo-open-dataset.git waymo-od cd waymo-od
+First, download the code and enter the base directory.
+```bash
+git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od cd waymo-od
 git checkout remotes/origin/master`
+```
 
 We use the [Bazel](https://www.bazel.build/) build system. These commands should
 install it in most cases. Please see these
 [instructions](https://docs.bazel.build/versions/master/install.html) for other
-ways to install Bazel. We assume you have Python installed. `bash sudo apt-get
+ways to install Bazel. We assume you have Python installed.
+```bash
+sudo apt-get
 install --assume-yes pkg-config zip g++ zlib1g-dev unzip python3 python3-pip
 BAZEL_VERSION=3.1.0 wget
 https://github.com/bazelbuild/bazel/releases/download/0.28.0/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
 sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh sudo apt install
-build-essential`
+build-essential
+```
 
 Configure .bazelrc. `./configure.sh`
 
@@ -60,11 +65,14 @@ bazel test waymo_open_dataset/metrics:all
 ```
 
 This binary computes the metric values given a pair of prediction and ground
-truth files. `bash bazel build
+truth files.
+```bash
+bazel build
 waymo_open_dataset/metrics/tools/compute_detection_metrics_main
 bazel-bin/waymo_open_dataset/metrics/tools/compute_detection_metrics_main
 waymo_open_dataset/metrics/tools/fake_predictions.bin
-waymo_open_dataset/metrics/tools/fake_ground_truths.bin`
+waymo_open_dataset/metrics/tools/fake_ground_truths.bin
+```
 
 ### A TensorFlow Op
 
@@ -80,9 +88,11 @@ version, you might need to update the proto version in WORKSPACE to match your
 TensorFlow version.
 
 Run TensorFlow metrics op related tests. They can serve as examples for usage.
-`bash bazel build waymo_open_dataset/metrics/ops/... bazel test
+```bash
+bazel build waymo_open_dataset/metrics/ops/... bazel test
 waymo_open_dataset/metrics/ops/... bazel test
-waymo_open_dataset/metrics/python/...`
+waymo_open_dataset/metrics/python/...
+```
 
 ## Python Utilities
 
@@ -101,25 +111,25 @@ We only pre-compiled the package for Python 3.6, 3.7, 3.8. If you need the lib
 for a different python version, follow steps in pip_pkg_scripts to build pip
 package on your own. ``` bash pip3 install --upgrade pip
 
-# tf 2.3.0.
+### tf 2.3.0.
 
 pip3 install waymo-open-dataset-tf-2-3-0==1.2.0 --user
 
-# tf 2.2.0.
+### tf 2.2.0.
 
 pip3 install waymo-open-dataset-tf-2-2-0==1.2.0 --user
 
-# tf 2.1.0.
+### tf 2.1.0.
 
 pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
 
-# tf 2.0.0
+### tf 2.0.0
 
-# pip3 install waymo-open-dataset-tf-2-0-0==1.2.0 --user
+pip3 install waymo-open-dataset-tf-2-0-0==1.2.0 --user
 
-# tf 1.15.0
+### tf 1.15.0
 
-# pip3 install waymo-open-dataset-tf-1-15-0==1.2.0 --user
+pip3 install waymo-open-dataset-tf-1-15-0==1.2.0 --user
 
 ~~~
 
@@ -137,7 +147,8 @@ pip3 install waymo-open-dataset-tf-2-1-0==1.2.0 --user
 
 ```bash
 mkdir /tmp/my_model
-metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb'
+metrics/tools/create_submission  --input_filenames='/tmp/preds.bin' --output_filename='/tmp/my_model/model' --submission_filename='metrics/tools/submission.txtpb
+```
 ~~~
 
 You can try a submission by running the following to the validation server. It
