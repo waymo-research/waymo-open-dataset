@@ -28,6 +28,7 @@ py_library(
     srcs = ["py_metrics_ops.py"],
     data = [
         ":detection_metrics_ops.so",
+        ":tracking_metrics_ops.so",
     ],
 )
 
@@ -56,10 +57,50 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "tracking_metrics_ops.so",
+    srcs = [
+        "metrics_ops.cc",
+        "tracking_metrics_ops.cc",
+    ],
+    copts = [
+        "-pthread",
+    ],
+    linkshared = 1,
+    deps = [
+        ":utils",
+        "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/metrics:config_util",
+        "//waymo_open_dataset/metrics:tracking_metrics",
+        "//waymo_open_dataset/protos:breakdown_cc_proto",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "@local_config_tf//:libtensorflow_framework",
+        "@local_config_tf//:tf_header_lib",
+    ],
+)
+
 # Tests
 py_test(
     name = "detection_metrics_ops_test",
     srcs = ["detection_metrics_ops_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":py_metrics_ops",
+        # Implicit python proto dependency.
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "tracking_metrics_ops_test",
+    srcs = ["tracking_metrics_ops_test.py"],
     python_version = "PY3",
     deps = [
         ":py_metrics_ops",

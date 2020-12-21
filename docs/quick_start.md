@@ -12,7 +12,7 @@ As a first step, please visit https://www.waymo.com/open to gain access to the W
 ## System Requirements
 
 *   g++ 5 or higher.
-*   TensorFlow 1.15.0, 2.0.0, 2.1.0
+*   TensorFlow 1.15.0, 2.0.0, 2.1.0, 2.2.0, 2.3.0
 
 The code has two main parts. One is a utility written in C++ to compute the
 evaluation metrics. The other part is a set of
@@ -30,12 +30,11 @@ install it in most cases. Please see these
 [instructions](https://docs.bazel.build/versions/master/install.html) for other
 ways to install Bazel. We assume you have Python installed.
 ```bash
-sudo apt-get
-install --assume-yes pkg-config zip g++ zlib1g-dev unzip python3 python3-pip
-BAZEL_VERSION=3.1.0 wget
-https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
-sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh sudo apt install
-build-essential
+sudo apt-get install --assume-yes pkg-config zip g++ zlib1g-dev unzip python3 python3-pip
+BAZEL_VERSION=3.1.0
+wget https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+sudo bash bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh
+sudo apt install build-essential
 ```
 
 Configure .bazelrc. `./configure.sh`
