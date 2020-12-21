@@ -17,6 +17,7 @@ cc_library(
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/types:optional",
         "@local_config_tf//:libtensorflow_framework",
         "@local_config_tf//:tf_header_lib",

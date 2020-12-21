@@ -24,12 +24,22 @@ detection_metrics_module = tf.load_op_library(
     tf.compat.v1.resource_loader.get_path_to_datafile(
         'detection_metrics_ops.so'))
 
+tracking_metrics_module = tf.load_op_library(
+    tf.compat.v1.resource_loader.get_path_to_datafile(
+        'tracking_metrics_ops.so'))
 
-def detection_metrics(prediction_bbox, prediction_type, prediction_score,
-                      prediction_frame_id, prediction_overlap_nlz,
-                      ground_truth_bbox, ground_truth_type,
-                      ground_truth_frame_id, ground_truth_difficulty,
-                      config, ground_truth_speed=None):
+
+def detection_metrics(prediction_bbox,
+                      prediction_type,
+                      prediction_score,
+                      prediction_frame_id,
+                      prediction_overlap_nlz,
+                      ground_truth_bbox,
+                      ground_truth_type,
+                      ground_truth_frame_id,
+                      ground_truth_difficulty,
+                      config,
+                      ground_truth_speed=None):
   """Wraps detection_metrics. See metrics_ops.cc for full documentation."""
   if ground_truth_speed is None:
     num_gt_boxes = tf.shape(ground_truth_bbox)[0]
@@ -44,6 +54,47 @@ def detection_metrics(prediction_bbox, prediction_type, prediction_score,
       ground_truth_bbox=ground_truth_bbox,
       ground_truth_type=ground_truth_type,
       ground_truth_frame_id=ground_truth_frame_id,
+      ground_truth_difficulty=ground_truth_difficulty,
+      ground_truth_speed=ground_truth_speed,
+      config=config)
+
+
+def tracking_metrics(prediction_bbox,
+                     prediction_type,
+                     prediction_score,
+                     prediction_frame_id,
+                     prediction_sequence_id,
+                     prediction_object_id,
+                     ground_truth_bbox,
+                     ground_truth_type,
+                     ground_truth_frame_id,
+                     ground_truth_sequence_id,
+                     ground_truth_object_id,
+                     ground_truth_difficulty,
+                     config,
+                     prediction_overlap_nlz=None,
+                     ground_truth_speed=None):
+  """Wraps tracking_metrics. See metrics_ops.cc for full documentation."""
+  if ground_truth_speed is None:
+    num_gt_boxes = tf.shape(ground_truth_bbox)[0]
+    ground_truth_speed = tf.zeros((num_gt_boxes, 2), dtype=tf.float32)
+
+  if prediction_overlap_nlz is None:
+    prediction_overlap_nlz = tf.zeros_like(prediction_frame_id, dtype=tf.bool)
+
+  return tracking_metrics_module.tracking_metrics(
+      prediction_bbox=prediction_bbox,
+      prediction_type=prediction_type,
+      prediction_score=prediction_score,
+      prediction_frame_id=prediction_frame_id,
+      prediction_sequence_id=prediction_sequence_id,
+      prediction_object_id=prediction_object_id,
+      prediction_overlap_nlz=prediction_overlap_nlz,
+      ground_truth_bbox=ground_truth_bbox,
+      ground_truth_type=ground_truth_type,
+      ground_truth_frame_id=ground_truth_frame_id,
+      ground_truth_sequence_id=ground_truth_sequence_id,
+      ground_truth_object_id=ground_truth_object_id,
       ground_truth_difficulty=ground_truth_difficulty,
       ground_truth_speed=ground_truth_speed,
       config=config)
