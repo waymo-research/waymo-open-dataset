@@ -5,6 +5,15 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def load_tf_version_specific_dependencies():
     """Load TF version specific dependencies."""
     http_archive(
+        name = "com_google_absl",
+        sha256 = "56cd3fbbbd94468a5fff58f5df2b6f9de7a0272870c61f6ca05b869934f4802a",
+        strip_prefix = "abseil-cpp-daf381e8535a1f1f1b8a75966a74e7cca63dee89",
+        urls = [
+            "https://github.com/abseil/abseil-cpp/archive/daf381e8535a1f1f1b8a75966a74e7cca63dee89.tar.gz",
+        ],
+    )
+
+    http_archive(
         name = "zlib",
         build_file = "//third_party:zlib.BUILD",
         sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",

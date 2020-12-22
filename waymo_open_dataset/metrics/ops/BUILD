@@ -32,6 +32,7 @@ py_library(
     ],
 )
 
+# All ops defined in metrics_ops.cc must be compiled in one target.
 cc_binary(
     name = "metrics_ops.so",
     srcs = [
