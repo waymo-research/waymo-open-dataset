@@ -22,14 +22,13 @@ This code repository (excluding third_party) is licensed under the Apache Licens
 The Waymo Open Dataset itself is licensed under separate terms. Please visit [https://waymo.com/open/terms/](https://waymo.com/open/terms/) for details.  Code located at third_party/camera is licensed under a BSD 3-clause copyright license + an additional limited patent license applicable only when the code is used to process data from the Waymo Open Dataset as authorized by and in compliance with the Waymo Dataset License Agreement for Non-Commercial Use.  See third_party/camera for details.
 
 ## Citation
-    @misc{sun2019scalability,
-      title={Scalability in Perception for Autonomous Driving: Waymo Open Dataset},
-      author={Pei Sun and Henrik Kretzschmar and Xerxes Dotiwalla and Aurelien Chouard and Vijaysai Patnaik and Paul Tsui and James Guo and Yin Zhou and Yuning Chai and Benjamin Caine and Vijay Vasudevan and Wei Han and Jiquan Ngiam and Hang Zhao and Aleksei Timofeev and Scott Ettinger and Maxim Krivokon and Amy Gao and Aditya Joshi and Yu Zhang and Jonathon Shlens and Zhifeng Chen and Dragomir Anguelov},
-      year={2019},
-      eprint={1912.04838},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
-    }
+@inproceedings{sun2020scalability,
+  title={Scalability in perception for autonomous driving: Waymo open dataset},
+  author={Sun, Pei and Kretzschmar, Henrik and Dotiwalla, Xerxes and Chouard, Aurelien and Patnaik, Vijaysai and Tsui, Paul and Guo, James and Zhou, Yin and Chai, Yuning and Caine, Benjamin and others},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={2446--2454},
+  year={2020}
+}
 
 ## Dataset Metadata
 The following table is necessary for this dataset to be indexed by search
