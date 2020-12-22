@@ -20,13 +20,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-detection_metrics_module = tf.load_op_library(
-    tf.compat.v1.resource_loader.get_path_to_datafile(
-        'detection_metrics_ops.so'))
-
-tracking_metrics_module = tf.load_op_library(
-    tf.compat.v1.resource_loader.get_path_to_datafile(
-        'tracking_metrics_ops.so'))
+metrics_module = tf.load_op_library(
+    tf.compat.v1.resource_loader.get_path_to_datafile('metrics_ops.so'))
 
 
 def detection_metrics(prediction_bbox,
@@ -45,7 +40,7 @@ def detection_metrics(prediction_bbox,
     num_gt_boxes = tf.shape(ground_truth_bbox)[0]
     ground_truth_speed = tf.zeros((num_gt_boxes, 2), dtype=tf.float32)
 
-  return detection_metrics_module.detection_metrics(
+  return metrics_module.detection_metrics(
       prediction_bbox=prediction_bbox,
       prediction_type=prediction_type,
       prediction_score=prediction_score,
@@ -82,7 +77,7 @@ def tracking_metrics(prediction_bbox,
   if prediction_overlap_nlz is None:
     prediction_overlap_nlz = tf.zeros_like(prediction_frame_id, dtype=tf.bool)
 
-  return tracking_metrics_module.tracking_metrics(
+  return metrics_module.tracking_metrics(
       prediction_bbox=prediction_bbox,
       prediction_type=prediction_type,
       prediction_score=prediction_score,
