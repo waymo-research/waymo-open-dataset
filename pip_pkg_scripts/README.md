@@ -19,7 +19,7 @@ export GITHUB_BRANCH=master
 export PYTHON_VERSION=3
 export PYTHON_MINOR_VERSION=7
 export PIP_MANYLINUX2010=0
-# Only support 1.15.0, 2.0.0, 2.1.0, 2.2.0, 2.3.0
+# Only support 1.15.0, 2.0.0, 2.1.0, 2.2.0, 2.3.0, 2.4.0
 export TF_VERSION=2.0.0
 ./pip_pkg_scripts/build.sh
 ```
