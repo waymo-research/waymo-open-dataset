@@ -1,6 +1,5 @@
 FROM tensorflow/tensorflow:custom-op-ubuntu16
 
-ENV GITHUB_BRANCH="master"
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
@@ -26,11 +25,11 @@ RUN for python in python3.5 python3.6 python3.7 python3.8; do \
       $python -m pip install --upgrade grpcio>=1.24.3; \
     done
 
-COPY pip_pkg_scripts/build.sh /
+VOLUME /tmp/artifacts
+COPY . /tmp/repo
+WORKDIR /tmp/repo
 
-VOLUME /tmp/pip_pkg_build
-
-ENTRYPOINT ["/build.sh"]
+ENTRYPOINT ["pip_pkg_scripts/build.sh"]
 
 # The default parameters for the build.sh
 CMD []
