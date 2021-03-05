@@ -21,9 +21,8 @@ training.
 
 First, download the code and enter the base directory.
 ```bash
-git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od 
-cd waymo-od
-git checkout remotes/origin/master
+git clone https://github.com/waymo-research/waymo-open-dataset.git waymo-od cd waymo-od
+git checkout remotes/origin/master`
 ```
 
 We use the [Bazel](https://www.bazel.build/) build system. These commands should
