@@ -13,6 +13,7 @@ py_library(
     deps = [
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
     ],
 )
 
@@ -39,6 +40,29 @@ py_test(
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+
+py_library(
+    name = "motion_metrics",
+    srcs = ["motion_metrics.py"],
+    deps = [
+        ":config_util_py",
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/metrics/ops:py_metrics_ops",
+    ],
+)
+
+py_test(
+    name = "motion_metrics_test",
+    srcs = ["motion_metrics_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":motion_metrics",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:motion_metrics_proto_py_pb2",
     ],
 )
 

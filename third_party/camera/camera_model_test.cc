@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "third_party/camera/camera_model.h"
 
 #include "google/protobuf/text_format.h"
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "absl/memory/memory.h"
 #include "waymo_open_dataset/dataset.pb.h"
@@ -37,6 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace waymo {
 namespace open_dataset {
 namespace {
+
+using ::testing::Ge;
 
 class CameraModelTest : public ::testing::Test {
  public:
@@ -151,6 +154,32 @@ TEST_F(CameraModelTest, GlobalShutter) {
   EXPECT_NEAR(x, -4091.97180, 0.1);
   EXPECT_NEAR(y, 11527.48092, 0.1);
   EXPECT_NEAR(z, 84.46586, 0.1);
+}
+
+TEST_F(CameraModelTest, SubPixelChangeInPrinciplePointChangesPoseTimeOffset) {
+  int center_x = static_cast<int>(calibration_.intrinsic(2));
+  int center_y = static_cast<int>(calibration_.intrinsic(3));
+  CameraCalibration calibration_a = calibration_;
+  calibration_a.set_intrinsic(2, center_x);
+  calibration_a.set_intrinsic(3, center_y);
+  CameraCalibration calibration_b = calibration_;
+  // Move principle point a little.
+  const double sub_pixel = 0.1;
+  calibration_a.set_intrinsic(2, center_x + sub_pixel);
+  calibration_a.set_intrinsic(3, center_y + sub_pixel);
+  CameraModel camera_a(calibration_a);
+  CameraModel camera_b(calibration_b);
+
+  camera_a.PrepareProjection(camera_image_);
+  camera_b.PrepareProjection(camera_image_);
+
+  const double readout_time = camera_image_.camera_readout_done_time() -
+                              camera_image_.camera_trigger_time() -
+                              camera_image_.shutter();
+  const double min_seconds_per_col =
+      readout_time / std::max(calibration_.width(), calibration_.height());
+  EXPECT_THAT(std::abs(camera_a.t_pose_offset() - camera_b.t_pose_offset()),
+              Ge(sub_pixel * min_seconds_per_col));
 }
 
 }  // namespace

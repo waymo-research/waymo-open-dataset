@@ -260,5 +260,92 @@ ParseObjectGroupedBySequenceFromTensors(
   return objects;
 }
 
+absl::flat_hash_map<std::string, std::pair<Scenario, ScenarioPredictions>>
+ParseScenarioAndPredictonsFromTensors(const tensorflow::Tensor& pred_trajectory,
+                                      const tensorflow::Tensor& pred_score,
+                                      const tensorflow::Tensor& gt_trajectory,
+                                      const tensorflow::Tensor& gt_is_valid,
+                                      const tensorflow::Tensor& object_type,
+                                      const tensorflow::Tensor& object_id,
+                                      const tensorflow::Tensor& scenario_id) {
+  const int batch_size = pred_trajectory.dim_size(0);
+  const int top_k = pred_trajectory.dim_size(1);
+  const int num_agents = pred_trajectory.dim_size(2);
+  const int num_pred_steps = pred_trajectory.dim_size(3);
+  const int num_gt_steps = gt_trajectory.dim_size(2);
+
+  CHECK_EQ(gt_trajectory.dim_size(0), batch_size);
+  CHECK_EQ(gt_trajectory.dim_size(1), num_agents);
+  CHECK_EQ(gt_trajectory.dim_size(3), 7);
+  CHECK_EQ(gt_is_valid.dim_size(0), batch_size);
+  CHECK_EQ(gt_is_valid.dim_size(1), num_agents);
+  CHECK_EQ(gt_is_valid.dim_size(2), num_gt_steps);
+  CHECK_EQ(pred_score.dim_size(0), batch_size);
+  CHECK_EQ(pred_score.dim_size(1), top_k);
+  CHECK_EQ(object_type.dim_size(0), batch_size);
+  CHECK_EQ(object_type.dim_size(1), num_agents);
+  CHECK_EQ(scenario_id.dim_size(0), batch_size);
+  CHECK_EQ(object_id.dim_size(0), batch_size);
+  CHECK_EQ(object_id.dim_size(1), num_agents);
+
+  absl::flat_hash_map<std::string, std::pair<Scenario, ScenarioPredictions>>
+      results;
+
+  for (int i = 0; i < batch_size; ++i) {
+    const std::string cur_scenario_id =
+        scenario_id.vec<tensorflow::tstring>()(i);
+    Scenario* scenario = &(results[cur_scenario_id].first);
+    ScenarioPredictions* predictions = &(results[cur_scenario_id].second);
+    scenario->set_scenario_id(cur_scenario_id);
+    predictions->set_scenario_id(cur_scenario_id);
+
+    for (int j = 0; j < num_agents; ++j) {
+      const int64 cur_object_id = object_id.matrix<int64>()(i, j);
+
+      Track* track = scenario->add_tracks();
+      track->set_id(cur_object_id);
+      track->set_object_type(
+          static_cast<Track_ObjectType>(object_type.matrix<int64>()(i, j)));
+
+      scenario->add_objects_of_interest(cur_object_id);
+      RequiredPrediction& required_track = *scenario->add_tracks_to_predict();
+      required_track.set_track_index(scenario->tracks_to_predict().size() - 1);
+      required_track.set_difficulty(RequiredPrediction::LEVEL_1);
+
+      for (int t = 0; t < num_gt_steps; ++t) {
+        auto state = track->add_states();
+        state->set_center_x(gt_trajectory.tensor<float, 4>()(i, j, t, 0));
+        state->set_center_y(gt_trajectory.tensor<float, 4>()(i, j, t, 1));
+        state->set_length(gt_trajectory.tensor<float, 4>()(i, j, t, 2));
+        state->set_width(gt_trajectory.tensor<float, 4>()(i, j, t, 3));
+        state->set_heading(gt_trajectory.tensor<float, 4>()(i, j, t, 4));
+        state->set_velocity_x(gt_trajectory.tensor<float, 4>()(i, j, t, 5));
+        state->set_velocity_y(gt_trajectory.tensor<float, 4>()(i, j, t, 6));
+        state->set_valid(gt_is_valid.tensor<bool, 3>()(i, j, t));
+      }
+    }
+
+    auto* multi_modal_predictions = predictions->add_multi_modal_predictions();
+
+    for (int k = 0; k < top_k; ++k) {
+      const float cur_score = pred_score.matrix<float>()(i, k);
+      JointTrajectories* joint_prediction =
+          multi_modal_predictions->add_joint_predictions();
+      joint_prediction->set_confidence(cur_score);
+      for (int j = 0; j < num_agents; ++j) {
+        auto new_trajectory = joint_prediction->add_trajectories();
+        new_trajectory->set_object_id(object_id.matrix<int64>()(i, j));
+        for (int t = 0; t < num_pred_steps; ++t) {
+          new_trajectory->add_center_x(
+              pred_trajectory.tensor<float, 5>()(i, k, j, t, 0));
+          new_trajectory->add_center_y(
+              pred_trajectory.tensor<float, 5>()(i, k, j, t, 1));
+        }
+      }
+    }
+  }
+  return results;
+}
+
 }  // namespace open_dataset
 }  // namespace waymo

@@ -30,6 +30,8 @@ cc_library(
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_metrics_cc_proto",
+        "//waymo_open_dataset/protos:scenario_cc_proto",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -141,6 +143,72 @@ cc_library(
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "motion_metrics_utils",
+    srcs = ["motion_metrics_utils.cc"],
+    hdrs = ["motion_metrics_utils.h"],
+    deps = [
+        "//waymo_open_dataset/common:status",
+        "//waymo_open_dataset/math:vec2d",
+        "//waymo_open_dataset/protos:motion_metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_submission_cc_proto",
+        "//waymo_open_dataset/protos:scenario_cc_proto",
+        "@com_google_absl//absl/types:optional",
+    ],
+)
+
+cc_library(
+    name = "motion_metrics",
+    srcs = ["motion_metrics.cc"],
+    hdrs = ["motion_metrics.h"],
+    deps = [
+        ":motion_metrics_utils",
+        # Implicit proto dependency.
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
+        "//waymo_open_dataset/common:status",
+        "//waymo_open_dataset/math:box2d",
+        "//waymo_open_dataset/math:polygon2d",
+        "//waymo_open_dataset/math:vec2d",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_submission_cc_proto",
+        "//waymo_open_dataset/protos:scenario_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "motion_metrics_utils_test",
+    srcs = ["motion_metrics_utils_test.cc"],
+    deps = [
+        ":motion_metrics_utils",
+        "@com_google_glog//:glog",
+        # Implicit proto dependency.
+        # Implicit python proto dependency.
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "//waymo_open_dataset/math:vec2d",
+        "//waymo_open_dataset/protos:motion_metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_submission_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "motion_metrics_test",
+    srcs = ["motion_metrics_test.cc"],
+    deps = [
+        ":motion_metrics",
+        "@com_google_glog//:glog",
+        # Implicit proto dependency.
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+        "//waymo_open_dataset/math:vec2d",
+        "//waymo_open_dataset/protos:motion_metrics_cc_proto",
+        "//waymo_open_dataset/protos:motion_submission_cc_proto",
     ],
 )
 

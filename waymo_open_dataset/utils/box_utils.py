@@ -59,8 +59,10 @@ def is_within_box_3d(point, box, name=None):
     # [N, M, 3]
     point_in_box_frame = tf.einsum('nj,mij->nmi', point, rotation) + translation
     # [N, M, 3]
-    point_in_box = tf.logical_and(point_in_box_frame <= dim * 0.5,
-                                  point_in_box_frame >= -dim * 0.5)
+    point_in_box = tf.logical_and(
+        tf.logical_and(point_in_box_frame <= dim * 0.5,
+                       point_in_box_frame >= -dim * 0.5),
+        tf.reduce_all(tf.not_equal(dim, 0), axis=-1, keepdims=True))
     # [N, M]
     point_in_box = tf.cast(
         tf.reduce_prod(
@@ -100,8 +102,10 @@ def is_within_box_2d(point, box):
     # [N, M, 2]
     point_in_box_frame = tf.einsum('nj,mij->nmi', point, rotation) + translation
     # [N, M, 2]
-    point_in_box = tf.logical_and(point_in_box_frame <= dim * 0.5,
-                                  point_in_box_frame >= -dim * 0.5)
+    point_in_box = tf.logical_and(
+        tf.logical_and(point_in_box_frame <= dim * 0.5,
+                       point_in_box_frame >= -dim * 0.5),
+        tf.reduce_all(tf.not_equal(dim, 0), axis=-1, keepdims=True))
     # [N, M]
     point_in_box = tf.cast(
         tf.reduce_prod(

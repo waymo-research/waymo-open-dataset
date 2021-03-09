@@ -60,6 +60,7 @@ Polygon2dProto BuildNLZ(const std::vector<double>& x,
 
 Config BuildDefaultConfig() {
   Config config;
+  config.mutable_score_cutoffs()->Reserve(10);
   for (int i = 0; i < 10; ++i) {
     config.add_score_cutoffs(0.1 * i);
   }

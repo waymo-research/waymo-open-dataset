@@ -1,0 +1,142 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto contains the  Waymo Open Dataset Motion source data.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/protos/map.proto";
+
+message ObjectState {
+  // Coordinates of the center of the object bounding box.
+  optional double center_x = 2;
+  optional double center_y = 3;
+  optional double center_z = 4;
+
+  // The dimensions of the bounding box in meters.
+  optional float length = 5;
+  optional float width = 6;
+  optional float height = 7;
+
+  // The yaw angle in radians of the forward direction of the bounding box (the
+  // vector from the center of the box to the middle of the front box segment)
+  // counter clockwise from the X-axis (right hand system about the Z axis).
+  // This angle is normalized to [-pi, pi).
+  optional float heading = 8;
+
+  // The velocity vector in m/s. This vector direction may be slightly different
+  // from the heading of the bounding box.
+  optional float velocity_x = 9;
+  optional float velocity_y = 10;
+
+  // False if the state data is invalid or missing.
+  optional bool valid = 11;
+}
+
+// The object states for a single object through the scenario.
+message Track {
+  enum ObjectType {
+    TYPE_UNSET = 0;  // This is an invalid state that indicates an error.
+    TYPE_VEHICLE = 1;
+    TYPE_PEDESTRIAN = 2;
+    TYPE_CYCLIST = 3;
+    TYPE_OTHER = 4;
+  }
+
+  // The unique ID of the object being tracked. The IDs start from zero and are
+  // non-negative.
+  optional int32 id = 1;
+
+  // The type of object being tracked.
+  optional ObjectType object_type = 2;
+
+  // The object states through the track. States include the 3D bounding boxes
+  // and velocities.
+  repeated ObjectState states = 3;
+}
+
+// The dynamic map information at a single time step.
+message DynamicMapState {
+  // The traffic signal states for all observed signals at this time step.
+  repeated TrafficSignalLaneState lane_states = 1;
+}
+
+// An object that must be predicted for the scenario.
+message RequiredPrediction {
+  // A difficulty level for predicting a given track.
+  enum DifficultyLevel {
+    NONE = 0;
+    LEVEL_1 = 1;
+    LEVEL_2 = 2;
+  }
+
+  // An index into the Scenario `tracks` field for the object to be predicted.
+  optional int32 track_index = 1;
+
+  // The difficulty level for this object.
+  optional DifficultyLevel difficulty = 2;
+}
+
+message Scenario {
+  reserved 9;
+
+  // The unique ID for this scenario.
+  optional string scenario_id = 5;
+
+  // Timestamps corresponding to the track states for each step in the scenario.
+  // The length of this field is equal to tracks[i].states_size() for all tracks
+  // i and equal to the length of the dynamic_map_states_field.
+  repeated double timestamps_seconds = 1;
+
+  // The index into timestamps_seconds for the current time. All time steps
+  // after this index are future data to be predicted. All steps before this
+  // index are history data.
+  optional int32 current_time_index = 10;
+
+  // Tracks for all objects in the scenario. All object tracks in all scenarios
+  // in the dataset have the same number of object states. In this way, the
+  // tracks field forms a 2 dimensional grid with objects on one axis and time
+  // on the other. Each state can be associated with a timestamp in the
+  // 'timestamps_seconds' field by its index. E.g., tracks[i].states[j] indexes
+  // the i^th agent's state at time timestamps_seconds[j].
+  repeated Track tracks = 2;
+
+  // The dynamic map states in the scenario (e.g. traffic signal states).
+  // This field has the same length as timestamps_seconds. Each entry in this
+  // field can be associated with a timestamp in the 'timestamps_seconds' field
+  // by its index. E.g., dynamic_map_states[i] indexes the dynamic map state at
+  // time timestamps_seconds[i].
+  repeated DynamicMapState dynamic_map_states = 7;
+
+  // The set of static map features for the scenario.
+  repeated MapFeature map_features = 8;
+
+  // The index into the tracks field of the autonomous vehicle object.
+  optional int32 sdc_track_index = 6;
+
+  // A list of objects IDs in the scene detected to have interactive behavior.
+  // The objects in this list form an interactive group. These IDs correspond
+  // to IDs in the tracks field above.
+  repeated int32 objects_of_interest = 4;
+
+  // A list of tracks to generate predictions for. For the challenges, exactly
+  // these objects must be predicted in each scenario for test and validation
+  // submissions. This field is populated in the training set only as a
+  // suggestion of objects to train on.
+  repeated RequiredPrediction tracks_to_predict = 11;
+
+}

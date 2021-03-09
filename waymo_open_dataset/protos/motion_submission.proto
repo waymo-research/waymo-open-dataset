@@ -1,0 +1,159 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto is used to submit results for the Waymo Open Dataset motion
+// prediction challenge.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+message Trajectory {
+  // The predicted trajectory positions.
+  // For the Waymo prediction challenges, these fields must be exactly
+  // length 16 - 8 seconds with 2 steps per second starting at timestamp 1.5
+  // (step 15) in the scenario.
+  // IMPORTANT: For the challenges, the first entry in each of these fields must
+  // correspond to time step 15 in the scenario NOT step 10 or 11 (i.e. the
+  // entries in these fields must correspond to steps 15, 20, 25, ... 85, 90 in
+  // the scenario).
+  repeated float center_x = 2 [packed = true];
+  repeated float center_y = 3 [packed = true];
+}
+
+message ScoredTrajectory {
+  // The object predicted trajectory.
+  optional Trajectory trajectory = 1;
+
+  // An optional confidence measure for this joint prediction. These confidence
+  // scores should reflect confidence in the existence of the trajectory across
+  // scenes, not normalized within a scene or per-agent.
+  optional float confidence = 2;
+}
+
+message SingleObjectPrediction {
+  // The ID of the object being predicted. This must match the object_id field
+  // in the test or validation set tf.Example or scenario proto corresponding to
+  // this prediction. Note this must be the same as the object_id in the
+  // scenario track or the state/id field in the tf.Example, not the track
+  // index.
+  optional int32 object_id = 1;
+
+  // A set of up to 6 trajectory predictions for this object with varying
+  // confidences. Any predictions past the first six will be discarded.
+  repeated ScoredTrajectory trajectories = 2;
+}
+
+message PredictionSet {
+  // A list of predictions for the required objects in the scene. These must
+  // exactly match the objects in the tracks_to_predict field of the test
+  // scenario or tf.Example.
+  repeated SingleObjectPrediction predictions = 1;
+}
+
+message ObjectTrajectory {
+  // The ID of the object being predicted. This must match the object_id field
+  // in the test or validation set tf.Example or scenario proto corresponding to
+  // this prediction. Note this must be the same as the object_id in the
+  // scenario track or the state/id field in the tf.Example, not the track
+  // index.
+  optional int32 object_id = 1;
+
+  // The trajectory for the object.
+  optional Trajectory trajectory = 2;
+}
+
+// A message containing a prediction for either a single object or a joint
+// prediction for a set of objects.
+message ScoredJointTrajectory {
+  // The trajectories for the objects in the scenario being predicted. For the
+  // interactive challenge, this must contain exactly 2 trajectories
+  // for the pair of objects listed in the tracks_to_predict field of the
+  // Scenario or tf.Example proto.
+  repeated ObjectTrajectory trajectories = 2;
+
+  // An optional confidence measure for this joint prediction. These confidence
+  // scores should reflect confidence in the existence of the trajectory across
+  // scenes, not normalized within a scene or per-agent.
+  optional float confidence = 3;
+}
+
+message JointPrediction {
+  // A set of up to 6 predictions with varying confidences - all for the same
+  // pair of objects. All prediction entries must contain trajectories for the
+  // same set of objects or an error will be returned. Any joint predictions
+  // past the first six will be discarded.
+  repeated ScoredJointTrajectory joint_trajectories = 1;
+}
+
+// A set of predictions for a single scenario.
+message ChallengeScenarioPredictions {
+  // The unique ID of the scenario being predicted. This ID must match the
+  // scenario_id field in the test or validation set tf.Example or scenario
+  // proto corresponding to this set of predictions.
+  optional string scenario_id = 1;
+
+  // The predictions for the scenario. For the motion prediction challenge,
+  // populate the predictions field. For the interaction prediction challenge,
+  // populate the joint_predictions_field.
+  oneof prediction_set {
+    // Single object predictions. This must be populated for the motion
+    // prediction challenge.
+    PredictionSet single_predictions = 2;
+
+    // Joint predictions for the interacting objects. This must be populated for
+    // the interaction prediction challenge.
+    JointPrediction joint_prediction = 3;
+  }
+}
+
+// A set of ScenarioPredictions protos. A ScenarioPredictions proto for each
+// example in the test or validation set must be included for a valid
+// submission.
+message MotionChallengeSubmission {
+  enum SubmissionType {
+    UNKNOWN = 0;
+
+    // A submission for the Waymo open dataset motion prediction challenge.
+    MOTION_PREDICTION = 1;
+
+    // A submission for the Waymo open dataset interaction prediction challenge.
+    INTERACTION_PREDICTION = 2;
+  }
+
+  // This must be set as the full email used to register at waymo.com/open.
+  optional string account_name = 3;
+
+  // This name needs to be short, descriptive and unique. Only the latest result
+  // of the method from a user will show up on the leaderboard.
+  optional string unique_method_name = 4;
+
+  // Author information.
+  repeated string authors = 5;
+  optional string affiliation = 6;
+
+  // A brief description of the method.
+  optional string description = 7;
+
+  // Link to paper or other link that describes the method.
+  optional string method_link = 8;
+
+  // The challenge submission type.
+  optional SubmissionType submission_type = 2;
+
+  // The set of scenario predictions to evaluate. One entry should exist for
+  // every record in the test set.
+  repeated ChallengeScenarioPredictions scenario_predictions = 1;
+}

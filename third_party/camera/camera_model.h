@@ -84,6 +84,9 @@ class CameraModel {
   // True if the given image coordinates are within the image.
   bool InImage(double u, double v) const;
 
+  // For testing.
+  double t_pose_offset() const;
+
  private:
   // Projects a point in the 3D camera frame into the lens distorted image
   // coordinates (u_d, v_d).

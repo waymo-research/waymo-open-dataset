@@ -1,0 +1,182 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// Various protos to compute tracking and detection metrics.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/protos/scenario.proto";
+
+message SingleTrajectory {
+  // The ID of the object being predicted. This must match the object_id field
+  // in the test or validation set tf.Example or scenario proto corresponding to
+  // this prediction.
+  optional int32 object_id = 1;
+
+  // The predicted trajectory positions.
+  repeated float center_x = 2 [packed = true];
+  repeated float center_y = 3 [packed = true];
+}
+
+// A message containing a prediction for either a single object or a joint
+// prediction for a set of objects.
+message JointTrajectories {
+  // The trajectories for each object in the set being predicted. This may
+  // contain a single trajectory for a single object or a set of trajectories
+  // representing a joint prediction of a set of objects.
+  repeated SingleTrajectory trajectories = 2;
+
+  // An optional confidence measure for this prediction.
+  // These should not be normalized across the set of trajectories.
+  optional float confidence = 3;
+}
+
+message MultimodalPrediction {
+  // A set of predictions (or joint predictions) with varying confidences - all
+  // for the same object or group of objects. All prediction entries must
+  // contain trajectories for the same set of objects or an error will be
+  // returned. Any predictions past the max number of predictions set in the
+  // metrics config will be discarded.
+  repeated JointTrajectories joint_predictions = 1;
+}
+
+// A set of predictions used for metrics evaluation.
+message ScenarioPredictions {
+  // The unique ID of the scenario being predicted. This ID must match the
+  // scenario_id field in the test or validation set tf.Example or scenario
+  // proto corresponding to this set of predictions.
+  optional string scenario_id = 1;
+
+  // The predictions for the scenario. These represent either single object
+  // predictions or joint predictions for a group of objects.
+  repeated MultimodalPrediction multi_modal_predictions = 2;
+}
+
+message MotionMetricsBundle {
+  // The object type these metrics were filtered by. All metrics below are
+  // only for this type of object. If not set, the metrics are aggregated for
+  // all types.
+  optional Track.ObjectType object_filter = 7;
+
+  // The prediction time step used to compute the metrics. The metrics are
+  // computed as if this was the last time step in the trajectory.
+  optional int32 measurement_step = 6;
+
+  // For each object, the average difference from the ground truth in meters is
+  // computed up to the measurement time step is computed for all trajectory
+  // predictions for that object. The value with the minimum error is kept
+  // (minADE). The resulting values are accumulated for all predicted objects in
+  // all scenarios.
+  optional float min_ade = 1;
+
+  // For each object the error for a given trajectory at the measurement time
+  // step is computed for all trajectory predictions for that objects. The value
+  // with the minimum error is kept (minFDE). The mean of all measurements in
+  // the accumulator is the average minFDE.
+  optional float min_fde = 2;
+
+  // The miss rate is calculated by computing the displacement from ground truth
+  // at the measurement time step. If the displacement is greater than the miss
+  // rate threshold it is considered a miss. The number of misses for all
+  // objects divided by the total number of objects is equal to the miss rate.
+  optional float miss_rate = 3;
+
+  // Overlaps are detected as any intersection of the bounding boxes of the
+  // highest confidence predicted object trajectory with those of any other
+  // valid object at the same time step for time steps up to the measurement
+  // time step. Only objects that were valid at the prediction time step are
+  // considered. If one or more overlaps occur up to the measurement step it
+  // is considered a single overlap measurement. The total number of
+  // overlaps divided by the total number of objects is equal to the overall
+  // overlap rate.
+  optional float overlap_rate = 4;
+
+  // The mAP metric is computed by accumulating true and false positive
+  // measurements based on thresholding the FDE at the measurement time step
+  // over all object predictions. The measurements are separated into buckets
+  // based on the trajectory shape. The mean average precision of each bucket is
+  // computed as described in "The PASCAL Visual Object Classes (VOC) Challenge"
+  // (Everingham, 2009, p. 11). using the newer method that includes all samples
+  // in the computation consistent with the current PASCAL challenge metrics.
+  // The mean of the AP value across all trajectory shape buckets is equal to
+  // this mAP value.
+  optional float mean_average_precision = 5;
+}
+
+message MotionMetrics {
+  // A set of metrics broken down by measurement time step and object type.
+  repeated MotionMetricsBundle metrics_bundles = 1;
+}
+
+// Configuration to compute motion metrics.
+message MotionMetricsConfig {
+  message MeasurementStepConfig {
+    // The prediction step to use to measure all metrics. The metrics are
+    // computed as if this were the last step in the predicted trajectory. Time
+    // in seconds can be computed as (measurement_step + 1) /
+    // prediction_steps_per_second.
+    optional int32 measurement_step = 1;
+
+    // The threshold for lateral distance error in meters for miss rate and mAP
+    // computations.
+    optional float lateral_miss_threshold = 2;
+
+    // The threshold for longitudinal distance error in meters for miss rate and
+    // mAP computations.
+    optional float longitudinal_miss_threshold = 3;
+  }
+
+  // The sampling rates for the scenario track data and the prediction data. The
+  // track sampling must be an integer multiple of the prediction sampling.
+  optional int32 track_steps_per_second = 1 [default = 10];
+  optional int32 prediction_steps_per_second = 2 [default = 2];
+
+  // The number of samples for both the history and the future track data.
+  // Tracks must be of length track_history_samples + track_future_samples + 1
+  // (one extra for the current time step).
+  // Predictions must be length (track_history_samples + track_future_samples) *
+  // prediction_steps_per_second / track_steps_per_second (current time is not
+  // included in the predictions).
+  // IMPORTANT: Note that the first element of the prediction corresponds to
+  // time (1.0 / prediction_steps_per_second) NOT time 0.
+  optional int32 track_history_samples = 3 [default = 10];
+  optional int32 track_future_samples = 4 [default = 80];
+
+  // Parameters for miss rate and mAP threshold scaling as a function of the
+  // object initial speed. If the object speed is below speed_lower_bound, the
+  // scale factor for the thresholds will equal speed_scale_lower. Above
+  // speed_upper_bound, the scale factor will equal speed_scale_upper. In
+  // between the two bounds, the scale factor will be interpolated linearly
+  // between the lower and upper scale factors. Both the lateral and
+  // longitudinal displacement thresholds for miss rate and mAP will be scaled
+  // by this factor before the thresholds are applied.
+  optional float speed_lower_bound = 5 [default = 1.4];
+  optional float speed_upper_bound = 6 [default = 11.0];
+  optional float speed_scale_lower = 7 [default = 0.5];
+  optional float speed_scale_upper = 8 [default = 1.0];
+
+  // The prediction samples and parameters used to compute metrics at a specific
+  // time step. Time in seconds can be computed as (measurement_step + 1) /
+  // prediction_steps_per_second. Metrics are computed for each step in the list
+  // as if the given measurement_step were the last step in the predicted
+  // trajectory.
+  repeated MeasurementStepConfig step_configurations = 9;
+
+  // The maximum number of predictions to use as K in all min over K metrics
+  // computations.
+  optional int32 max_predictions = 10 [default = 6];
+}

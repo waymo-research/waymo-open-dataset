@@ -126,6 +126,7 @@ message LaserCalibration {
   optional double beam_inclination_max = 4;
   // Lidar frame to vehicle frame.
   optional Transform extrinsic = 5;
+
 }
 
 message Context {

@@ -21,7 +21,7 @@ Copyright © 2019 Waymo LLC.
 
 #### No Label Zones
 
-No Label Zones are created for areas that have little immediate relevance to the driving of the self-driving car or to other road users within the self-driving car's environment, such as the opposite side of a highway or a parking lot on the side of the road with a large number of vehicles.
+No Label Zones are created for areas that have little immediate relevance to the driving of the autonomous vehicle or to other road users within the autonomous vehicle's environment, such as the opposite side of a highway or a parking lot on the side of the road with a large number of vehicles.
 
 
 ### Vehicle Labeling Specifications
@@ -149,7 +149,7 @@ No Label Zones are created for areas that have little immediate relevance to the
 
 *   2D bounding boxes are drawn as tightly as possible around objects in the camera images, and capture all visible parts of the object.
 *   The boxes only capture the visible parts of the object, and do not try to estimate the extent of a partially occluded object.
-*   Parts of the self-driving car that are visible in the camera image and reflections are not labeled.
+*   Parts of the autonomous vehicle that are visible in the camera image and reflections are not labeled.
 *   When there are too many objects at the horizon to label each one of them individually, labels are created only for the objects that can be labeled individually, and the remaining objects are ignored.
 
 

@@ -19,9 +19,12 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/config_util.h"
 #include "waymo_open_dataset/metrics/ops/utils.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
+#include "waymo_open_dataset/protos/motion_metrics.pb.h"
 
 namespace tensorflow {
 namespace {
+
+using ::tensorflow::shape_inference::InferenceContext;
 
 REGISTER_OP("DetectionMetrics")
     .Input("prediction_bbox: float")
@@ -75,6 +78,55 @@ precision_recall_ha_weighted: [B, S, 2]. precision and recall with heading
 breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
   breakdown.
 config: a string serialized proto of metrics configuration protobuf.
+)doc");
+
+REGISTER_OP("MotionMetrics")
+    .Input("prediction_trajectory: float")
+    .Input("prediction_score: float")
+    .Input("ground_truth_trajectory: float")
+    .Input("ground_truth_is_valid: bool")
+    .Input("object_type: int64")
+    .Input("object_id: int64")
+    .Input("scenario_id: string")
+    .Output("min_ade: float")
+    .Output("min_fde: float")
+    .Output("miss_rate: float")
+    .Output("overlap_rate: float")
+    .Output("mean_average_precision: float")
+    .Attr("config: string")
+    .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+      return Status::OK();
+    })
+    .Doc(R"doc(
+Computes motion metrics.
+
+- Notations:
+- B: batch size containing joint predictions.
+- A: number of objects in a joint prediction. 1 if mutual independence is
+    assumed.
+- K: top_K predictions per joint prediction.
+- TP: number of steps to evaluate on. Matches len(config.step_measurement).
+- TG: number of steps in the groundtruth track. Matches
+    config.track_history_samples + 1 + config.future_history_samples.
+- BR: number of breakdowns.
+
+prediction_trajectory: [B, K, A, TP, 2]. Predicted trajectories.
+  The inner-most dimensions are [x, y].
+prediction_score: [B, K]. Scores per joint prediction.
+ground_truth_trajectory: [B, A, TG, 7]. Groundtruth trajectories.
+  The inner-most dimensions are [x, y, length, width, heading, velocity_x,
+  velocity_y].
+ground_truth_is_valid: [B, A, TG]. Indicates whether a time stamp is valid per
+  trajectory.
+object_type: [B, A] Object type per trajectory.
+object_id: [B, A]. Object IDs per trajectory.
+scenario_id: [B]. Scenario IDs of all groundtruth trajectories.
+min_ade: [BR]. Minimum average distance error among K proposals.
+min_fde: [BR]. Minimum final distance error among K proposals.
+miss_rate: [BR]. Miss rate given K guesses.
+overlap_rate: [BR]. Overlap rate for each breakdown.
+mean_average_precision: [BR]. Average precision for each breakdown.
+config: a string serialized proto of metrics MotionConfig protobuf.
 )doc");
 
 REGISTER_OP("TrackingMetrics")

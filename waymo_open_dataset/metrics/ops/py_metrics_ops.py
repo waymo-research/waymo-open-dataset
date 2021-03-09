@@ -54,6 +54,25 @@ def detection_metrics(prediction_bbox,
       config=config)
 
 
+def motion_metrics(prediction_scenario_id, prediction_object_id,
+                   prediction_score, prediction_trajectory,
+                   ground_truth_scenario_id, ground_truth_object_id,
+                   ground_truth_object_type, ground_truth_is_valid,
+                   ground_truth_trajectory, config):
+  """Wraps motion_metrics. See metrics_ops.cc for full documentation."""
+  return metrics_module.motion_metrics(
+      prediction_scenario_id=prediction_scenario_id,
+      prediction_object_id=prediction_object_id,
+      prediction_score=prediction_score,
+      prediction_trajectory=prediction_trajectory,
+      ground_truth_scenario_id=ground_truth_scenario_id,
+      ground_truth_object_id=ground_truth_object_id,
+      ground_truth_object_type=ground_truth_object_type,
+      ground_truth_is_valid=ground_truth_is_valid,
+      ground_truth_trajectory=ground_truth_trajectory,
+      config=config)
+
+
 def tracking_metrics(prediction_bbox,
                      prediction_type,
                      prediction_score,

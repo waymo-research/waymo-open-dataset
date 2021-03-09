@@ -13,3 +13,13 @@ cc_library(
         "integral_types.h",
     ],
 )
+
+cc_library(
+    name = "status",
+    srcs = [
+        "status.cc",
+    ],
+    hdrs = [
+        "status.h",
+    ],
+)

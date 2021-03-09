@@ -138,6 +138,53 @@ class BreakdownGeneratorRange : public BreakdownGenerator {
   }
 };
 
+// This breakdown generator breaks down the objects based on their center
+// distance (w.r.t. SDC if the box is in vehicle frame).
+class BreakdownGeneratorSize : public BreakdownGenerator {
+ public:
+  ~BreakdownGeneratorSize() override {}
+
+  int Shard(const Object& object) const override {
+    double size = std::max(
+        std::max(object.object().box().length(), object.object().box().width()),
+        object.object().box().height());
+    constexpr float kLarge = 7.0;
+    const int shard_offset = 2 * (object.object().type() - 1);
+    if (shard_offset < 0) {
+      return -1;
+    }
+    if (size < kLarge) {
+      return 0 + shard_offset;
+    } else {
+      return 1 + shard_offset;
+    }
+  }
+
+  Breakdown::GeneratorId Id() const override { return Breakdown::SIZE; }
+
+  int NumShards() const override {
+    return 2 * static_cast<int>(Label::Type_MAX);
+  }
+
+  std::string ShardName(int shard) const override {
+    const Label::Type object_type = static_cast<Label::Type>(shard / 2 + 1);
+    CHECK_LE(object_type, Label::Type_MAX) << shard;
+    CHECK_GE(object_type, 1) << shard;
+
+    const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
+                                            "_", Label::Type_Name(object_type));
+    const int range_shard = shard % 2;
+    switch (range_shard) {
+      case 0:
+        return absl::StrCat(prefix, "_", "small");
+      case 1:
+        return absl::StrCat(prefix, "_", "large");
+      default:
+        LOG(FATAL) << "Code should not reach here.";
+    }
+  }
+};
+
 // This generator breaks down the results based on the magnitude of
 // the velocity vector.
 class BreakdownGeneratorVelocity : public BreakdownGenerator {
@@ -231,6 +278,8 @@ std::unique_ptr<BreakdownGenerator> BreakdownGenerator::Create(
       return absl::make_unique<BreakdownGeneratorVelocity>();
     case Breakdown::ALL_BUT_SIGN:
       return absl::make_unique<BreakdownGeneratorAllButSign>();
+    case Breakdown::SIZE:
+      return absl::make_unique<BreakdownGeneratorSize>();
     default:
       LOG(FATAL) << "Unimplemented breakdown generator "
                  << Breakdown::GeneratorId_Name(id);

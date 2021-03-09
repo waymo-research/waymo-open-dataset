@@ -14,6 +14,9 @@ description: "A detailed description of your method."
 
 method_link: "A link to your method, e.g. paper, code etc."
 
+# This is optional. Set this to evaluate your model latency.
+docker_image_source: "Link to the latency submission Docker image stored in Google Storage bucket or pushed to Google Container/Artifact Registry. See submission.proto for details."
+
 # See submission.proto for allowed types.
 sensor_type: LIDAR_ALL
 
@@ -24,5 +27,7 @@ object_types: TYPE_VEHICLE
 object_types: TYPE_PEDESTRIAN
 object_types: TYPE_CYCLIST
 
-# Inference latency in seconds.
+# Self-reported latency in seconds. This is NOT shown on the leaderboard for
+# now. But it is still recommended to set this. That is needed to evaluate
+# your model latency on our server.
 latency_second: -1

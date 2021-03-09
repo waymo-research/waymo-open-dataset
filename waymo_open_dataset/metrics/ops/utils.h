@@ -24,6 +24,9 @@ limitations under the License.
 #include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
+#include "waymo_open_dataset/protos/motion_metrics.pb.h"
+#include "waymo_open_dataset/protos/motion_submission.pb.h"
+#include "waymo_open_dataset/protos/scenario.pb.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -79,6 +82,37 @@ ParseObjectGroupedBySequenceFromTensors(
     const absl::optional<const tensorflow::Tensor>& detection_difficulty,
     const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
     const absl::optional<const tensorflow::Tensor>& object_speed);
+
+// Parse Scenario and ScenarioPredictions protos from tensors.
+//
+// - B: batch size containing joint predictions.
+// - A: number of objects in a joint prediction. 1 if mutual independence is
+//     assumed.
+// - K: top_K predictions per joint prediction.
+// - TP: number of steps to evaluate on. Matches len(config.step_measurement).
+// - TG: number of steps in the groundtruth track. Matches
+//     config.track_history_samples + 1 + config.future_history_samples.
+// - BR: number of breakdowns.
+//
+// prediction_trajectory: [B, K, A, TP, 2]. Predicted trajectories.
+//   The inner-most dimensions are [x, y].
+// prediction_score: [B, K]. Scores per joint prediction.
+// ground_truth_trajectory: [B, A, TG, 7]. Groundtruth trajectories.
+//   The inner-most dimensions are [x, y, length, width, heading, velocity_x,
+//   velocity_y].
+// ground_truth_is_valid: [B, A, TG]. Indicates whether a time stamp is valid
+//   per trajectory.
+// object_type: [B, A] Object type per trajectory.
+// object_id: [B, A]. Object IDs per trajectory.
+// scenario_id: [B]. Scenario IDs of all groundtruth trajectories.
+absl::flat_hash_map<std::string, std::pair<Scenario, ScenarioPredictions>>
+ParseScenarioAndPredictonsFromTensors(const tensorflow::Tensor& pred_trajectory,
+                                      const tensorflow::Tensor& pred_score,
+                                      const tensorflow::Tensor& gt_trajectory,
+                                      const tensorflow::Tensor& gt_is_valid,
+                                      const tensorflow::Tensor& object_type,
+                                      const tensorflow::Tensor& object_id,
+                                      const tensorflow::Tensor& scenario_id);
 
 }  // namespace open_dataset
 }  // namespace waymo

@@ -22,7 +22,7 @@ import "waymo_open_dataset/protos/metrics.proto";
 
 // If your inference results are too large to fit in one proto, you can shard
 // them to multiple files by sharding the inference_results field.
-// Next ID: 16.
+// Next ID: 17.
 message Submission {
   // These values correspond to the tasks on the waymo.com/open site.
   enum Task {
@@ -58,6 +58,14 @@ message Submission {
   // Link to paper or other link that describes the method.
   optional string method_link = 6;
 
+  // Link to the latency submission Docker image stored in Google Storage bucket
+  // or pushed to Google Container/Artifact Registry.
+  // Google Storage bucket example:
+  //   gs://example_bucket_name/example_folder/example_docker_image.tar.gz
+  // Google Container/Artifact Registry example:
+  //   us-west1-docker.pkg.dev/example-registry-name/example-folder/example-image@sha256:example-sha256-hash
+  optional string docker_image_source = 16;
+
   optional SensorType sensor_type = 12;
   // Number of frames used.
   optional int32 number_past_frames_exclude_current = 9;
@@ -69,7 +77,10 @@ message Submission {
   // Object types this submission contains. By default, we assume all types.
   repeated Label.Type object_types = 14;
 
-  // End to end inference latency.
+  // Self-reported end to end inference latency in seconds. This is NOT shown on
+  // the leaderboard for now. But it is still recommended to set this. Do not
+  // confuse this with the `docker_image_source` field above. That is needed to
+  // evaluate your model latency on our server.
   optional float latency_second = 15;
   reserved 7, 8;
 }

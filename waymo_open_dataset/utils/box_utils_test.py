@@ -108,6 +108,24 @@ class BoxUtilsTest(tf.test.TestCase):
           math.sin(math.pi * 0.25), 1.0, 2.0, 2.0, 2.0, math.pi * 0.35
       ]])
 
+  def test_no_points_in_zero_boxes(self):
+    # Unit size boxes centered at (center, 0, 2)
+    box, _, num_box = test_utils.generate_boxes([0.0], 1)
+    box = box[0, 0:num_box[0], :]
+    point = tf.constant(
+        [
+            [5.0, 0.0, 1.5],  # not in
+            [20.0, 0.0, 1.6],  # not in
+            [20.0, 0.0, 2.6],  # not in
+        ],
+        dtype=tf.float32)
+
+    point_in_box = box_utils.is_within_box_3d(point, box)
+
+    with self.test_session() as sess:
+      point_in_box = sess.run(point_in_box)
+      self.assertAllEqual(point_in_box, [[False], [False], [False]])
+
 
 if __name__ == "__main__":
   tf.compat.v1.disable_eager_execution()

@@ -16,8 +16,11 @@
 
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import breakdown_pb2
+from waymo_open_dataset.protos import scenario_pb2
 
-__all__ = ["get_breakdown_names_from_config"]
+__all__ = [
+    "get_breakdown_names_from_config", "get_breakdown_names_from_motion_config"
+]
 
 
 def _get_num_breakdown_shards(breakdown_generator_id):
@@ -34,6 +37,9 @@ def _get_num_breakdown_shards(breakdown_generator_id):
     return 1
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("ALL_BUT_SIGN")):
+    return 2
+  elif breakdown_generator_id == (
+      breakdown_pb2.Breakdown.GeneratorId.Value("SIZE")):
     return 2
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("OBJECT_TYPE")):
@@ -106,6 +112,14 @@ def _get_breakdown_shard_name(breakdown_generator_id, shard):
     return "{}_{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
         label_pb2.Label.Type.Name(object_type), range_shard_name)
+  elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
+      "SIZE"):
+    object_type = shard // 2 + 1
+    size_shard = shard % 2
+    size_shard_name = "small" if size_shard == 0 else "large"
+    return "{}_{}_{}".format(
+        breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
+        label_pb2.Label.Type.Name(object_type), size_shard_name)
   else:
     raise ValueError("Unsupported breakdown {}.".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)))
@@ -144,4 +158,37 @@ def get_breakdown_names_from_config(config):
         for dl in difficulty_levels:
           names.append("{}_{}".format(shard_name,
                                       label_pb2.Label.DifficultyLevel.Name(dl)))
+  return names
+
+
+def get_breakdown_names_from_motion_config(config):
+  r"""Returns names for each metrics breakdown defined by the config.
+
+  The output vector is ordered as:
+  [{object_type_i_step_j}]
+  j \in [0, len(step_configrations) for ith object_type]
+  i \in [0, num_object_types (currently at 4: VEHICLE, PEDESTRIAN, CYCLIST,
+  ALL)]
+
+  The implementation should be kept the same as metrics/ops/motion_metrics
+
+  Args:
+    config: the metrics config defined in protos/metrics.proto.
+
+  Returns:
+    A list of names for each breakdown defined by the config. The order is
+      guaranteed to be the same as all public metric lib that produces
+      breakdown metrics.
+  """
+  names = []
+  for object_type in (scenario_pb2.Track.TYPE_VEHICLE,
+                      scenario_pb2.Track.TYPE_PEDESTRIAN,
+                      scenario_pb2.Track.TYPE_CYCLIST):
+    for step in config.step_configurations:
+      names.append("{}_{}".format(
+          scenario_pb2.Track.ObjectType.Name(object_type),
+          step.measurement_step))
+  for step in config.step_configurations:
+    names.append("ALL_{}".format(step.measurement_step))
+
   return names

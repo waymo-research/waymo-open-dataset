@@ -22,6 +22,7 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/breakdown_generator.h"
 #include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
+#include "waymo_open_dataset/protos/motion_metrics.pb.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -34,6 +35,15 @@ namespace open_dataset {
 // k \in [0, num_difficulty_levels for each shard in the i-th breakdown
 //   generator).
 std::vector<std::string> GetBreakdownNamesFromConfig(const Config& config);
+
+// Returns names for each metrics breakdown defined by `MotionConfig`.
+// The output vector is ordered as:
+// [{object_type_i_step_j}]
+// j \in [0, len(step_configrations) for ith object_type]
+// i \in [0, num_object_types (currently at 4: VEHICLE, PEDESTRIAN, CYCLIST,
+// ALL)]
+std::vector<std::string> GetBreakdownNamesFromMotionConfig(
+    const MotionMetricsConfig& config);
 
 }  // namespace open_dataset
 }  // namespace waymo

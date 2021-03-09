@@ -85,6 +85,7 @@ def get_detection_metric_ops(
     ground_truth_difficulty,
     ground_truth_speed=None,
     recall_at_precision=None,
+    name_filter=None,
 ):
   """Returns dict of metric name to tuples of `(value_op, update_op)`.
 
@@ -123,6 +124,7 @@ def get_detection_metric_ops(
     ground_truth_speed: [N, 2] tensor with the vx, vy velocity for each object.
     recall_at_precision: a float within [0,1]. If set, returns a 3rd metric that
       reports the recall at the given precision.
+    name_filter: If set, only preserve metrics that contains the given filter.
 
   Returns:
     A dictionary of metric names to tuple of value_op and update_op.
@@ -162,9 +164,13 @@ def get_detection_metric_ops(
       config=config_str, **variable_map)
   breakdown_names = config_util.get_breakdown_names_from_config(config)
   metric_ops = {}
+  update_op_added = False
   for i, name in enumerate(breakdown_names):
-    if i == 0:
+    if name_filter is not None and name_filter not in name:
+      continue
+    if not update_op_added:
       metric_ops['{}/AP'.format(name)] = (ap[i], update_op)
+      update_op_added = True
     else:
       # Set update_op to be an no-op just in case if anyone runs update_ops in
       # multiple session.run()s.

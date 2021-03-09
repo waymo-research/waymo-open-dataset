@@ -78,9 +78,9 @@ Eigen::Isometry3d ToEigenTransform(const Transform& t) {
 double GetPixelTimestamp(
     CameraCalibration::RollingShutterReadOutDirection readout_direction,
     double shutter, double camera_trigger_time, double camera_readout_done_time,
-    int image_width, int image_height, int x, int y) {
+    int image_width, int image_height, double x, double y) {
   // Please see dataset.proto for an explanation of shutter timings.
-  const double readout_time =
+  const double readout_duration =
       camera_readout_done_time - camera_trigger_time - shutter;
 
   // Cameras have a rolling shutter, so each *sensor* row is exposed at a
@@ -88,36 +88,22 @@ double GetPixelTimestamp(
   // bottom row. Because the sensor itself may be rotated, this means that the
   // *image* is captured row-by-row or column-by-column, depending on
   // `readout_direction`.
-  double seconds_per_col = 0.0;
-  double seconds_per_row = 0.0;
-  bool flip_rows = false;
-  bool flip_cols = false;
-  switch (readout_direction) {
-    case CameraCalibration::TOP_TO_BOTTOM:
-      seconds_per_row = readout_time / image_height;
-      break;
-    case CameraCalibration::BOTTOM_TO_TOP:
-      seconds_per_row = readout_time / image_height;
-      flip_rows = true;
-      break;
-    case CameraCalibration::LEFT_TO_RIGHT:
-      seconds_per_col = readout_time / image_width;
-      break;
-    case CameraCalibration::RIGHT_TO_LEFT:
-      seconds_per_col = readout_time / image_width;
-      flip_cols = true;
-      break;
-    default:
-      LOG(FATAL) << "Should not reach here " << readout_direction;
-  }
-
   // Final time for this pixel is the initial trigger time + the column and row
   // offset (exactly one of these will be non-zero) + half the shutter time to
   // get the middle of the exposure.
-  return (camera_trigger_time +
-          (flip_cols ? (image_width - x) : x) * seconds_per_col +
-          (flip_rows ? (image_height - y) : y) * seconds_per_row +
-          shutter * 0.5);
+  const double base_ts = camera_trigger_time + 0.5 * shutter;
+  switch (readout_direction) {
+    case CameraCalibration::TOP_TO_BOTTOM:
+      return base_ts + readout_duration / image_height * y;
+    case CameraCalibration::BOTTOM_TO_TOP:
+      return base_ts + readout_duration / image_height * (image_height - y);
+    case CameraCalibration::LEFT_TO_RIGHT:
+      return base_ts + readout_duration / image_width * x;
+    case CameraCalibration::RIGHT_TO_LEFT:
+      return base_ts + readout_duration / image_width * (image_width - x);
+    default:
+      LOG(FATAL) << "Should not reach here " << readout_direction;
+  }
 }
 
 // In normalized camera, undistorts point coordinates via iteration.
@@ -218,6 +204,10 @@ CameraModel::CameraModel(const CameraCalibration& calibration)
 
 CameraModel::~CameraModel() {}
 
+double CameraModel::t_pose_offset() const {
+  return rolling_shutter_state_->t_pose_offset;
+}
+
 void CameraModel::PrepareProjection(const CameraImage& camera_image) {
   const Eigen::Isometry3d n_tfm_vehicle0 =
       ToEigenTransform(camera_image.pose());
@@ -254,7 +244,6 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
       principal_point_pixel.y());
   rolling_shutter_state_->t_pose_offset =
       camera_image.pose_timestamp() - t_principal_point;
-
   if (calibration_.rolling_shutter_direction() ==
           CameraCalibration::RIGHT_TO_LEFT ||
       calibration_.rolling_shutter_direction() ==

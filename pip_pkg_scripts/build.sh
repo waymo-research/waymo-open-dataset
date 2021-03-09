@@ -22,11 +22,10 @@
 set -e -x
 
 # Override the following env variables if necessary.
-export GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
-export TF_VERSION="${TF_VERSION:-1.15.0}"
+export TF_VERSION="${TF_VERSION:-2.3.0}"
 
 if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
   PYTHON="python${PYTHON_VERSION}"
@@ -50,7 +49,7 @@ python3 -m pip install --upgrade tensorflow-gpu=="${TF_VERSION}" --user
 
 bazel clean
 bazel build ...
-bazel test ...
+bazel test ... --test_output=all
 
 DST_DIR="/tmp/artifacts"
 rm -rf "$DST_DIR" || true

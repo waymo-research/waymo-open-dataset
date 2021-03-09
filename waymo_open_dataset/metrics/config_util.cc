@@ -23,6 +23,8 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/breakdown_generator.h"
 #include "waymo_open_dataset/metrics/metrics_utils.h"
 #include "waymo_open_dataset/protos/breakdown.pb.h"
+#include "waymo_open_dataset/protos/motion_metrics.pb.h"
+#include "waymo_open_dataset/protos/scenario.pb.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -41,6 +43,24 @@ std::vector<std::string> GetBreakdownNamesFromConfig(const Config& config) {
                                      Label::DifficultyLevel_Name(dl)));
       }
     }
+  }
+  return names;
+}
+
+std::vector<std::string> GetBreakdownNamesFromMotionConfig(
+    const MotionMetricsConfig& config) {
+  const std::vector<Track::ObjectType> types = {
+      Track::TYPE_VEHICLE, Track::TYPE_PEDESTRIAN, Track::TYPE_CYCLIST};
+  std::vector<std::string> names;
+  for (const auto& object_type : types) {
+    for (const auto& step : config.step_configurations()) {
+      names.push_back(absl::StrCat(Track::ObjectType_Name(object_type), "_",
+                                   step.measurement_step()));
+    }
+  }
+  // Iterate over the joint types.
+  for (const auto& step : config.step_configurations()) {
+    names.push_back(absl::StrCat("ALL_", step.measurement_step()));
   }
   return names;
 }

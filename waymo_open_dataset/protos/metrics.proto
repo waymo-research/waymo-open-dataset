@@ -22,6 +22,7 @@ package waymo.open_dataset;
 import "waymo_open_dataset/dataset.proto";
 import "waymo_open_dataset/label.proto";
 import "waymo_open_dataset/protos/breakdown.proto";
+import "waymo_open_dataset/protos/scenario.proto";
 
 // This is a wrapper on waymo.open_dataset.Label. We have another proto
 // to add more information such as class confidence for metrics computation.

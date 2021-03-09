@@ -1,0 +1,175 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+message Map {
+  // The full set of map features.
+  repeated MapFeature map_features = 1;
+
+  // A set of dynamic states per time step. These are ordered in consecutive
+  // time steps.
+  repeated DynamicState dynamic_states = 2;
+
+}
+
+message DynamicState {
+  // The timestamp associated with the dynamic feature data.
+  optional double timestamp_seconds = 1;
+
+  // The set of traffic signal states for the associated time step.
+  repeated TrafficSignalLaneState lane_states = 2;
+}
+
+message TrafficSignalLaneState {
+  // The ID for the MapFeature corresponding to the lane controlled by this
+  // traffic signal state.
+  optional int64 lane = 1;
+
+  enum State {
+    LANE_STATE_UNKNOWN = 0;
+
+    // States for traffic signals with arrows.
+    LANE_STATE_ARROW_STOP = 1;
+    LANE_STATE_ARROW_CAUTION = 2;
+    LANE_STATE_ARROW_GO = 3;
+
+    // Standard round traffic signals.
+    LANE_STATE_STOP = 4;
+    LANE_STATE_CAUTION = 5;
+    LANE_STATE_GO = 6;
+
+    // Flashing light signals.
+    LANE_STATE_FLASHING_STOP = 7;
+    LANE_STATE_FLASHING_CAUTION = 8;
+  }
+
+  // The state of the traffic signal.
+  optional State state = 2;
+
+  // The stopping point along the lane controlled by the traffic signal.
+  // This is the point where dynamic objects must stop when the signal is in a
+  // stop state.
+  optional MapPoint stop_point = 3;
+}
+
+message MapFeature {
+  // A unique ID to identify this feature.
+  optional int64 id = 1;
+
+  // Type specific data.
+  oneof feature_data {
+    LaneCenter lane = 3;
+    RoadLine road_line = 4;
+    RoadEdge road_edge = 5;
+    StopSign stop_sign = 7;
+    Crosswalk crosswalk = 8;
+    SpeedBump speed_bump = 9;
+  }
+}
+
+message MapPoint {
+  // Position in meters. The origin is an arbitrary location.
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+}
+
+message LaneCenter {
+  // The speed limit for this lane.
+  optional double speed_limit_mph = 1;
+
+  // Type of this lane.
+  enum LaneType {
+    TYPE_UNDEFINED = 0;
+    TYPE_FREEWAY = 1;
+    TYPE_SURFACE_STREET = 2;
+    TYPE_BIKE_LANE = 3;
+  }
+  optional LaneType type = 2;
+
+  // True if the lane interpolates between two other lanes.
+  optional bool interpolating = 3;
+
+  // The polyline data for the lane. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 8;
+}
+
+message RoadEdge {
+  // Type of this road edge.
+  enum RoadEdgeType {
+    TYPE_UNKNOWN = 0;
+    // Physical road boundary that doesn't have traffic on the other side (e.g.,
+    // a curb or the k-rail on the right side of a freeway).
+    TYPE_ROAD_EDGE_BOUNDARY = 1;
+    // Physical road boundary that separates the car from other traffic
+    // (e.g. a k-rail or an island).
+    TYPE_ROAD_EDGE_MEDIAN = 2;
+  }
+
+  // The type of road edge.
+  optional RoadEdgeType type = 1;
+
+  // The polyline defining the road edge. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 2;
+}
+
+message RoadLine {
+  // Type of this road line.
+  enum RoadLineType {
+    TYPE_UNKNOWN = 0;
+    TYPE_BROKEN_SINGLE_WHITE = 1;
+    TYPE_SOLID_SINGLE_WHITE = 2;
+    TYPE_SOLID_DOUBLE_WHITE = 3;
+    TYPE_BROKEN_SINGLE_YELLOW = 4;
+    TYPE_BROKEN_DOUBLE_YELLOW = 5;
+    TYPE_SOLID_SINGLE_YELLOW = 6;
+    TYPE_SOLID_DOUBLE_YELLOW = 7;
+    TYPE_PASSING_DOUBLE_YELLOW = 8;
+  }
+
+  // The type of the lane boundary.
+  optional RoadLineType type = 1;
+
+  // The polyline defining the road edge. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 2;
+}
+
+message StopSign {
+  // The IDs of lane features controlled by this stop sign.
+  repeated int64 lane = 1;
+
+  // The position of the stop sign.
+  optional MapPoint position = 2;
+}
+
+message Crosswalk {
+  // The polygon defining the outline of the crosswalk. The polygon is assumed
+  // to be closed (i.e. a segment exists between the last point and the first
+  // point).
+  repeated MapPoint polygon = 1;
+}
+
+message SpeedBump {
+  // The polygon defining the outline of the speed bump. The polygon is assumed
+  // to be closed (i.e. a segment exists between the last point and the first
+  // point).
+  repeated MapPoint polygon = 1;
+}
