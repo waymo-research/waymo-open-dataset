@@ -40,8 +40,7 @@ std::vector<std::string> GetBreakdownNamesFromConfig(const Config& config);
 // The output vector is ordered as:
 // [{object_type_i_step_j}]
 // j \in [0, len(step_configrations) for ith object_type]
-// i \in [0, num_object_types (currently at 4: VEHICLE, PEDESTRIAN, CYCLIST,
-// ALL)]
+// i \in [0, num_object_types (currently at 3: VEHICLE, PEDESTRIAN, CYCLIST)]
 std::vector<std::string> GetBreakdownNamesFromMotionConfig(
     const MotionMetricsConfig& config);
 

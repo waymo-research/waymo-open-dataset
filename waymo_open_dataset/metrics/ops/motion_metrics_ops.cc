@@ -29,6 +29,7 @@ limitations under the License.
 #include "tensorflow/core/lib/core/threadpool.h"
 #include "tensorflow/core/platform/cpu_info.h"
 #include "waymo_open_dataset/label.pb.h"
+#include "waymo_open_dataset/metrics/config_util.h"
 #include "waymo_open_dataset/metrics/motion_metrics.h"
 #include "waymo_open_dataset/metrics/ops/utils.h"
 #include "waymo_open_dataset/protos/breakdown.pb.h"
@@ -108,7 +109,7 @@ class MotionMetricsOp final : public OpKernel {
         co::Track::TYPE_VEHICLE, co::Track::TYPE_PEDESTRIAN,
         co::Track::TYPE_CYCLIST};
     const int num_breakdowns =
-        (expected_types.size() + 1) * config_.step_configurations().size();
+        ::waymo::open_dataset::GetBreakdownNamesFromMotionConfig(config_).size();
 
     std::map<std::pair<int, int>, int> indices;
 
@@ -146,26 +147,6 @@ class MotionMetricsOp final : public OpKernel {
         ++i;
       }
     }
-    for (const auto& step : config_.step_configurations()) {
-      auto found = indices.find({-1, step.measurement_step()});
-      if (found != indices.end()) {
-        const auto bundle = metrics.metrics_bundles(found->second);
-        output.min_ade.vec<float>()(i) = bundle.min_ade();
-        output.min_fde.vec<float>()(i) = bundle.min_fde();
-        output.miss_rate.vec<float>()(i) = bundle.miss_rate();
-        output.overlap_rate.vec<float>()(i) = bundle.overlap_rate();
-        output.mean_average_precision.vec<float>()(i) =
-            bundle.mean_average_precision();
-      } else {
-        output.min_ade.vec<float>()(i) = -1.0;
-        output.min_fde.vec<float>()(i) = -1.0;
-        output.miss_rate.vec<float>()(i) = -1.0;
-        output.overlap_rate.vec<float>()(i) = -1.0;
-        output.mean_average_precision.vec<float>()(i) = -1.0;
-      }
-      ++i;
-    }
-
     return output;
   }
 

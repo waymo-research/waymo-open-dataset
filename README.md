@@ -1,6 +1,12 @@
 # Waymo Open Dataset
 
-The Waymo Open Dataset was first launched in August 2019 with a perception dataset comprising high resolution sensor data and labels for 1,950 segments. In March 2021, we expanded the Waymo Open Dataset to also include a motion dataset comprising object trajectories and corresponding 3D maps for 103,354 segments. We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
+The Waymo Open Dataset was first launched in August 2019 with a perception dataset comprising high resolution sensor data and labels for 1,950 segments. We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
+
+## March 2021 Update
+
+We expanded the Waymo Open Dataset to also include a motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset. Please refer to the [Quick Start](docs/quick_start.md).
+
+Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](latency/README.md).
 
 ## Website
 

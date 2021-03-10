@@ -64,6 +64,7 @@ message Submission {
   //   gs://example_bucket_name/example_folder/example_docker_image.tar.gz
   // Google Container/Artifact Registry example:
   //   us-west1-docker.pkg.dev/example-registry-name/example-folder/example-image@sha256:example-sha256-hash
+  // Follow latency/README.md to create a docker file.
   optional string docker_image_source = 16;
 
   optional SensorType sensor_type = 12;

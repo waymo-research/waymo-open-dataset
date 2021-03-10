@@ -19,6 +19,12 @@ package on your own.
 pip3 install --upgrade pip
 ```
 
+### tf 2.4.0.
+
+``` bash
+pip3 install waymo-open-dataset-tf-2-3-0 --user
+```
+
 ### tf 2.3.0.
 
 ``` bash
@@ -32,12 +38,14 @@ pip3 install waymo-open-dataset-tf-2-2-0 --user
 ```
 
 ### tf 2.1.0.
+Note available for Python 3.8.
 
 ``` bash
 pip3 install waymo-open-dataset-tf-2-1-0 --user
 ```
 
 ### tf 2.0.0
+Note available for Python 3.8.
 
 ``` bash
 pip3 install waymo-open-dataset-tf-2-0-0 --user
@@ -50,7 +58,7 @@ Follow instructions in [pip_pkg_scripts](pip_pkg_scripts/README.md).
 
 *   g++ 5 or higher.
 *   python 3.6, 3.7 with TensorFlow 2.0.0, 2.1.0, 2.2.0, 2.3.0, 2.4.0
-*   python 3.8 with TensorFlow 2.3.0, 2.4.0
+*   python 3.8 with TensorFlow 2.2.0, 2.3.0, 2.4.0
 
 The code has two main parts. One is a utility written in C++ to compute the
 evaluation metrics. The other part is a set of
@@ -84,8 +92,7 @@ command: `bazel clean`
 ## Metrics Computation
 
 The core metrics library is written in C++, so it can be wrapped in other
-languages or frameworks. It can compute detection metrics (mAP) and tracking
-metrics (MOTA). See more information about the metrics on the
+languages or frameworks. It can compute detection metrics, tracking and motion prediction metrics. See more information about the metrics on the
 [website](https://waymo.com/open/next/).
 
 We provide command line tools and TensorFlow ops to call the detection metrics
@@ -132,14 +139,14 @@ waymo_open_dataset/metrics/python/...
 
 We provide a set of TensorFlow libraries in the utils directory to help with
 building models. Refer to the
-[Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial.ipynb)
+[Perception Colab tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial.ipynb) and [Motion Prediction tutorial](https://colab.sandbox.google.com/github/waymo-research/waymo-open-dataset/blob/master/tutorial/tutorial_motion.ipynb)
 for examples of their usage.
 
 ```bash
 bazel test waymo_open_dataset/utils/...
 ```
 
-## Submit to leaderboard
+## Submit to leaderboard (For Perception tasks only)
 
 1.  Run inference and dump the predictions in protos/metrics.proto:Objects
     format. Example code can be found in

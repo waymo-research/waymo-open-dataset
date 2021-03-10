@@ -58,10 +58,6 @@ std::vector<std::string> GetBreakdownNamesFromMotionConfig(
                                    step.measurement_step()));
     }
   }
-  // Iterate over the joint types.
-  for (const auto& step : config.step_configurations()) {
-    names.push_back(absl::StrCat("ALL_", step.measurement_step()));
-  }
   return names;
 }
 

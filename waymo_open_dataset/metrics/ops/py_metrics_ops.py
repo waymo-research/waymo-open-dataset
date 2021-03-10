@@ -54,22 +54,33 @@ def detection_metrics(prediction_bbox,
       config=config)
 
 
-def motion_metrics(prediction_scenario_id, prediction_object_id,
-                   prediction_score, prediction_trajectory,
-                   ground_truth_scenario_id, ground_truth_object_id,
-                   ground_truth_object_type, ground_truth_is_valid,
-                   ground_truth_trajectory, config):
+def motion_metrics(prediction_trajectory,
+                   prediction_score,
+                   ground_truth_trajectory,
+                   ground_truth_is_valid,
+                   object_type,
+                   config,
+                   object_id=None,
+                   scenario_id=None):
   """Wraps motion_metrics. See metrics_ops.cc for full documentation."""
+  if object_id is None:
+    batch_size = tf.shape(ground_truth_trajectory)[0]
+    num_agents = tf.shape(ground_truth_trajectory)[1]
+    object_id = tf.tile(
+        tf.range(num_agents, dtype=tf.int64)[tf.newaxis], (batch_size, 1))
+
+  if scenario_id is None:
+    batch_size = tf.shape(ground_truth_trajectory)[0]
+    scenario_id = tf.strings.as_string(tf.range(batch_size))
+
   return metrics_module.motion_metrics(
-      prediction_scenario_id=prediction_scenario_id,
-      prediction_object_id=prediction_object_id,
-      prediction_score=prediction_score,
       prediction_trajectory=prediction_trajectory,
-      ground_truth_scenario_id=ground_truth_scenario_id,
-      ground_truth_object_id=ground_truth_object_id,
-      ground_truth_object_type=ground_truth_object_type,
-      ground_truth_is_valid=ground_truth_is_valid,
+      prediction_score=prediction_score,
       ground_truth_trajectory=ground_truth_trajectory,
+      ground_truth_is_valid=ground_truth_is_valid,
+      object_type=object_type,
+      object_id=object_id,
+      scenario_id=scenario_id,
       config=config)
 
 

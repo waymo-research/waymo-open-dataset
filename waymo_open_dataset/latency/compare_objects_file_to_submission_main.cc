@@ -20,14 +20,25 @@ limitations under the License.
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <vector>
 #include <tuple>
 
 #include <glog/logging.h>
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/metrics/matcher.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 #include "waymo_open_dataset/protos/submission.pb.h"
+
+ABSL_FLAG(std::string, latency_result_filename, {},
+          "Comma separated list of sharded files that contains "
+          "car.open_dataset.Objects proto from the latency evaluation"
+          "scripts..");
+ABSL_FLAG(std::vector<std::string>, full_result_filenames, {},
+          "Comma separated list of sharded files that contains "
+          "car.open_dataset.Objects proto from user provided submissions.");
 
 namespace waymo {
 namespace open_dataset {
@@ -58,22 +69,28 @@ Config GetConfig(bool is_3d) {
 // Reads a file into an Objects proto. The file can either be a serialized
 // Objects proto or a serialized Submission proto (from which the Objects proto
 // will be extracted).
-Objects ReadObjectsFromFile(const std::string& path) {
-  Objects objs;
-  std::ifstream s(path);
-  const std::string content((std::istreambuf_iterator<char>(s)),
-                            std::istreambuf_iterator<char>());
-  if (!objs.ParseFromString(content)) {
-    LOG(ERROR) << "Could not parse " << path
-               << " as Objects file. Trying as a Submission file.";
-    Submission submission;
-    if (!submission.ParseFromString(content)) {
-      LOG(FATAL) << "Could not parse " << path << " as submission either.";
+Objects ReadObjectsFromFile(const std::vector<std::string>& paths) {
+  Objects objects_merged;
+  for (const auto& path : paths) {
+    Objects objs;
+    std::ifstream s(path);
+    const std::string content((std::istreambuf_iterator<char>(s)),
+                              std::istreambuf_iterator<char>());
+    if (!objs.ParseFromString(content)) {
+      LOG(ERROR) << "Could not parse " << path
+                 << " as Objects file. Trying as a Submission file.";
+      Submission submission;
+      if (!submission.ParseFromString(content)) {
+        LOG(FATAL) << "Could not parse " << path << " as submission either.";
+      }
+      objs = std::move(submission.inference_results());
     }
-    objs = std::move(submission.inference_results());
+    for (const auto& o : objs.objects()) {
+      *objects_merged.add_objects() = o;
+    }
   }
 
-  return objs;
+  return objects_merged;
 }
 
 // Compare the results from the latency evaluator to the results from the full
@@ -83,9 +100,9 @@ Objects ReadObjectsFromFile(const std::string& path) {
 // dimensions, confidence score, and class name) are nearly identical.
 // Returns 0 if the two sets of results match and 1 otherwise.
 int Compute(const std::string& latency_result_filename,
-            const std::string& full_result_filename) {
+            const std::vector<std::string>& full_result_filename) {
   using KeyTuple = std::tuple<std::string, int64, CameraName::Name>;
-  Objects latency_result_objs = ReadObjectsFromFile(latency_result_filename);
+  Objects latency_result_objs = ReadObjectsFromFile({latency_result_filename});
   Objects full_result_objs = ReadObjectsFromFile(full_result_filename);
 
   // Maps from frames (identified by their context name, timestamps, and camera
@@ -201,15 +218,13 @@ int Compute(const std::string& latency_result_filename,
 }  // namespace waymo
 
 int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    std::cerr << "Usage: " << argv[0]
-              << " prediction_filename ground_truth_filename.\n";
-    return 1;
-  }
+  absl::ParseCommandLine(argc, argv);
 
-  const std::string latency_result_filename(argv[1]);
-  const std::string full_result_filename(argv[2]);
+  const std::string latency_result_filename =
+      absl::GetFlag(FLAGS_latency_result_filename);
+  const std::vector<std::string> full_result_filennames =
+      absl::GetFlag(FLAGS_full_result_filenames);
 
   return waymo::open_dataset::Compute(latency_result_filename,
-                                    full_result_filename);
+                                    full_result_filennames);
 }

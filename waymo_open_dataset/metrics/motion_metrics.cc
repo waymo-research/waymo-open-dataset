@@ -1060,15 +1060,6 @@ MotionMetrics ComputeMotionMetrics(BucketedMetricsStats* total_stats) {
       ComputeBundle(step, object_type, &stats, bundle);
     }
   }
-
-  // Compute the metrics for accumulated stats across all object types.
-  std::map<int, MetricsStats> stats_all_types =
-      total_stats->AccumulateAcrossTypes();
-  for (auto& [step, stats] : stats_all_types) {
-    MotionMetricsBundle* bundle = metrics.add_metrics_bundles();
-    ComputeBundle(step, Track::TYPE_UNSET, &stats, bundle);
-  }
-
   return metrics;
 }
 

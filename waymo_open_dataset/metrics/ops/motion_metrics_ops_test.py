@@ -283,6 +283,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
                         [[[14, 0], [16, 0], [18, 0], [20, 0]],
                          [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
     val = self._RunEval(pred_score, pred_trajectory)
+    # 5 metrics.
+    self.assertEqual(len(val), 5)
+    # 3 steps.
+    self.assertEqual(len(val[0]), 3)
     # ADE of Vehicle.
     self.assertAlmostEqual(val[0][0], 5.97487, delta=1e-4)
     # FDE of Vehicle.

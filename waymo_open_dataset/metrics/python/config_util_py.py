@@ -167,8 +167,7 @@ def get_breakdown_names_from_motion_config(config):
   The output vector is ordered as:
   [{object_type_i_step_j}]
   j \in [0, len(step_configrations) for ith object_type]
-  i \in [0, num_object_types (currently at 4: VEHICLE, PEDESTRIAN, CYCLIST,
-  ALL)]
+  i \in [0, num_object_types (currently at 3: VEHICLE, PEDESTRIAN, CYCLIST)]
 
   The implementation should be kept the same as metrics/ops/motion_metrics
 
@@ -188,7 +187,4 @@ def get_breakdown_names_from_motion_config(config):
       names.append("{}_{}".format(
           scenario_pb2.Track.ObjectType.Name(object_type),
           step.measurement_step))
-  for step in config.step_configurations:
-    names.append("ALL_{}".format(step.measurement_step))
-
   return names

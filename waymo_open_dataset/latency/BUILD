@@ -15,6 +15,8 @@ cc_binary(
         "//waymo_open_dataset/metrics:matcher",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "//waymo_open_dataset/protos:submission_cc_proto",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
         "@com_google_glog//:glog",
     ],
 )
