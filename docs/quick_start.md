@@ -52,7 +52,7 @@ pip3 install waymo-open-dataset-tf-2-0-0 --user
 ```
 
 ## Compile in our docker container
-Follow instructions in [pip_pkg_scripts](pip_pkg_scripts/README.md).
+Follow instructions in [pip_pkg_scripts](../pip_pkg_scripts/README.md).
 
 ## Local compilation without docker system requirements
 

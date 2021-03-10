@@ -91,6 +91,7 @@ py_test(
         # Implicit numpy dependency.
         # Implicit tensorflow dependency.
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:motion_metrics_proto_py_pb2",
     ],
 )
 

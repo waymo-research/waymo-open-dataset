@@ -29,7 +29,6 @@ py_binary(
     deps = [
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
-        "//waymo_open_dataset/metrics/ops:motion_metrics_ops",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
         "//waymo_open_dataset/metrics/python:config_util_py",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
