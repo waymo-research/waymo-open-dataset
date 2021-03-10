@@ -6,7 +6,7 @@ The Waymo Open Dataset was first launched in August 2019 with a perception datas
 
 We expanded the Waymo Open Dataset to also include a motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset. Please refer to the [Quick Start](docs/quick_start.md).
 
-Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](latency/README.md).
+Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](waymo_open_dataset/latency/README.md).
 
 ## Website
 
