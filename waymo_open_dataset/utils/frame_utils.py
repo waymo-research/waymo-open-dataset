@@ -216,6 +216,8 @@ def convert_frame_to_dict(frame):
   """Convert the frame proto into a dict of numpy arrays.
 
   The keys, shapes, and data types are:
+    POSE: 4x4 float32 array
+
     For each lidar:
       <LIDAR_NAME>_BEAM_INCLINATION: H float32 array
       <LIDAR_NAME>_LIDAR_EXTRINSIC: 4x4 float32 array
@@ -303,5 +305,8 @@ def convert_frame_to_dict(frame):
   data_dict['TOP_RANGE_IMAGE_POSE'] = np.reshape(
       np.array(range_image_top_pose.data, np.float32),
       range_image_top_pose.shape.dims)
+
+  data_dict['POSE'] = np.reshape(
+      np.array(frame.pose.transform, np.float32), (4, 4))
 
   return data_dict

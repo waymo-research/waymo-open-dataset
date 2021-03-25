@@ -19,8 +19,9 @@ User-submitted models will take the form of a Python module named `wod_latency_s
 
 Converting from Frame protos to usable point clouds/images can be non-trivially expensive (involving various unzippings and transforms) and does not reflect a workflow that would realistically be present in an autonomous driving scenario. Thus, our evaluation of submitted models does not time the conversion from Frame proto to tensor. Instead, we have pre-extracted the dataset into numpy ndarrays. The keys, shapes, and data types are:
 
+* `POSE`: 4x4 float32 array with the vehicle pose.
 * For each lidar:
-  * `<LIDAR_NAME>_RANGE_IMAGE_FIRST_RETURN`: HxWx6 float32 array with the range image of the first return for this lidar. The six channels are range, intensity, elongation, x, y, and z. Pixels with range 0 are not valid points.
+  * `<LIDAR_NAME>_RANGE_IMAGE_FIRST_RETURN`: HxWx6 float32 array with the range image of the first return for this lidar. The six channels are range, intensity, elongation, x, y, and z. The x, y, and z values are in vehicle frame. Pixels with range 0 are not valid points.
   * `<LIDAR_NAME>_RANGE_IMAGE_SECOND_RETURN`: HxWx6 float32 array with the range image of the first return for this lidar. Same channels as the first return range image.
   * `<LIDAR_NAME>_BEAM_INCLINATION`: H-length float32 array with the beam inclinations for each row of range image for this lidar.
   * `<LIDAR_NAME>_LIDAR_EXTRINSIC`: 4x4 float32 array with the 4x4 extrinsic matrix for this lidar.
@@ -36,7 +37,11 @@ Converting from Frame protos to usable point clouds/images can be non-trivially 
 
 See the `LaserName.Name` and `CameraName.Name` enums in [dataset.proto](https://github.com/waymo-research/waymo-open-dataset/blob/eb7d74d1e11f40f5f8485ae8e0dc71f0944e8661/waymo_open_dataset/dataset.proto#L48-L69) for the valid lidar and camera name strings.
 
+To request a field from the previous frame, add `_1` to the end of the field name; for example, `TOP_RANGE_IMAGE_FIRST_RETURN_1` is the range image for the top lidar from the previous frame. Likewise, to request a field from two frames ago, add `_2` to the end of the field name (e.g. `TOP_RANGE_IMAGE_FIRST_RETURN_2`). Note that only two previous frames (in addition to the current frame, which does not require a subscript) can be requested.
+
 Users specify which of these arrays they would like their models to receive using the `DATASET_FORMAT` list of strings in their `wod_latency_submission` module. The requested arrays will then be passed to `run_model` as keyword arguments with the original names (e.g. `TOP_RANGE_IMAGE_FIRST_RETURN`).
+
+Note that the `convert_frame_to_dict` function in [utils/frame_utils.py](https://github.com/waymo-research/waymo-open-dataset/blob/ae21353bf721bf36e197654e67d482b5619a2302/waymo_open_dataset/utils/frame_utils.py#L215) will convert a Frame proto into a dictionary with the same keys and values defined above. However, it will not add the `_1` or `_2` suffix to the keys from earlier frames for multi-frame input.
 
 ## Examples
 
@@ -44,6 +49,7 @@ These examples all show different ways of making Docker images that contain subm
 
 * `tensorflow/from_saved_model`: Contains a basic PointPillars model that is executed from a [SavedModel](https://www.tensorflow.org/guide/saved_model) for the 3D detection challenge.
 * `pytorch/from_saved_model`: Contains a PV-RCNN model that loads saved weights and runs model inference using the input/output formats specified above for the 3D detection challenge.
+* `tensorflow/multiframe`: Contains a basic PointNet model that shows how to use multiple frames as input.
 * `2d_challenge/tensorflow`: Contains a pretrained EfficientDet model loaded from the [TF Model Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md) that outputs detections for the 2D detection challenge.
 * `2d_challenge/pytorch`: Contains a pretrained Faster R-CNN model loaded from [torchvision](https://pytorch.org/vision/0.8/models.html#faster-r-cnn) that outputs detections for the 2D detection challenge.
 

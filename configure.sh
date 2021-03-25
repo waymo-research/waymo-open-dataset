@@ -50,7 +50,7 @@ TF_NEED_CUDA=0
 # Check if it's installed
 TF_CFLAGS=""
 TF_LFLAGS=""
-if ${PIP} list | grep "tensorflow \|tensorflow-gpu\|tf-nightly" >/dev/null ; then
+if ${PIP} list | grep "tensorflow \|tensorflow-gpu\|tensorflow-cpu\|tf-nightly" >/dev/null ; then
   echo 'Using installed tensorflow'
   TF_CFLAGS=( $(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
   TF_LFLAGS="$(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
@@ -81,7 +81,7 @@ if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
   write_to_bazelrc "test --config=manylinux2010"
 fi
 
-export TF_VERSION="${TF_VERSION:-1.15.0}"
+export TF_VERSION="${TF_VERSION:-2.4.0}"
 export TF_VERSION_UNDERSCORE=$(echo $TF_VERSION | sed 's/\./_/g')
 export TF_VERSION_DASH=$(echo $TF_VERSION | sed 's/\./-/g')
 
