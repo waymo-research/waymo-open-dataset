@@ -20,6 +20,7 @@ User-submitted models will take the form of a Python module named `wod_latency_s
 Converting from Frame protos to usable point clouds/images can be non-trivially expensive (involving various unzippings and transforms) and does not reflect a workflow that would realistically be present in an autonomous driving scenario. Thus, our evaluation of submitted models does not time the conversion from Frame proto to tensor. Instead, we have pre-extracted the dataset into numpy ndarrays. The keys, shapes, and data types are:
 
 * `POSE`: 4x4 float32 array with the vehicle pose.
+* `TIMESTAMP`: int64 scalar with the timestamp of the frame in microseconds.
 * For each lidar:
   * `<LIDAR_NAME>_RANGE_IMAGE_FIRST_RETURN`: HxWx6 float32 array with the range image of the first return for this lidar. The six channels are range, intensity, elongation, x, y, and z. The x, y, and z values are in vehicle frame. Pixels with range 0 are not valid points.
   * `<LIDAR_NAME>_RANGE_IMAGE_SECOND_RETURN`: HxWx6 float32 array with the range image of the first return for this lidar. Same channels as the first return range image.
@@ -34,6 +35,10 @@ Converting from Frame protos to usable point clouds/images can be non-trivially 
   * `<CAMERA_NAME>_EXTRINSIC`: 4x4 float32 array with the 4x4 extrinsic matrix for this camera.
   * `<CAMERA_NAME>_WIDTH`: int64 scalar with the width of this camera image.
   * `<CAMERA_NAME>_HEIGHT`: int64 scalar with the height of this camera image.
+  * `<CAMERA_NAME>_POSE`: 4x4 float32 array with the vehicle pose at the timestamp of this camera image.
+  * `<CAMERA_NAME>_POSE_TIMESTAMP`: float32 scalar with the timestamp in seconds for the image (i.e. the timestamp that `<CAMERA_NAME>_POSE` is valid at).
+  * `<CAMERA_NAME>_ROLLING_SHUTTER_DURATION`: float32 scalar with the duration of the rolling shutter in seconds. See the documentation for `CameraImage.shutter in [dataset.proto](https://github.com/waymo-research/waymo-open-dataset/blob/eb7d74d1e11f40f5f8485ae8e0dc71f0944e8661/waymo_open_dataset/dataset.proto#L268-L283) for details.
+  * `<CAMERA_NAME>_ROLLING_SHUTTER_DIRECTION`: int64 scalar with the direction of the rolling shutter, expressed as the int value of a `CameraCalibration.RollingShutterReadOutDirection` enum.
 
 See the `LaserName.Name` and `CameraName.Name` enums in [dataset.proto](https://github.com/waymo-research/waymo-open-dataset/blob/eb7d74d1e11f40f5f8485ae8e0dc71f0944e8661/waymo_open_dataset/dataset.proto#L48-L69) for the valid lidar and camera name strings.
 

@@ -217,6 +217,7 @@ def convert_frame_to_dict(frame):
 
   The keys, shapes, and data types are:
     POSE: 4x4 float32 array
+    TIMESTAMP: int64 scalar
 
     For each lidar:
       <LIDAR_NAME>_BEAM_INCLINATION: H float32 array
@@ -233,6 +234,11 @@ def convert_frame_to_dict(frame):
       <CAMERA_NAME>_EXTRINSIC: 4x4 float32 array
       <CAMERA_NAME>_WIDTH: int64 scalar
       <CAMERA_NAME>_HEIGHT: int64 scalar
+      <CAMERA_NAME>_SDC_VELOCITY: 6 float32 array
+      <CAMERA_NAME>_POSE: 4x4 float32 array
+      <CAMERA_NAME>_POSE_TIMESTAMP: float32 scalar
+      <CAMERA_NAME>_ROLLING_SHUTTER_DURATION: float32 scalar
+      <CAMERA_NAME>_ROLLING_SHUTTER_DIRECTION: int64 scalar
 
   NOTE: This function only works in eager mode for now.
 
@@ -291,6 +297,15 @@ def convert_frame_to_dict(frame):
   for im in frame.images:
     cam_name_str = dataset_pb2.CameraName.Name.Name(im.name)
     data_dict[f'{cam_name_str}_IMAGE'] = tf.io.decode_jpeg(im.image).numpy()
+    data_dict[f'{cam_name_str}_SDC_VELOCITY'] = np.array([
+        im.velocity.v_x, im.velocity.v_y, im.velocity.v_z, im.velocity.w_x,
+        im.velocity.w_y, im.velocity.w_z
+    ], np.float32)
+    data_dict[f'{cam_name_str}_POSE'] = np.reshape(
+        np.array(im.pose.transform, np.float32), (4, 4))
+    data_dict[f'{cam_name_str}_POSE_TIMESTAMP'] = np.array(
+        im.pose_timestamp, np.float32)
+    data_dict[f'{cam_name_str}_ROLLING_SHUTTER_DURATION'] = np.array(im.shutter)
 
   # Save the intrinsics, 4x4 extrinsic matrix, width, and height of each camera.
   for c in frame.context.camera_calibrations:
@@ -300,6 +315,8 @@ def convert_frame_to_dict(frame):
         np.array(c.extrinsic.transform, np.float32), [4, 4])
     data_dict[f'{cam_name_str}_WIDTH'] = np.array(c.width)
     data_dict[f'{cam_name_str}_HEIGHT'] = np.array(c.height)
+    data_dict[f'{cam_name_str}_ROLLING_SHUTTER_DURATION'] = np.array(
+        c.rolling_shutter_direction)
 
   # Save the range image pixel pose for the top lidar.
   data_dict['TOP_RANGE_IMAGE_POSE'] = np.reshape(
@@ -308,5 +325,6 @@ def convert_frame_to_dict(frame):
 
   data_dict['POSE'] = np.reshape(
       np.array(frame.pose.transform, np.float32), (4, 4))
+  data_dict['TIMESTAMP'] = np.array(frame.timestamp_micros)
 
   return data_dict

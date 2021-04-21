@@ -38,7 +38,7 @@ docker run --rm \
 # submission.
 OBJS_FILE=$(mktemp)
 $MAKE_OBJS_CMD --results_dir $DETECTION_OUTPUT_DIR --output_file $OBJS_FILE
-$COMPARE_OBJS_TO_SUBMISSION_CMD $OBJS_FILE $SUBMISSION_PB
+$COMPARE_OBJS_TO_SUBMISSION_CMD --latency_result_filename $OBJS_FILE --full_result_filenames $SUBMISSION_PB
 
 # Clean up the outputs of the accuracy check.
 sudo rm -rf $DETECTION_OUTPUT_DIR $OBJS_FILE

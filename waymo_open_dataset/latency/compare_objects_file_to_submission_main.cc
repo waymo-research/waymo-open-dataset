@@ -33,12 +33,18 @@ limitations under the License.
 #include "waymo_open_dataset/protos/submission.pb.h"
 
 ABSL_FLAG(std::string, latency_result_filename, {},
-          "Comma separated list of sharded files that contains "
-          "car.open_dataset.Objects proto from the latency evaluation"
-          "scripts..");
+          "File that contains the car.open_dataset.Objects proto from the "
+          "latency evaluation scripts.");
 ABSL_FLAG(std::vector<std::string>, full_result_filenames, {},
           "Comma separated list of sharded files that contains "
           "car.open_dataset.Objects proto from user provided submissions.");
+ABSL_FLAG(double, iou_threshold, 0.9,
+          "IOU threshold to match detections between the latency evaluator "
+          "results and the user submission.");
+ABSL_FLAG(double, minimum_score, 0.0,
+          "Minimum score of detections to consider. Detections with scores "
+          "lower than this will not be checked for equivalence between the "
+          "submission proto and the latency evaluation script.");
 
 namespace waymo {
 namespace open_dataset {
@@ -48,15 +54,15 @@ namespace {
 // proto with ones from the objects file. Uses very high IOU thresholds since
 // the boxes should be nearly identical. If is_3d is true, this binary will do 3
 // IOU matching; otherwise, it will do 2D axis-aligned IOU matching.
-Config GetConfig(bool is_3d) {
+Config GetConfig(bool is_3d, double iou_threshold) {
   Config config;
 
   config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
-  config.add_iou_thresholds(0.9);
-  config.add_iou_thresholds(0.9);
-  config.add_iou_thresholds(0.9);
-  config.add_iou_thresholds(0.9);
-  config.add_iou_thresholds(0.9);
+  config.add_iou_thresholds(iou_threshold);
+  config.add_iou_thresholds(iou_threshold);
+  config.add_iou_thresholds(iou_threshold);
+  config.add_iou_thresholds(iou_threshold);
+  config.add_iou_thresholds(iou_threshold);
   if (is_3d) {
     config.set_box_type(Label::Box::TYPE_3D);
   } else {
@@ -77,8 +83,6 @@ Objects ReadObjectsFromFile(const std::vector<std::string>& paths) {
     const std::string content((std::istreambuf_iterator<char>(s)),
                               std::istreambuf_iterator<char>());
     if (!objs.ParseFromString(content)) {
-      LOG(ERROR) << "Could not parse " << path
-                 << " as Objects file. Trying as a Submission file.";
       Submission submission;
       if (!submission.ParseFromString(content)) {
         LOG(FATAL) << "Could not parse " << path << " as submission either.";
@@ -100,7 +104,8 @@ Objects ReadObjectsFromFile(const std::vector<std::string>& paths) {
 // dimensions, confidence score, and class name) are nearly identical.
 // Returns 0 if the two sets of results match and 1 otherwise.
 int Compute(const std::string& latency_result_filename,
-            const std::vector<std::string>& full_result_filename) {
+            const std::vector<std::string>& full_result_filename,
+            double iou_threshold, double minimum_score) {
   using KeyTuple = std::tuple<std::string, int64, CameraName::Name>;
   Objects latency_result_objs = ReadObjectsFromFile({latency_result_filename});
   Objects full_result_objs = ReadObjectsFromFile(full_result_filename);
@@ -120,20 +125,22 @@ int Compute(const std::string& latency_result_filename,
 
   bool is_2d;
   for (auto& o : *latency_result_objs.mutable_objects()) {
-    const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
-                       o.camera_name());
     is_2d = o.object().box().has_heading();
-    latency_result_map[key].push_back(std::move(o));
+    if (o.score() >= minimum_score) {
+      const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
+                         o.camera_name());
+      latency_result_map[key].push_back(std::move(o));
+    }
   }
   for (auto& o : *full_result_objs.mutable_objects()) {
-    const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
-                       o.camera_name());
-    full_result_map[key].push_back(std::move(o));
+    if (o.score() >= minimum_score) {
+      const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
+                         o.camera_name());
+      full_result_map[key].push_back(std::move(o));
+    }
   }
 
-  std::cout << latency_result_map.size() << " frames found.\n";
-
-  const Config config = GetConfig(is_2d);
+  const Config config = GetConfig(is_2d, iou_threshold);
   std::unique_ptr<Matcher> matcher = Matcher::Create(config);
 
   // This loop iterates over the key-value pairs in the latency result map
@@ -144,29 +151,34 @@ int Compute(const std::string& latency_result_filename,
     const auto& latency_results = kv.second;
     auto full_result_it = full_result_map.find(example_key);
     if (full_result_it == full_result_map.end()) {
-      std::cerr << print_key(example_key) << " not found in full results"
-                << std::endl;
+      LOG(FATAL) << print_key(example_key)
+                 << " in latency evaluator results but not in submission.";
       return 1;
     }
     const auto& full_results = full_result_it->second;
 
     const size_t num_detections = latency_results.size();
-    if (full_results.size() != num_detections) {
-      std::cerr << "Different number of detections found: " << num_detections
-                << " in latency results, " << full_results.size()
-                << " in full results for frame " << print_key(example_key)
-                << std::endl;
-      return 1;
+
+    // Keep track of the number of detections that do not match, starting by
+    // subtracting the number of detections in the latency results from the
+    // number of detections in the full results since that difference
+    // constitutes detections in the full results that cannot have a match in
+    // the latency results.
+    size_t unmatched_detections = 0;
+    if (full_results.size() > num_detections) {
+      unmatched_detections = full_results.size() - num_detections;
     }
 
     // Run the Hungarian matcher on the two sets of results from this frame.
     matcher->SetPredictions(latency_results);
     matcher->SetGroundTruths(full_results);
 
-    std::vector<int> subset(num_detections);
-    std::iota(subset.begin(), subset.end(), 0);
-    matcher->SetPredictionSubset(subset);
-    matcher->SetGroundTruthSubset(subset);
+    std::vector<int> pred_subset(num_detections);
+    std::iota(pred_subset.begin(), pred_subset.end(), 0);
+    matcher->SetPredictionSubset(pred_subset);
+    std::vector<int> gt_subset(full_results.size());
+    std::iota(gt_subset.begin(), gt_subset.end(), 0);
+    matcher->SetGroundTruthSubset(gt_subset);
 
     std::vector<int> matches;
     matcher->Match(&matches, nullptr);
@@ -175,35 +187,31 @@ int Compute(const std::string& latency_result_filename,
       const Object& latency_obj = latency_results[latency_ind];
       const int full_ind = matches[latency_ind];
       if (full_ind < 0) {
-        std::cerr << "No match found for object " << latency_ind
-                  << " for frame " << print_key(example_key) << std::endl;
-        return 1;
+        LOG(INFO) << "No match found for object " << latency_ind
+                  << " for frame " << print_key(example_key) << std::endl
+                  << latency_obj.DebugString();
+        ++unmatched_detections;
+        continue;
       }
       const Object& full_obj = full_results[full_ind];
 
-      if (std::abs(latency_obj.score() - full_obj.score()) > 1e-3 ||
-          std::abs(latency_obj.object().box().center_x() -
-                   full_obj.object().box().center_x()) > 1e-3 ||
-          std::abs(latency_obj.object().box().center_y() -
-                   full_obj.object().box().center_y()) > 1e-3 ||
-          std::abs(latency_obj.object().box().center_z() -
-                   full_obj.object().box().center_z()) > 1e-3 ||
-          std::abs(latency_obj.object().box().length() -
-                   full_obj.object().box().length()) > 1e-3 ||
-          std::abs(latency_obj.object().box().width() -
-                   full_obj.object().box().width()) > 1e-3 ||
-          std::abs(latency_obj.object().box().height() -
-                   full_obj.object().box().height()) > 1e-3 ||
-          std::abs(latency_obj.object().box().heading() -
-                   full_obj.object().box().heading()) > 1e-3 ||
-          latency_obj.object().type() != full_obj.object().type()) {
-        std::cerr << "Matched objects for frame " << print_key(example_key)
+      if (std::abs(latency_obj.score() - full_obj.score()) > 0.05) {
+        LOG(INFO) << "Matched objects for frame " << print_key(example_key)
                   << " are not identical: " << std::endl
                   << latency_obj.DebugString() << std::endl
                   << "vs" << std::endl
                   << full_obj.DebugString();
-        return 1;
+        ++unmatched_detections;
       }
+    }
+
+    if (unmatched_detections > 0.05 * num_detections) {
+      LOG(FATAL) << "Latency evaluator results did not match submission "
+                 << "proto for " << print_key(example_key) << std::endl
+                 << unmatched_detections << " detections out of "
+                 << num_detections << " did not match. This exceeds our "
+                 << "cut-off of 5% of detections being unmatched.";
+      return 1;
     }
 
     std::cout << "Results matched for " << print_key(example_key) << std::endl;
@@ -224,7 +232,10 @@ int main(int argc, char* argv[]) {
       absl::GetFlag(FLAGS_latency_result_filename);
   const std::vector<std::string> full_result_filennames =
       absl::GetFlag(FLAGS_full_result_filenames);
+  const double iou_threshold = absl::GetFlag(FLAGS_iou_threshold);
+  const double minimum_score = absl::GetFlag(FLAGS_minimum_score);
 
   return waymo::open_dataset::Compute(latency_result_filename,
-                                    full_result_filennames);
+                                    full_result_filennames, iou_threshold,
+                                    minimum_score);
 }

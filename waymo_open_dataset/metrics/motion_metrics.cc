@@ -140,7 +140,9 @@ Status ValidatePredictions(const MotionMetricsConfig& config,
                            const Scenario& scenario) {
   // Validate that the scenario IDs match.
   if (scenario_predictions.scenario_id() != scenario.scenario_id()) {
-    return InvalidArgumentError("Scenario IDs do not match.");
+    return InvalidArgumentError(
+        "Scenario IDs do not match : " + scenario_predictions.scenario_id() +
+        " vs. " + scenario.scenario_id());
   }
 
   // Validate the predictions trajectory lengths and construct a set of the

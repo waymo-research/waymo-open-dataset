@@ -148,5 +148,6 @@ if __name__ == '__main__':
       objects.objects.extend(make_object_list_from_subdir(
           timestamp_dir, context_name, int(timestamp_micros)))
 
+  print('Got ', len(objects.objects), 'objects')
   with open(args.output_file, 'wb') as f:
     f.write(objects.SerializeToString())
