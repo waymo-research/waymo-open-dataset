@@ -38,6 +38,31 @@ namespace waymo {
 namespace open_dataset {
 namespace {
 
+const std::unordered_map<Track::ObjectType, int>& GetObjectTypePriority() {
+  static const auto* priorities =
+      new std::unordered_map<Track::ObjectType, int>({
+          {Track::TYPE_UNSET, 0},
+          {Track::TYPE_OTHER, 1},
+          {Track::TYPE_VEHICLE, 2},
+          {Track::TYPE_PEDESTRIAN, 3},
+          {Track::TYPE_CYCLIST, 4},
+      });
+  return *priorities;
+}
+
+const std::unordered_map<TrajectoryType, int>& GetTrajectoryTypePriority() {
+  static const auto* priorities = new std::unordered_map<TrajectoryType, int>(
+      {{TrajectoryType::STATIONARY, 0},
+       {TrajectoryType::STRAIGHT, 1},
+       {TrajectoryType::STRAIGHT_RIGHT, 2},
+       {TrajectoryType::STRAIGHT_LEFT, 3},
+       {TrajectoryType::RIGHT_TURN, 4},
+       {TrajectoryType::LEFT_TURN, 5},
+       {TrajectoryType::LEFT_U_TURN, 6},
+       {TrajectoryType::RIGHT_U_TURN, 7}});
+  return *priorities;
+}
+
 // Validate the metrics configuration.
 Status ValidateConfig(const MotionMetricsConfig& config) {
   // Validate the configuration.
@@ -704,28 +729,54 @@ Status ComputeMeanAveragePrecision(
       prediction.joint_predictions(0).trajectories().empty()) {
     return OkStatus();
   }
-  const SingleTrajectory& trajectory =
-      prediction.joint_predictions(0).trajectories(0);
-  ConstTrackPtr track_ptr;
-  Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
-  if (!status.ok()) {
-    return status;
-  }
-  absl::optional<TrajectoryType> trajectory_type =
-      ClassifyTrack(config.track_history_samples(), *track_ptr);
 
-  // If the track does not have enough valid states, return an empty result.
-  if (!trajectory_type) {
+  // Find the trajectory_type that best describes the prediction. If it is a
+  // joint prediction, the trajectory_type is selected according pre-defined
+  // priorities among all agents.
+  TrajectoryType type = TrajectoryType::STATIONARY;
+  bool valid_type_found = false;
+
+  const std::unordered_map<TrajectoryType, int>& priorities =
+      GetTrajectoryTypePriority();
+
+  for (const auto& trajectory :
+       prediction.joint_predictions(0).trajectories()) {
+    ConstTrackPtr track_ptr;
+
+    Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
+    if (!status.ok()) {
+      return status;
+    }
+
+    absl::optional<TrajectoryType> trajectory_type =
+        ClassifyTrack(config.track_history_samples(), *track_ptr);
+
+    if (trajectory_type) {
+      if (priorities.find(*trajectory_type) == priorities.end()) {
+        return InvalidArgumentError(
+            absl::StrCat("trajectory_type", *trajectory_type,
+                         " not defined in GetObjectTypePriority"));
+      }
+
+      if (priorities.at(*trajectory_type) > priorities.at(type)) {
+        type = *trajectory_type;
+      }
+      valid_type_found = true;
+    }
+  }
+
+  // If the tracks do not have enough valid states, return an empty result.
+  if (!valid_type_found) {
     return OkStatus();
   }
 
   // Bin right u-turns with right turns.
-  if (*trajectory_type == TrajectoryType::RIGHT_U_TURN) {
-    *trajectory_type = TrajectoryType::RIGHT_TURN;
+  if (type == TrajectoryType::RIGHT_U_TURN) {
+    type = TrajectoryType::RIGHT_TURN;
   }
 
   // Compute the P/R stats for the predictions.
-  PredictionStats& bucket = result->pr_buckets[*trajectory_type];
+  PredictionStats& bucket = result->pr_buckets[type];
   std::vector<int> sorted_indices =
       GetSortedTrajectoryIndices(config, prediction);
   bool already_found_positive = false;
@@ -781,20 +832,43 @@ Status ComputeAllMetrics(
         multi_modal_prediction.joint_predictions(0).trajectories().empty()) {
       return OkStatus();
     }
-    const SingleTrajectory& trajectory =
-        multi_modal_prediction.joint_predictions(0).trajectories(0);
-    ConstTrackPtr track_ptr;
-    Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
-    if (!status.ok()) {
-      return status;
+
+    // Find the object_type that best describes the prediction. If it is a joint
+    // prediction, the type is selected according predefined priorities among
+    // all agents.
+    Track::ObjectType object_type = Track::TYPE_UNSET;
+
+    const std::unordered_map<Track::ObjectType, int>& priorities =
+        GetObjectTypePriority();
+
+    for (const auto& trajectory :
+         multi_modal_prediction.joint_predictions(0).trajectories()) {
+      ConstTrackPtr track_ptr;
+      Status status =
+          GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
+      if (!status.ok()) {
+        return status;
+      }
+
+      if (priorities.find(track_ptr->object_type()) == priorities.end()) {
+        return InvalidArgumentError(
+            absl::StrCat("object_type ", track_ptr->object_type(),
+                         " not defined in GetObjectTypePriority"));
+      }
+
+      if (priorities.at(track_ptr->object_type()) >
+          priorities.at(object_type)) {
+        object_type = track_ptr->object_type();
+      }
     }
+
     // Compute the per time step metrics.
     for (const auto& step_config : config.step_configurations()) {
       const int evaluation_step = step_config.measurement_step();
 
       // Accumulate the results into the stats for this object's type.
       std::map<int, MetricsStats>& step_to_metric_stats =
-          result->stats[track_ptr->object_type()];
+          result->stats[object_type];
       MetricsStats& metrics_stats = step_to_metric_stats[evaluation_step];
 
       Status status;

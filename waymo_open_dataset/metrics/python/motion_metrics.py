@@ -58,6 +58,8 @@ def get_motion_metric_ops(config,
                           prediction_score,
                           ground_truth_trajectory,
                           ground_truth_is_valid,
+                          prediction_ground_truth_indices,
+                          prediction_ground_truth_indices_mask,
                           object_type,
                           object_id=None,
                           scenario_id=None):
@@ -70,42 +72,56 @@ def get_motion_metric_ops(config,
 
   All shapes except for the batch size must be statically defined.
 
-  Notation:
-    - B: batch size containing joint predictions.
-    - A: number of objects in a joint prediction. 1 if mutual independence
-      between agents is assumed.
+  - Notations:
+    - B: batch size. Each batch should contain 1 scenario.
+    - M: Number of joint prediction groups to predict per scenario.
+    - N: number of agents in a joint prediction. 1 if mutual independence is
+        assumed between agents.
     - K: top_K predictions per joint prediction.
-    - TP: number of steps to evaluate on. Should match
-        len(config.step_measurement).
-    - TG: number of steps in the groundtruth track. Should match
+    - A: number of agents in the groundtruth.
+    - TP: number of steps to evaluate on. Matches len(config.step_measurement).
+    - TG: number of steps in the groundtruth track. Matches
         config.track_history_samples + 1 + config.future_history_samples.
+    - BR: number of breakdowns.
 
   Args:
     config: The metrics config defined in protos/metrics.proto.
-    prediction_trajectory: [B, K, A, TP, 2] float. Predicted trajectories. The
-    prediction_score: [B, K] float. Scores per joint prediction.
-    ground_truth_trajectory: [B, A, TG, 7] float. Groundtruth trajectories. The
+    prediction_trajectory: [B, M, K, N, TP, 2]. Predicted trajectories. The
+      inner-most dimensions are [x, y].
+    prediction_score: [B, M, K]. Scores per joint prediction.
+    ground_truth_trajectory: [B, A, TG, 7]. Groundtruth trajectories. The
       inner-most dimensions are [x, y, length, width, heading, velocity_x,
       velocity_y].
-    ground_truth_is_valid: [B, A, TG] bool. Indicates whether a time stamp is
-      valid per trajectory.
-    object_type: [B, A] int64. Object type per trajectory.
-    object_id: [B, A] int64. Optional. Helps with debugging messages.
-    scenario_id: [B] string. Optional. Helps with debugging messages.
+    ground_truth_is_valid: [B, A, TG]. Indicates whether a time stamp is valid
+      per trajectory. If all timestamps for a trajectory are invalid, the
+      trajectory is assumed invalid.
+    prediction_ground_truth_indices: [B, M, N]. Indices to gather the
+      predictions of shape [B, M, ?, N] from the groundtruth of shape [B, A],
+      values must be between [0, A).
+    prediction_ground_truth_indices_mask: [B, M, N]. A validity mask for
+      `prediction_ground_truth_indices`.
+    object_type: [B, A] Object type per trajectory.
+    object_id: [B, A]. Object IDs per trajectory.
+    scenario_id: [B]. Scenario IDs of all groundtruth trajectories.
 
   Returns:
     A dictionary of metric names to tuple of value_op and update_op.
   """
-  _, top_k, num_agents, num_pred_steps, _ = prediction_trajectory.shape.as_list(
-  )
+  (_, num_groups, top_k, num_agents, num_pred_steps,
+   _) = prediction_trajectory.shape.as_list()
   _, _, num_gt_steps, _ = ground_truth_trajectory.shape.as_list()
 
-  assert prediction_trajectory.shape.as_list()[4] == 2
+  assert prediction_trajectory.shape.as_list()[5] == 2
   assert ground_truth_trajectory.shape.as_list()[1] == num_agents
   assert ground_truth_trajectory.shape.as_list()[3] == 7
   assert ground_truth_is_valid.shape.as_list()[1] == num_agents
   assert ground_truth_is_valid.shape.as_list()[2] == num_gt_steps
-  assert prediction_score.shape.as_list()[1] == top_k
+  assert prediction_ground_truth_indices.shape.as_list()[1] == num_groups
+  assert prediction_ground_truth_indices.shape.as_list()[2] == num_agents
+  assert prediction_ground_truth_indices_mask.shape.as_list()[1] == num_groups
+  assert prediction_ground_truth_indices_mask.shape.as_list()[2] == num_agents
+  assert prediction_score.shape.as_list()[1] == num_groups
+  assert prediction_score.shape.as_list()[2] == top_k
   assert object_type.shape.as_list()[1] == num_agents
 
   if object_id is None:
@@ -126,9 +142,16 @@ def get_motion_metric_ops(config,
       'ground_truth_is_valid':
           (ground_truth_is_valid, [0, num_agents, num_gt_steps], tf.bool),
       'prediction_trajectory':
-          (prediction_trajectory, [0, top_k, num_agents, num_pred_steps,
-                                   2], tf.float32),
-      'prediction_score': (prediction_score, [0, top_k], tf.float32),
+          (prediction_trajectory,
+           [0, num_groups, top_k, num_agents, num_pred_steps, 2], tf.float32),
+      'prediction_score': (prediction_score, [0, num_groups,
+                                              top_k], tf.float32),
+      'prediction_ground_truth_indices':
+          (prediction_ground_truth_indices, [0, num_groups,
+                                             num_agents], tf.int64),
+      'prediction_ground_truth_indices_mask':
+          (prediction_ground_truth_indices_mask, [0, num_groups,
+                                                  num_agents], tf.bool),
       'object_type': (object_type, [0, num_agents], tf.int64),
       'object_id': (object_id, [0, num_agents], tf.int64),
       'scenario_id': (scenario_id, [0], tf.string)

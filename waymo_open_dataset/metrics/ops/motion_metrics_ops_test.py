@@ -67,12 +67,18 @@ class MotionMetricsOpsTest(tf.test.TestCase):
                                  [-4, 0, 1, 1, 3.14159, -10.0, 0.0],
                                  [-5, 0, 1, 1, 3.14159, -10.0, 0.0]]],
                                [1, 2, 5, 7])
+
+    pred_gt_indices = np.reshape([0, 1], (1, 1, 2))
+    pred_gt_indices_mask = np.ones((1, 1, 2)) > 0.0
+
     return {
         'scenario_id': gt_scenario_id,
         'object_id': gt_object_id,
         'object_type': gt_object_type,
         'gt_is_valid': gt_is_valid,
         'gt_trajectory': gt_trajectory,
+        'pred_gt_indices': pred_gt_indices,
+        'pred_gt_indices_mask': pred_gt_indices_mask,
     }
 
   def setUp(self):
@@ -95,6 +101,8 @@ class MotionMetricsOpsTest(tf.test.TestCase):
            prediction_score=pred_score,
            ground_truth_trajectory=gt['gt_trajectory'],
            ground_truth_is_valid=gt['gt_is_valid'],
+           prediction_ground_truth_indices=gt['pred_gt_indices'],
+           prediction_ground_truth_indices_mask=gt['pred_gt_indices_mask'],
            object_type=gt['object_type'],
            object_id=gt['object_id'],
            scenario_id=gt['scenario_id'])
@@ -103,19 +111,37 @@ class MotionMetricsOpsTest(tf.test.TestCase):
       return sess.run([min_ade, min_fde, miss_rate, overlap_rate, mean_ap])
 
   def testComputeMissRateNoMisses(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
+
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 0.0)
     # mean_ap of Vehicle.
     self.assertEqual(val[4][0], 1.0)
 
+  def testComputeMissRateNoMisses2(self):
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[-2, 0], [-3, 0], [-4, 0], [-5, 0]],
+                                  [[4, 4], [6, 6], [8, 8], [10, 10]]],
+                                 (1, 1, 1, 2, 4, 2))
+
+    gt = copy.deepcopy(self._gt)
+    gt['pred_gt_indices'] = np.reshape([1, 0], (1, 1, 2))
+
+    val = self._RunEval(pred_score, pred_trajectory, gt=gt)
+    # miss_rate of Vehicle.
+    self.assertEqual(val[2][0], 0.0)
+    # mean_ap of Vehicle.
+    self.assertEqual(val[4][0], 1.0)
+
   def testComputeMissRateLateral_2(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 1.01], [-3, 1.01], [-4, 1.01], [-5, 1.01]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape(
+        [[[4, 4], [6, 6], [8, 8], [10, 10]],
+         [[-2, 1.01], [-3, 1.01], [-4, 1.01], [-5, 1.01]]], (1, 1, 1, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 1.0)
@@ -123,9 +149,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.0)
 
   def testComputeMissRateLateral_1(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [9.292, 10.708]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [9.292, 10.708]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 1.0)
@@ -133,9 +160,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.0)
 
   def testComputeMissRateLongitudinal_2(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 1.0)
@@ -143,9 +171,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.0)
 
   def testComputeMissRateLongitudinal_1(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [11.415, 11.415]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [11.415, 11.415]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 1.0)
@@ -153,9 +182,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.0)
 
   def testComputeNoMissLongitudinal_1(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [11.414, 11.414]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [11.414, 11.414]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 0.0)
@@ -163,9 +193,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 1.0)
 
   def testComputeVelocityScalingLatitudinal(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0.75]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-5, 0.75]]],
+                                 (1, 1, 1, 2, 4, 2))
 
     config = motion_metrics_pb2.MotionMetricsConfig()
     config.CopyFrom(self._config)
@@ -202,9 +233,10 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[2][0], 0.0)
 
   def testComputeVelocityScalingLongitudinal(self):
-    pred_score = [[0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-6.5, 0]]]]]
+    pred_score = np.reshape([0.5], (1, 1, 1))
+    pred_trajectory = np.reshape([[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                  [[-2, 0], [-3, 0], [-4, 0], [-6.5, 0]]],
+                                 (1, 1, 1, 2, 4, 2))
 
     config = motion_metrics_pb2.MotionMetricsConfig()
     config.CopyFrom(self._config)
@@ -241,11 +273,12 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[2][0], 0.0)
 
   def testComputeNoMissLateral_2(self):
-    pred_score = [[0.8, 0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [9.294, 10.706]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
-                        [[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.8, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape([[[[4, 4], [6, 6], [8, 8], [9.294, 10.706]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]],
+                                  [[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]],
+                                 (1, 1, 2, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 0.0)
@@ -253,11 +286,12 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 1.0)
 
   def testTwoJointPredictionsNoMiss(self):
-    pred_score = [[0.8, 0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]],
-                        [[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.8, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape([[[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]],
+                                  [[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]],
+                                 (1, 1, 2, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 0.0)
@@ -265,11 +299,12 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.5)
 
   def testTwoJointPredictionsMiss(self):
-    pred_score = [[0.8, 0.5]]
-    pred_trajectory = [[[[[4, 4], [6, 6], [8, 8], [10, 10]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]],
-                        [[[4, 4], [6, 6], [8, 8], [14, 14]],
-                         [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]]]
+    pred_score = np.reshape([0.8, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape([[[[4, 4], [6, 6], [8, 8], [10, 10]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-7.01, 0]]],
+                                  [[[4, 4], [6, 6], [8, 8], [14, 14]],
+                                   [[-2, 0], [-3, 0], [-4, 0], [-5, 0]]]],
+                                 (1, 1, 2, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # miss_rate of Vehicle.
     self.assertEqual(val[2][0], 1.0)
@@ -277,11 +312,11 @@ class MotionMetricsOpsTest(tf.test.TestCase):
     self.assertEqual(val[4][0], 0.0)
 
   def testComputeMinADE(self):
-    pred_score = [[0.5, 0.5]]
-    pred_trajectory = [[[[[4, 0], [6, 0], [8, 0], [10, 0]],
-                         [[0, 2], [0, 3], [0, 4], [0, 5]]],
-                        [[[14, 0], [16, 0], [18, 0], [20, 0]],
-                         [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
+    pred_score = np.reshape([0.5, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape(
+        [[[[4, 0], [6, 0], [8, 0], [10, 0]], [[0, 2], [0, 3], [0, 4], [0, 5]]],
+         [[[14, 0], [16, 0], [18, 0], [20, 0]],
+          [[0, 22], [0, 23], [0, 24], [0, 25]]]], (1, 1, 2, 2, 4, 2))
     val = self._RunEval(pred_score, pred_trajectory)
     # 5 metrics.
     self.assertEqual(len(val), 5)

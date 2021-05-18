@@ -9,11 +9,9 @@ for a quick demo of the installation and data format.
 
 As a first step, please visit https://www.waymo.com/open to gain access to the Waymo Open Dataset.
 
-## Use pre-compiled pip/pip3 packages
+## Use pre-compiled pip/pip3 packages for Linux
 
-We only pre-compiled the package for Python 3.6, 3.7, 3.8. If you need the lib
-for a different python version, follow steps in pip_pkg_scripts to build pip
-package on your own.
+We only pre-compiled the package for Python 3.6, 3.7, 3.8 for Linux. If you need the lib for a different python version, follow steps in pip_pkg_scripts to build pip package on your own.
 
 ``` bash
 pip3 install --upgrade pip
@@ -22,7 +20,7 @@ pip3 install --upgrade pip
 ### tf 2.4.0.
 
 ``` bash
-pip3 install waymo-open-dataset-tf-2-3-0 --user
+pip3 install waymo-open-dataset-tf-2-4-0 --user
 ```
 
 ### tf 2.3.0.

@@ -39,12 +39,14 @@ Converting from Frame protos to usable point clouds/images can be non-trivially 
   * `<CAMERA_NAME>_POSE_TIMESTAMP`: float32 scalar with the timestamp in seconds for the image (i.e. the timestamp that `<CAMERA_NAME>_POSE` is valid at).
   * `<CAMERA_NAME>_ROLLING_SHUTTER_DURATION`: float32 scalar with the duration of the rolling shutter in seconds. See the documentation for `CameraImage.shutter in [dataset.proto](https://github.com/waymo-research/waymo-open-dataset/blob/eb7d74d1e11f40f5f8485ae8e0dc71f0944e8661/waymo_open_dataset/dataset.proto#L268-L283) for details.
   * `<CAMERA_NAME>_ROLLING_SHUTTER_DIRECTION`: int64 scalar with the direction of the rolling shutter, expressed as the int value of a `CameraCalibration.RollingShutterReadOutDirection` enum.
+  * `<CAMERA_NAME>_CAMERA_TRIGGER_TIME`: float32 scalar with the time when the camera was triggered.
+  * `<CAMERA_NAME>_CAMERA_READOUT_DONE_TIME`: float32 scalar with the time when the last readout finished. The difference between this and the trigger time includes the exposure time and the actual sensor readout time.
 
 See the `LaserName.Name` and `CameraName.Name` enums in [dataset.proto](https://github.com/waymo-research/waymo-open-dataset/blob/eb7d74d1e11f40f5f8485ae8e0dc71f0944e8661/waymo_open_dataset/dataset.proto#L48-L69) for the valid lidar and camera name strings.
 
 To request a field from the previous frame, add `_1` to the end of the field name; for example, `TOP_RANGE_IMAGE_FIRST_RETURN_1` is the range image for the top lidar from the previous frame. Likewise, to request a field from two frames ago, add `_2` to the end of the field name (e.g. `TOP_RANGE_IMAGE_FIRST_RETURN_2`). Note that only two previous frames (in addition to the current frame, which does not require a subscript) can be requested.
 
-Users specify which of these arrays they would like their models to receive using the `DATASET_FORMAT` list of strings in their `wod_latency_submission` module. The requested arrays will then be passed to `run_model` as keyword arguments with the original names (e.g. `TOP_RANGE_IMAGE_FIRST_RETURN`).
+Users specify which of these arrays they would like their models to receive using the `DATA_FIELDS` list of strings in their `wod_latency_submission` module. The requested arrays will then be passed to `run_model` as keyword arguments with the original names (e.g. `TOP_RANGE_IMAGE_FIRST_RETURN`).
 
 Note that the `convert_frame_to_dict` function in [utils/frame_utils.py](https://github.com/waymo-research/waymo-open-dataset/blob/ae21353bf721bf36e197654e67d482b5619a2302/waymo_open_dataset/utils/frame_utils.py#L215) will convert a Frame proto into a dictionary with the same keys and values defined above. However, it will not add the `_1` or `_2` suffix to the keys from earlier frames for multi-frame input.
 

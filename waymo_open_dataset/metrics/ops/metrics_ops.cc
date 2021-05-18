@@ -85,6 +85,8 @@ REGISTER_OP("MotionMetrics")
     .Input("prediction_score: float")
     .Input("ground_truth_trajectory: float")
     .Input("ground_truth_is_valid: bool")
+    .Input("prediction_ground_truth_indices: int64")
+    .Input("prediction_ground_truth_indices_mask: bool")
     .Input("object_type: int64")
     .Input("object_id: int64")
     .Input("scenario_id: string")
@@ -101,23 +103,31 @@ REGISTER_OP("MotionMetrics")
 Computes motion metrics.
 
 - Notations:
-- B: batch size containing joint predictions.
-- A: number of objects in a joint prediction. 1 if mutual independence is
-    assumed.
+- B: batch size. Each batch should contain 1 scenario.
+- M: Number of joint prediction groups to predict per scenario.
+- N: number of agents in a joint prediction. 1 if mutual independence is
+    assumed between agents.
 - K: top_K predictions per joint prediction.
+- A: number of agents in the groundtruth.
 - TP: number of steps to evaluate on. Matches len(config.step_measurement).
 - TG: number of steps in the groundtruth track. Matches
     config.track_history_samples + 1 + config.future_history_samples.
 - BR: number of breakdowns.
 
-prediction_trajectory: [B, K, A, TP, 2]. Predicted trajectories.
+prediction_trajectory: [B, M, K, N, TP, 2]. Predicted trajectories.
   The inner-most dimensions are [x, y].
-prediction_score: [B, K]. Scores per joint prediction.
+prediction_score: [B, M, K]. Scores per joint prediction.
 ground_truth_trajectory: [B, A, TG, 7]. Groundtruth trajectories.
   The inner-most dimensions are [x, y, length, width, heading, velocity_x,
   velocity_y].
 ground_truth_is_valid: [B, A, TG]. Indicates whether a time stamp is valid per
-  trajectory.
+  agent. If all timestamps for a trajectory are invalid, the trajectory is
+  assumed invalid.
+prediction_ground_truth_indices: [B, M, N]. Indices to gather the predictions
+  of shape [B, M, ?, N] from the groundtruth of shape [B, A], values must be
+  between [0, A).
+prediction_ground_truth_indices_mask: [B, M, N]. A validity mask for
+  `prediction_ground_truth_indices`.
 object_type: [B, A] Object type per trajectory.
 object_id: [B, A]. Object IDs per trajectory.
 scenario_id: [B]. Scenario IDs of all groundtruth trajectories.

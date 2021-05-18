@@ -67,6 +67,9 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
                                  [-5, 0, 1, 1, 3.14159, -10.0, 0.0]]],
                                [1, 2, 5, 7])
 
+    pred_gt_indices = np.reshape([0, 1], (1, 1, 2))
+    pred_gt_indices_mask = np.ones((1, 1, 2)) > 0.0
+
     return {
         'scenario_id':
             [[gt_scenario_id[0] + '%s' % i] for i in range(batch_size)],
@@ -74,6 +77,10 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
         'object_type': [gt_object_type for _ in range(batch_size)],
         'gt_is_valid': [gt_is_valid for _ in range(batch_size)],
         'gt_trajectory': [gt_trajectory for _ in range(batch_size)],
+        'pred_gt_indices': [pred_gt_indices for _ in range(batch_size)],
+        'pred_gt_indices_mask': [
+            pred_gt_indices_mask for _ in range(batch_size)
+        ],
     }
 
   def setUp(self):
@@ -83,6 +90,7 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
   def _BuildGraph(self,
                   graph,
                   config,
+                  num_agent_groups=1,
                   num_agents=2,
                   top_k=2,
                   num_pred_steps=4,
@@ -96,9 +104,14 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
       self._object_type = tf.compat.v1.placeholder(
           dtype=tf.int64, shape=[None, num_agents])
       self._pd_trajectory = tf.compat.v1.placeholder(
-          dtype=tf.float32, shape=(None, top_k, num_agents, num_pred_steps, 2))
+          dtype=tf.float32,
+          shape=(None, num_agent_groups, top_k, num_agents, num_pred_steps, 2))
       self._pd_score = tf.compat.v1.placeholder(
-          dtype=tf.float32, shape=[None, top_k])
+          dtype=tf.float32, shape=[None, num_agent_groups, top_k])
+      self._pred_gt_indices = tf.compat.v1.placeholder(
+          dtype=tf.int64, shape=(None, num_agent_groups, num_agents))
+      self._pred_gt_indices_mask = tf.compat.v1.placeholder(
+          dtype=tf.bool, shape=(None, num_agent_groups, num_agents))
       self._object_id = tf.compat.v1.placeholder(
           dtype=tf.int64, shape=[None, num_agents])
       self._scenario_id = tf.compat.v1.placeholder(
@@ -117,6 +130,8 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
           prediction_score=self._pd_score,
           ground_truth_trajectory=self._gt_trajectory,
           ground_truth_is_valid=self._gt_is_valid,
+          prediction_ground_truth_indices=self._pred_gt_indices,
+          prediction_ground_truth_indices_mask=self._pred_gt_indices_mask,
           object_type=self._object_type,
           object_id=object_id,
           scenario_id=scenario_id,
@@ -142,6 +157,8 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
     assert num_updates == len(gt['object_type'])
     assert num_updates == len(gt['gt_is_valid'])
     assert num_updates == len(gt['gt_trajectory'])
+    assert num_updates == len(gt['pred_gt_indices'])
+    assert num_updates == len(gt['pred_gt_indices_mask'])
 
     graph = tf.Graph()
     metrics = self._BuildGraph(
@@ -158,6 +175,8 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
                 self._object_type: gt['object_type'][i],
                 self._gt_is_valid: gt['gt_is_valid'][i],
                 self._gt_trajectory: gt['gt_trajectory'][i],
+                self._pred_gt_indices: gt['pred_gt_indices'][i],
+                self._pred_gt_indices_mask: gt['pred_gt_indices_mask'][i],
                 self._pd_score: pred_score[i],
                 self._pd_trajectory: pred_trajectory[i],
             })
@@ -165,11 +184,11 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
       return metric_dict
 
   def testComputeMinADE(self):
-    pred_score = [[0.5, 0.5]]
-    pred_trajectory = [[[[[4, 0], [6, 0], [8, 0], [10, 0]],
-                         [[0, 2], [0, 3], [0, 4], [0, 5]]],
-                        [[[14, 0], [16, 0], [18, 0], [20, 0]],
-                         [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
+    pred_score = np.reshape([0.5, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape(
+        [[[[4, 0], [6, 0], [8, 0], [10, 0]], [[0, 2], [0, 3], [0, 4], [0, 5]]],
+         [[[14, 0], [16, 0], [18, 0], [20, 0]],
+          [[0, 22], [0, 23], [0, 24], [0, 25]]]], (1, 1, 2, 2, 4, 2))
     gt = self._CreateTestScenario(1)
     metric_dict = self._RunEval([pred_score], [pred_trajectory], gt)
     # ADE of Vehicle.
@@ -180,15 +199,15 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
         metric_dict['TYPE_VEHICLE_3/minFDE'], 8.53553, delta=1e-4)
 
   def testComputeMinADEBatch2(self):
-    pred_score = [[0.5, 0.5]]
-    pred_trajectory = [[[[[4, 0], [6, 0], [8, 0], [10, 0]],
-                         [[0, 2], [0, 3], [0, 4], [0, 5]]],
-                        [[[14, 0], [16, 0], [18, 0], [20, 0]],
-                         [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
-    pred_trajectory_2 = [[[[[4, 0], [6, 0], [8, 0], [10, 0]],
-                           [[0, 2], [0, 3], [0, 5], [0, 5]]],
-                          [[[14, 0], [16, 0], [18, 0], [20, 0]],
-                           [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
+    pred_score = np.reshape([0.5, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape(
+        [[[[4, 0], [6, 0], [8, 0], [10, 0]], [[0, 2], [0, 3], [0, 4], [0, 5]]],
+         [[[14, 0], [16, 0], [18, 0], [20, 0]],
+          [[0, 22], [0, 23], [0, 24], [0, 25]]]], (1, 1, 2, 2, 4, 2))
+    pred_trajectory_2 = np.reshape(
+        [[[[4, 0], [6, 0], [8, 0], [10, 0]], [[0, 2], [0, 3], [0, 5], [0, 5]]],
+         [[[14, 0], [16, 0], [18, 0], [20, 0]],
+          [[0, 22], [0, 23], [0, 24], [0, 25]]]], (1, 1, 2, 2, 4, 2))
     gt = self._CreateTestScenario(2)
     metric_dict = self._RunEval([pred_score, pred_score],
                                 [pred_trajectory, pred_trajectory_2], gt)
@@ -200,11 +219,11 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
         metric_dict['TYPE_VEHICLE_3/minFDE'], 8.53553, delta=1e-4)
 
   def testComputeMinADEDefaultIds(self):
-    pred_score = [[0.5, 0.5]]
-    pred_trajectory = [[[[[4, 0], [6, 0], [8, 0], [10, 0]],
-                         [[0, 2], [0, 3], [0, 4], [0, 5]]],
-                        [[[14, 0], [16, 0], [18, 0], [20, 0]],
-                         [[0, 22], [0, 23], [0, 24], [0, 25]]]]]
+    pred_score = np.reshape([0.5, 0.5], (1, 1, 2))
+    pred_trajectory = np.reshape(
+        [[[[4, 0], [6, 0], [8, 0], [10, 0]], [[0, 2], [0, 3], [0, 4], [0, 5]]],
+         [[[14, 0], [16, 0], [18, 0], [20, 0]],
+          [[0, 22], [0, 23], [0, 24], [0, 25]]]], (1, 1, 2, 2, 4, 2))
     gt = self._CreateTestScenario(1)
     metric_dict = self._RunEval([pred_score], [pred_trajectory],
                                 gt,

@@ -606,6 +606,73 @@ TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsNoMiss) {
   EXPECT_EQ(ComputeMapMetric(&stats.mean_average_precision), 0.5);
 }
 
+TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsObjectAndTrajectoryTypes) {
+  const std::string predictions_str = R"(
+    scenario_id: "test"
+    multi_modal_predictions {
+      joint_predictions {
+        confidence : 0.8
+        trajectories {
+         object_id: 1
+         center_x: [0, 0, 0, 0]
+         center_y: [0, 0, 0, 0]
+        }
+        trajectories {
+         object_id: 2
+         center_x: [-2, -3, -4, -7.01]
+         center_y: [0, 0, 0, 0]
+        }
+      }
+      joint_predictions {
+        confidence : 0.5
+        trajectories {
+         object_id: 1
+         center_x: [0, 0, 0, 0]
+         center_y: [0, 0, 0, 0]
+        }
+        trajectories {
+         object_id: 2
+         center_x: [-2, -3, -4, -5]
+         center_y: [0, 0, 0, 0]
+        }
+      }
+    }
+  )";
+  ScenarioPredictions predictions;
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
+
+  Scenario scenario = scenario_;
+  // Change the first track to something boring (STATIC) so that the track_type
+  // is inherited from the second track.
+  auto* track = scenario.mutable_tracks(0);
+  for (auto& states : *(track->mutable_states())) {
+    states.set_center_x(0);
+    states.set_center_y(0);
+    states.set_velocity_x(0);
+    states.set_velocity_y(0);
+  }
+  // Change the second track's object type to PEDESTRIAN so that the object_type
+  // is inherited from the second track.
+  track = scenario.mutable_tracks(1);
+  track->set_object_type(Track::TYPE_PEDESTRIAN);
+
+  BucketedMetricsStats metrics_stats;
+  Status status =
+      ComputeMetricsStats(config_, predictions, scenario, &metrics_stats);
+  EXPECT_TRUE(status.ok());
+
+  EXPECT_TRUE(metrics_stats.stats.find(Track::TYPE_VEHICLE) ==
+              metrics_stats.stats.end());
+  // Expect miss rate to be 0 and mAP metric to be 0.5.
+  MetricsStats& stats = metrics_stats.stats[Track::TYPE_PEDESTRIAN][3];
+  EXPECT_EQ(stats.miss_rate.Mean(), 0.0);
+  // The STRAIGHT bucket should have 1 trajectory, and STATIC bucket should have
+  // 0 trajectory.
+  EXPECT_EQ(stats.mean_average_precision.pr_buckets[0].num_trajectories, 0);
+  EXPECT_EQ(stats.mean_average_precision.pr_buckets[1].num_trajectories, 1);
+  EXPECT_EQ(ComputeMapMetric(&stats.mean_average_precision), 0.5);
+}
+
 TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsMiss) {
   const std::string predictions_str = R"(
     scenario_id: "test"

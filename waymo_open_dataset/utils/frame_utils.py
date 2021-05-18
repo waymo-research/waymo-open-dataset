@@ -239,6 +239,8 @@ def convert_frame_to_dict(frame):
       <CAMERA_NAME>_POSE_TIMESTAMP: float32 scalar
       <CAMERA_NAME>_ROLLING_SHUTTER_DURATION: float32 scalar
       <CAMERA_NAME>_ROLLING_SHUTTER_DIRECTION: int64 scalar
+      <CAMERA_NAME>_CAMERA_TRIGGER_TIME: float32 scalar
+      <CAMERA_NAME>_CAMERA_READOUT_DONE_TIME: float32 scalar
 
   NOTE: This function only works in eager mode for now.
 
@@ -306,6 +308,10 @@ def convert_frame_to_dict(frame):
     data_dict[f'{cam_name_str}_POSE_TIMESTAMP'] = np.array(
         im.pose_timestamp, np.float32)
     data_dict[f'{cam_name_str}_ROLLING_SHUTTER_DURATION'] = np.array(im.shutter)
+    data_dict[f'{cam_name_str}_CAMERA_TRIGGER_TIME'] = np.array(
+        im.camera_trigger_time)
+    data_dict[f'{cam_name_str}_CAMERA_READOUT_DONE_TIME'] = np.array(
+        im.camera_readout_done_time)
 
   # Save the intrinsics, 4x4 extrinsic matrix, width, and height of each camera.
   for c in frame.context.camera_calibrations:
@@ -315,7 +321,7 @@ def convert_frame_to_dict(frame):
         np.array(c.extrinsic.transform, np.float32), [4, 4])
     data_dict[f'{cam_name_str}_WIDTH'] = np.array(c.width)
     data_dict[f'{cam_name_str}_HEIGHT'] = np.array(c.height)
-    data_dict[f'{cam_name_str}_ROLLING_SHUTTER_DURATION'] = np.array(
+    data_dict[f'{cam_name_str}_ROLLING_SHUTTER_DIRECTION'] = np.array(
         c.rolling_shutter_direction)
 
   # Save the range image pixel pose for the top lidar.

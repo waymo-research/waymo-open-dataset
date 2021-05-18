@@ -85,34 +85,43 @@ ParseObjectGroupedBySequenceFromTensors(
 
 // Parse Scenario and ScenarioPredictions protos from tensors.
 //
-// - B: batch size containing joint predictions.
-// - A: number of objects in a joint prediction. 1 if mutual independence is
-//     assumed.
+// - B: batch size. Each batch should contain 1 scenario.
+// - M: Number of joint prediction groups to predict per scenario.
+// - N: number of agents in a joint prediction. 1 if mutual independence is
+//     assumed between agents.
 // - K: top_K predictions per joint prediction.
+// - A: number of agents in the groundtruth.
 // - TP: number of steps to evaluate on. Matches len(config.step_measurement).
 // - TG: number of steps in the groundtruth track. Matches
 //     config.track_history_samples + 1 + config.future_history_samples.
-// - BR: number of breakdowns.
 //
-// prediction_trajectory: [B, K, A, TP, 2]. Predicted trajectories.
+// pred_trajectory: [B, M, K, N, TP, 2]. Predicted trajectories.
 //   The inner-most dimensions are [x, y].
-// prediction_score: [B, K]. Scores per joint prediction.
-// ground_truth_trajectory: [B, A, TG, 7]. Groundtruth trajectories.
+// pred_score: [B, M, K]. Scores per joint prediction.
+// gt_trajectory: [B, A, TG, 7]. Groundtruth trajectories.
 //   The inner-most dimensions are [x, y, length, width, heading, velocity_x,
 //   velocity_y].
-// ground_truth_is_valid: [B, A, TG]. Indicates whether a time stamp is valid
-//   per trajectory.
+// gt_is_valid: [B, A, TG]. Indicates whether a time stamp is valid
+//   per agent. If all timestamps for a trajectory are invalid, the
+//   trajectory is assumed invalid.
+// pred_gt_indices: [B, M, N]. Indices to gather the predictions
+//   of shape [B, M, ?, N] from the groundtruth of shape [B, A], values must be
+//   between [0, A).
+// pred_gt_indices_mask: [B, M, N]. A validity mask for
+//   `prediction_ground_truth_indices`.
 // object_type: [B, A] Object type per trajectory.
 // object_id: [B, A]. Object IDs per trajectory.
 // scenario_id: [B]. Scenario IDs of all groundtruth trajectories.
 absl::flat_hash_map<std::string, std::pair<Scenario, ScenarioPredictions>>
-ParseScenarioAndPredictonsFromTensors(const tensorflow::Tensor& pred_trajectory,
-                                      const tensorflow::Tensor& pred_score,
-                                      const tensorflow::Tensor& gt_trajectory,
-                                      const tensorflow::Tensor& gt_is_valid,
-                                      const tensorflow::Tensor& object_type,
-                                      const tensorflow::Tensor& object_id,
-                                      const tensorflow::Tensor& scenario_id);
+ParseScenarioAndPredictonsFromTensors(
+    const tensorflow::Tensor& pred_trajectory,
+    const tensorflow::Tensor& pred_score,
+    const tensorflow::Tensor& gt_trajectory,
+    const tensorflow::Tensor& gt_is_valid,
+    const tensorflow::Tensor& pred_gt_indices,
+    const tensorflow::Tensor& pred_gt_indices_mask,
+    const tensorflow::Tensor& object_type, const tensorflow::Tensor& object_id,
+    const tensorflow::Tensor& scenario_id);
 
 }  // namespace open_dataset
 }  // namespace waymo

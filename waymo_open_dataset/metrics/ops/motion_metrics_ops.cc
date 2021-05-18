@@ -63,6 +63,11 @@ class MotionMetricsOp final : public OpKernel {
                                    &input.ground_truth_trajectory));
     OP_REQUIRES_OK(
         ctx, ctx->input("ground_truth_is_valid", &input.ground_truth_is_valid));
+    OP_REQUIRES_OK(ctx, ctx->input("prediction_ground_truth_indices",
+                                   &input.prediction_ground_truth_indices));
+    OP_REQUIRES_OK(ctx,
+                   ctx->input("prediction_ground_truth_indices_mask",
+                              &input.prediction_ground_truth_indices_mask));
     OP_REQUIRES_OK(ctx, ctx->input("object_type", &input.object_type));
     OP_REQUIRES_OK(ctx, ctx->input("object_id", &input.object_id));
     OP_REQUIRES_OK(ctx, ctx->input("scenario_id", &input.scenario_id));
@@ -82,6 +87,8 @@ class MotionMetricsOp final : public OpKernel {
     const Tensor* prediction_score = nullptr;
     const Tensor* ground_truth_trajectory = nullptr;
     const Tensor* ground_truth_is_valid = nullptr;
+    const Tensor* prediction_ground_truth_indices = nullptr;
+    const Tensor* prediction_ground_truth_indices_mask = nullptr;
     const Tensor* object_type = nullptr;
     const Tensor* object_id = nullptr;
     const Tensor* scenario_id = nullptr;
@@ -168,7 +175,9 @@ class MotionMetricsOp final : public OpKernel {
         gts_pds_map = co::ParseScenarioAndPredictonsFromTensors(
             *input.prediction_trajectory, *input.prediction_score,
             *input.ground_truth_trajectory, *input.ground_truth_is_valid,
-            *input.object_type, *input.object_id, *input.scenario_id);
+            *input.prediction_ground_truth_indices,
+            *input.prediction_ground_truth_indices_mask, *input.object_type,
+            *input.object_id, *input.scenario_id);
 
     co::MotionMetricsConfig metrics_config = config_;
 

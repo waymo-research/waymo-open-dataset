@@ -23,6 +23,7 @@ limitations under the License.
 #include <vector>
 #include <tuple>
 
+#include "base/init_google.h"
 #include <glog/logging.h>
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -126,14 +127,14 @@ int Compute(const std::string& latency_result_filename,
   bool is_2d;
   for (auto& o : *latency_result_objs.mutable_objects()) {
     is_2d = o.object().box().has_heading();
-    if (o.score() >= minimum_score) {
+    if (o.score() >= minimum_score && o.object().type() > 0) {
       const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
                          o.camera_name());
       latency_result_map[key].push_back(std::move(o));
     }
   }
   for (auto& o : *full_result_objs.mutable_objects()) {
-    if (o.score() >= minimum_score) {
+    if (o.score() >= minimum_score && o.object().type() > 0) {
       const KeyTuple key(o.context_name(), o.frame_timestamp_micros(),
                          o.camera_name());
       full_result_map[key].push_back(std::move(o));
@@ -206,11 +207,12 @@ int Compute(const std::string& latency_result_filename,
     }
 
     if (unmatched_detections > 0.05 * num_detections) {
-      LOG(FATAL) << "Latency evaluator results did not match submission "
-                 << "proto for " << print_key(example_key) << std::endl
-                 << unmatched_detections << " detections out of "
-                 << num_detections << " did not match. This exceeds our "
-                 << "cut-off of 5% of detections being unmatched.";
+      LOG(ERROR).NoPrefix()
+          << "Latency evaluator results did not match submission "
+          << "proto for " << print_key(example_key) << std::endl
+          << unmatched_detections << " detections out of " << num_detections
+          << " did not match. This exceeds our "
+          << "cut-off of 5% of detections being unmatched.";
       return 1;
     }
 
@@ -226,6 +228,7 @@ int Compute(const std::string& latency_result_filename,
 }  // namespace waymo
 
 int main(int argc, char* argv[]) {
+  InitGoogle(argv[0], &argc, &argv, false);
   absl::ParseCommandLine(argc, argv);
 
   const std::string latency_result_filename =
