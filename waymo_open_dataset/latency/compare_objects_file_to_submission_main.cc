@@ -20,10 +20,9 @@ limitations under the License.
 #include <iostream>
 #include <memory>
 #include <numeric>
-#include <vector>
 #include <tuple>
+#include <vector>
 
-#include "base/init_google.h"
 #include <glog/logging.h>
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -207,12 +206,11 @@ int Compute(const std::string& latency_result_filename,
     }
 
     if (unmatched_detections > 0.05 * num_detections) {
-      LOG(ERROR).NoPrefix()
-          << "Latency evaluator results did not match submission "
-          << "proto for " << print_key(example_key) << std::endl
-          << unmatched_detections << " detections out of " << num_detections
-          << " did not match. This exceeds our "
-          << "cut-off of 5% of detections being unmatched.";
+      LOG(FATAL) << "Latency evaluator results did not match submission "
+                 << "proto for " << print_key(example_key) << std::endl
+                 << unmatched_detections << " detections out of "
+                 << num_detections << " did not match. This exceeds our "
+                 << "cut-off of 5% of detections being unmatched.";
       return 1;
     }
 
@@ -228,7 +226,6 @@ int Compute(const std::string& latency_result_filename,
 }  // namespace waymo
 
 int main(int argc, char* argv[]) {
-  InitGoogle(argv[0], &argc, &argv, false);
   absl::ParseCommandLine(argc, argv);
 
   const std::string latency_result_filename =

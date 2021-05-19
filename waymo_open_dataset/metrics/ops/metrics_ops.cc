@@ -103,16 +103,22 @@ REGISTER_OP("MotionMetrics")
 Computes motion metrics.
 
 - Notations:
-- B: batch size. Each batch should contain 1 scenario.
+- B: batch size. Each batch should contain exactly 1 scenario.
 - M: Number of joint prediction groups to predict per scenario.
+- K: top_K predictions per joint prediction.
 - N: number of agents in a joint prediction. 1 if mutual independence is
     assumed between agents.
-- K: top_K predictions per joint prediction.
 - A: number of agents in the groundtruth.
 - TP: number of steps to evaluate on. Matches len(config.step_measurement).
 - TG: number of steps in the groundtruth track. Matches
     config.track_history_samples + 1 + config.future_history_samples.
 - BR: number of breakdowns.
+
+For the marginal (mutually-independent) prediction, M is the number of agents to
+predict for, N is 1.
+
+For joint predictions of multiple agents, M is the number of joint predictions,
+and N is the number of agents per joint prediction.
 
 prediction_trajectory: [B, M, K, N, TP, 2]. Predicted trajectories.
   The inner-most dimensions are [x, y].
