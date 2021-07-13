@@ -25,7 +25,7 @@ set -e -x
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
-export TF_VERSION="${TF_VERSION:-2.3.0}"
+export TF_VERSION="${TF_VERSION:-2.5.0}"
 
 if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
   PYTHON="python${PYTHON_VERSION}"
@@ -39,11 +39,7 @@ $PYTHON get-pip.py --user
 PIP="$PYTHON -m pip"
 
 ${PIP} install --upgrade setuptools --user
-${PIP} install tensorflow-gpu=="${TF_VERSION}" --user
-# Hack. Bazel python runtime is not configured. We need to
-# install tensorflow in order to run TF related python tests in
-# bazel.
-python3 -m pip install --upgrade tensorflow-gpu=="${TF_VERSION}" --user
+${PIP} install --upgrade tensorflow=="${TF_VERSION}" --user
 
 ./configure.sh
 

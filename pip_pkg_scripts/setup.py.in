@@ -18,9 +18,9 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.3.0'
+__version__ = '1.4.0'
 REQUIRED_PACKAGES = [
-    'tensorflow-gpu==' + '.'.join('TF_VERSION'.split('-')),
+    'tensorflow==' + '.'.join('TF_VERSION'.split('-')),
 ]
 project_name = 'waymo-open-dataset-tf-TF_VERSION'
 
@@ -71,6 +71,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Software Development',

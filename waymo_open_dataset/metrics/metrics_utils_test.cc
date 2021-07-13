@@ -224,8 +224,7 @@ TEST(MetricsUtilsTest, DecideScoreCutoffs) {
 
 TEST(MetricsUtilsTest, ComputeMeanAveragePrecision) {
   EXPECT_NEAR(ComputeMeanAveragePrecision({}, {}, 0.05), 0.0, 1e-6);
-  EXPECT_NEAR(ComputeMeanAveragePrecision({0.1}, {0.2}, 0.05),
-              0.2 * 0.1 + 0.05 * 0.1 * 0.5, 1e-6);
+  EXPECT_NEAR(ComputeMeanAveragePrecision({0.1}, {0.2}, 0.05), 0.2 * 0.1, 1e-6);
   EXPECT_NEAR(ComputeMeanAveragePrecision({0.1, 0.05}, {0.2, 1.0}, 0.05),
               0.05 * 0.8 + 0.1 * 0.2 + (0.1 - 0.05) * 0.5 * 0.05, 1e-6);
   EXPECT_NEAR(ComputeMeanAveragePrecision({0.1, 0.05}, {0.2, 1.0}, 1.0),
@@ -267,6 +266,7 @@ TEST(MetricsUtilsTest, EstimateObjectSpeed) {
   EXPECT_DOUBLE_EQ(pds_cp[0].object().metadata().speed_x(), 1);
   EXPECT_DOUBLE_EQ(pds_cp[1].object().metadata().speed_x(), 2);
 }
+
 
 }  // namespace
 }  // namespace internal

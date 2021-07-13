@@ -251,8 +251,6 @@ float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
   // Recall to precision mapping.
   std::map<float, float> recall_precision;
   recall_precision[0.0] = 1.0;
-  // If the user provides a precision for recall = 1.0, this will be overridden.
-  recall_precision[1.0] = 0.0;
   for (int i = 0, sz = precisions.size(); i < sz; ++i) {
     recall_precision[recalls[i]] =
         std::max(recall_precision[recalls[i]], precisions[i]);
@@ -268,7 +266,7 @@ float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
   // This vector is ordered by recall in descending order.
   std::vector<PR> precision_recall;
   // The last recall value we saw when iterating rp.
-  float last_recall = 1.0;
+  float last_recall = recall_precision.cbegin()->first;
   // The maximum precision so far.
   float max_precision = 0.0;
   // Iterate from high recall to low recall.

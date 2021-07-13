@@ -28,6 +28,7 @@ else
   PYTHON="python${PYTHON_VERSION}.${PYTHON_MINOR_VERSION}"
 fi
 PIP="$PYTHON -m pip"
+update-alternatives --install /usr/bin/python3 python3 "/usr/bin/$PYTHON" 1
 
 function write_to_bazelrc() {
   echo "$1" >> .bazelrc
@@ -81,7 +82,7 @@ if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
   write_to_bazelrc "test --config=manylinux2010"
 fi
 
-export TF_VERSION="${TF_VERSION:-2.4.0}"
+export TF_VERSION="${TF_VERSION:-2.5.0}"
 export TF_VERSION_UNDERSCORE=$(echo $TF_VERSION | sed 's/\./_/g')
 export TF_VERSION_DASH=$(echo $TF_VERSION | sed 's/\./-/g')
 

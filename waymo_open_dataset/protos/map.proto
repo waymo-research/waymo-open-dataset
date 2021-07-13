@@ -89,6 +89,50 @@ message MapPoint {
   optional double z = 3;
 }
 
+message LaneNeighbor {
+  // The feature ID of the neighbor lane.
+  optional int64 feature_id = 1;
+
+  // The self adjacency segment.
+  // The other lane may only be a neighbor for only part of this lane. These
+  // indices define the points within this lane's polyline for which feature_id
+  // is a neighbor. If the lanes are neighbors at disjoint places (e.g., a
+  // median between them appears and then goes away) multiple neighbors will be
+  // listed. A lane change can only happen from this segment of this lane into
+  // the segment of the neighbor lane defined by neighbor_start_index and
+  // neighbor_end_index.
+  optional int32 self_start_index = 2;
+  optional int32 self_end_index = 3;
+
+  // The neighbor adjacency segment.
+  // These indices define the valid portion of the neighbor lane's polyline
+  // where that lane is a neighbor to this lane. A lane change can only happen
+  // into this segment of the neighbor lane from the segment of this lane
+  // defined by self_start_index and self_end_index.
+  optional int32 neighbor_start_index = 4;
+  optional int32 neighbor_end_index = 5;
+
+  // A segment of this lane with a given boundary between this lane and the
+  // neighbor.
+  message BoundarySegment {
+    // The index into the lane polyline where this lane boundary starts.
+    optional int32 lane_start_index = 1;
+
+    // The index into the lane polyline where this lane boundary ends.
+    optional int32 lane_end_index = 2;
+
+    // The boundary type between this lane and the neighboring lane.
+    optional RoadLine.RoadLineType lane_boundary = 3;
+  }
+
+  // A list of segments within the self adjacency segment that have different
+  // boundaries between this lane and the neighbor lane. Each entry in this
+  // field contains the boundary type between this lane and the neighbor lane
+  // along with the indices into this lane's polyline where the boundary type
+  // begins and ends.
+  repeated BoundarySegment boundaries = 6;
+}
+
 message LaneCenter {
   // The speed limit for this lane.
   optional double speed_limit_mph = 1;
@@ -108,6 +152,20 @@ message LaneCenter {
   // The polyline data for the lane. A polyline is a list of points with
   // segments defined between consecutive points.
   repeated MapPoint polyline = 8;
+
+  // A list of IDs for lanes that this lane may be entered from.
+  repeated int64 entry_lanes = 9 [packed = true];
+
+  // A list of IDs for lanes that this lane may exit to.
+  repeated int64 exit_lanes = 10 [packed = true];
+
+  // A list of neighbors to the left of this lane. Neighbor lanes
+  // include only adjacent lanes going the same direction.
+  repeated LaneNeighbor left_neighbors = 11;
+
+  // A list of neighbors to the right of this lane. Neighbor lanes
+  // include only adjacent lanes going the same direction.
+  repeated LaneNeighbor right_neighbors = 12;
 }
 
 message RoadEdge {
