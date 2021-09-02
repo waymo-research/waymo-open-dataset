@@ -89,6 +89,23 @@ message MapPoint {
   optional double z = 3;
 }
 
+// A segment of a lane with a given adjacent boundary.
+message BoundarySegment {
+  // The index into the lane's polyline where this lane boundary starts.
+  optional int32 lane_start_index = 1;
+
+  // The index into the lane's polyline where this lane boundary ends.
+  optional int32 lane_end_index = 2;
+
+  // The adjacent boundary feature ID of the MapFeature for the boundary. This
+  // can either be a RoadLine feature or a RoadEdge feature.
+  optional int64 boundary_feature_id = 3;
+
+  // The adjacent boundary type. If the boundary is a road edge instead of a
+  // road line, this will be set to TYPE_UNKNOWN.
+  optional RoadLine.RoadLineType boundary_type = 4;
+}
+
 message LaneNeighbor {
   // The feature ID of the neighbor lane.
   optional int64 feature_id = 1;
@@ -111,19 +128,6 @@ message LaneNeighbor {
   // defined by self_start_index and self_end_index.
   optional int32 neighbor_start_index = 4;
   optional int32 neighbor_end_index = 5;
-
-  // A segment of this lane with a given boundary between this lane and the
-  // neighbor.
-  message BoundarySegment {
-    // The index into the lane polyline where this lane boundary starts.
-    optional int32 lane_start_index = 1;
-
-    // The index into the lane polyline where this lane boundary ends.
-    optional int32 lane_end_index = 2;
-
-    // The boundary type between this lane and the neighboring lane.
-    optional RoadLine.RoadLineType lane_boundary = 3;
-  }
 
   // A list of segments within the self adjacency segment that have different
   // boundaries between this lane and the neighbor lane. Each entry in this
@@ -158,6 +162,15 @@ message LaneCenter {
 
   // A list of IDs for lanes that this lane may exit to.
   repeated int64 exit_lanes = 10 [packed = true];
+
+  // The boundaries to the left of this lane. There may be different boundary
+  // types along this lane. Each BoundarySegment defines a section of the lane
+  // with a given boundary feature to the left. Note that some lanes do not have
+  // any boundaries (i.e. lane centers in intersections).
+  repeated BoundarySegment left_boundaries = 13;
+
+  // The boundaries to the right of this lane. See left_boundaries for details.
+  repeated BoundarySegment right_boundaries = 14;
 
   // A list of neighbors to the left of this lane. Neighbor lanes
   // include only adjacent lanes going the same direction.

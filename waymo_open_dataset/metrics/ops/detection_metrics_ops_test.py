@@ -135,6 +135,21 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     self.assertAllEqual(pr[0, 0], [1.0, 0.0])
     self.assertAllEqual(pr[0, 1], [1.0, 0.0])
 
+  def testEmpty(self):
+    # We're generating 0 prediction and 0 ground truth boxes here
+    k, n, m = 10, 0, 0
+    pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
+    gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
+    ap, aph, pr, prh, breakdown = self._GetAP(pd_bbox, pd_type, pd_frameid,
+                                              pd_score, gt_bbox, gt_type,
+                                              gt_frameid, gt_speed)
+
+    self.assertEqual(0, ap)
+    self.assertEqual(0, aph)
+    self.assertAllEqual(pr.shape, (1, 11, 2))
+    self.assertAllEqual(prh.shape, (1, 11, 2))
+    self.assertAllEqual(len(breakdown), 1)
+
   def testVelocityBreakdown(self):
     k, n, m = 10, 100, 200
     pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)

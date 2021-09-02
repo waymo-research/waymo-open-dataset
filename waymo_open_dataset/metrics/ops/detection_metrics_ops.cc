@@ -189,6 +189,13 @@ class DetectionMetricsOp final : public OpKernel {
       gts.push_back(std::move(gts_map[id]));
     }
 
+    // Ensure there is at least a single frame to run with or else the output
+    // tensors will be empty.
+    if (pds.empty() && gts.empty()) {
+      pds.push_back({});
+      gts.push_back({});
+    }
+
     std::vector<std::vector<co::DetectionMeasurements>> measurements(
         pds.size());
     co::Config config = config_;
