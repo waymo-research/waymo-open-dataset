@@ -17,6 +17,7 @@ limitations under the License.
 #define WAYMO_OPEN_DATASET_METRICS_IOU_H_
 
 #include "waymo_open_dataset/label.pb.h"
+#include "waymo_open_dataset/math/polygon2d.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -32,6 +33,12 @@ extern const int kMaxIoU;
 // REQUIRES: The input boxes' length/width/height are >= 0.
 double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
                   Label::Box::Type box_type);
+
+// The function type for customized IOU computation function.
+typedef double (*ComputeIoUFunc)(const Label::Box&, const Label::Box&);
+
+// Converts a box proto to a polygon.
+Polygon2d ToPolygon2d(const open_dataset::Label::Box& box);
 
 }  // namespace open_dataset
 }  // namespace waymo

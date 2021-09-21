@@ -45,23 +45,36 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
   int num_false_positives = 0;
   int num_false_negatives = 0;
   float sum_heading_accuracy = 0.0;
+
+  DetectionMeasurement measurement;
+  DetectionMeasurement::Details* details = nullptr;
+  if (config.include_details_in_measurements()) {
+    details = measurement.add_details();
+  }
+
   auto is_in_breakdown = [&matcher, &breakdown](int gt_subset_id) {
     return internal::IsInBreakdown(
         matcher.ground_truths()[matcher.ground_truth_subset()[gt_subset_id]],
         breakdown);
   };
   for (int i = 0, sz = pd_matches.size(); i < sz; ++i) {
+    const int pd_index = matcher.prediction_subset()[i];
+    const std::string& pd_id = matcher.predictions()[pd_index].object().id();
     // This is a true positive only if
     // 1) This prediction matches a ground truth.
     // 2) The matched ground truth is in the given breakdown.
     if (internal::IsTP(pd_matches, i) &&
         (!internal::IsGroundTruthOnlyBreakdown(breakdown) ||
          is_in_breakdown(pd_matches[i]))) {
-      const float heading_accuracy = internal::ComputeHeadingAccuracy(
-          matcher, matcher.prediction_subset()[i],
-          matcher.ground_truth_subset()[pd_matches[i]]);
+      const int gt_index = matcher.ground_truth_subset()[pd_matches[i]];
+      const float heading_accuracy =
+          internal::ComputeHeadingAccuracy(matcher, pd_index, gt_index);
       if (heading_accuracy <= config.min_heading_accuracy()) continue;
       ++num_true_positives;
+      if (details != nullptr) {
+        details->add_tp_pr_ids(pd_id);
+        details->add_tp_gt_ids(matcher.ground_truths()[gt_index].object().id());
+      }
       sum_heading_accuracy += heading_accuracy;
     }
     // This is a false positive only if
@@ -70,6 +83,7 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
     //  not inside this breakdown. The threshold of deciding whether there is an
     //  overlap is set to kOverlapIoUThreshold for now.
     if (internal::IsFP(matcher, pd_matches, i)) {
+      bool is_fp = false;
       if (internal::IsGroundTruthOnlyBreakdown(breakdown)) {
         static constexpr double kOverlapIoUThreshold = 0.01;
         const int gt_subset_id = internal::FindGTWithLargestIoU(
@@ -77,10 +91,16 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
         const bool overlap_with_gt_in_other_shard =
             gt_subset_id >= 0 && !is_in_breakdown(gt_subset_id);
         if (!overlap_with_gt_in_other_shard) {
-          ++num_false_positives;
+          is_fp = true;
         }
       } else {
+        is_fp = true;
+      }
+      if (is_fp) {
         ++num_false_positives;
+        if (details != nullptr) {
+          details->add_fp_ids(pd_id);
+        }
       }
     }
   }
@@ -92,13 +112,22 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
         (!internal::IsGroundTruthOnlyBreakdown(breakdown) ||
          is_in_breakdown(i))) {
       ++num_false_negatives;
+      if (details != nullptr) {
+        const int gt_index = matcher.ground_truth_subset()[i];
+        details->add_fn_ids(matcher.ground_truths()[gt_index].object().id());
+      }
     }
   }
-  DetectionMeasurement measurement;
   measurement.set_num_tps(num_true_positives);
   measurement.set_num_fps(num_false_positives);
   measurement.set_num_fns(num_false_negatives);
   measurement.set_sum_ha(sum_heading_accuracy);
+  if (details != nullptr &&
+      details->tp_gt_ids_size() != details->tp_pr_ids_size()) {
+    LOG(FATAL) << "True positive sizes should be equal. pr size: "
+               << details->tp_pr_ids_size()
+               << ", gt size: " << details->tp_gt_ids_size();
+  }
   return measurement;
 }
 
@@ -157,6 +186,7 @@ DetectionMeasurement MergeDetectionMeasurement(const DetectionMeasurement& m1,
   if (!m2.has_score_cutoff()) return m1;
   CHECK_EQ(m1.score_cutoff(), m2.score_cutoff());
   DetectionMeasurement m;
+
 #define ADD_FIELD(FIELD_NAME) \
   m.set_##FIELD_NAME(m1.FIELD_NAME() + m2.FIELD_NAME())
   ADD_FIELD(num_fps);
@@ -164,6 +194,14 @@ DetectionMeasurement MergeDetectionMeasurement(const DetectionMeasurement& m1,
   ADD_FIELD(num_fns);
   ADD_FIELD(sum_ha);
 #undef ADD_FIELD
+
+  // If we enables details population, appends it as a new frame. The new
+  // frame's `details()` size should be 1.
+  if (m1.details_size() == 1 || m2.details_size() == 1) {
+    *m.mutable_details() = m1.details();
+    m.mutable_details()->MergeFrom(m2.details());
+  }
+
   m.set_score_cutoff(m1.score_cutoff());
   return m;
 }
@@ -277,11 +315,14 @@ DetectionMetrics ToDetectionMetrics(const Config& config,
 
 std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
     const Config& config, const std::vector<Object>& pds,
-    const std::vector<Object>& gts) {
+    const std::vector<Object>& gts, ComputeIoUFunc custom_iou_func) {
   CHECK_GT(config.score_cutoffs_size(), 0)
       << "config.scores() must be populated: " << config.DebugString();
   std::unique_ptr<Matcher> matcher = Matcher::Create(config);
   matcher->SetGroundTruths(gts);
+  if (custom_iou_func != nullptr) {
+    matcher->SetCustomIoUComputeFunc(custom_iou_func);
+  }
   // Matcher stores a pointer to pds, so make a copy so pds lives the lifetime
   // of the matcher.
   auto pds_copy = pds;
@@ -317,7 +358,8 @@ std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
 
 std::vector<DetectionMetrics> ComputeDetectionMetrics(
     const Config& config, const std::vector<std::vector<Object>>& pds,
-    const std::vector<std::vector<Object>>& gts) {
+    const std::vector<std::vector<Object>>& gts,
+    ComputeIoUFunc custom_iou_func) {
   std::vector<DetectionMeasurements> measurements;
   CHECK_EQ(pds.size(), gts.size());
   const int num_frames = pds.size();
@@ -326,10 +368,12 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
                                  : EstimateScoreCutoffs(config, pds, gts);
   for (int i = 0; i < num_frames; ++i) {
     if (i == 0) {
-      measurements = ComputeDetectionMeasurements(config_copy, pds[i], gts[i]);
+      measurements = ComputeDetectionMeasurements(config_copy, pds[i], gts[i],
+                                                  custom_iou_func);
     } else {
       MergeDetectionMeasurementsVector(
-          ComputeDetectionMeasurements(config_copy, pds[i], gts[i]),
+          ComputeDetectionMeasurements(config_copy, pds[i], gts[i],
+                                       custom_iou_func),
           &measurements);
     }
   }

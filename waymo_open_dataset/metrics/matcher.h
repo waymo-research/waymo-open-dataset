@@ -93,6 +93,11 @@ class Matcher {
     ground_truth_subset_ = subset;
   }
 
+  // Sets a custom IOU calculation function to replace the default function.
+  void SetCustomIoUComputeFunc(ComputeIoUFunc custom_iou_func) {
+    custom_iou_func_ = custom_iou_func;
+  }
+
   // Accessors.
   const std::vector<Object>& predictions() const {
     CHECK(predictions_ != nullptr);
@@ -167,6 +172,9 @@ class Matcher {
   // A subset of ground_truths_ above. Eache element is an index to
   // ground_truths_.
   std::vector<int> ground_truth_subset_;
+
+  // If set, will use to calculate the iou instead of the default one.
+  ComputeIoUFunc custom_iou_func_ = nullptr;
 
   // The [i][j] element caches the IoU score between the i-th prediction and the
   // j-th ground truth.

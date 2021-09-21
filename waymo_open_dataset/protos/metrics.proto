@@ -123,15 +123,34 @@ message Config {
   // Any matching with an heading accuracy lower than this is considered as
   // false matching.
   optional float min_heading_accuracy = 10 [default = -1.0];
+  // When enabled, the details in the matching such as index of the false
+  // positives, false negatives or true positives will be included.
+  optional bool include_details_in_measurements = 11;
 }
 
 message DetectionMeasurement {
+  // Detailed information regarding the results.
+  message Details {
+    // False positive prediction ids.
+    repeated string fp_ids = 1;
+    // False negative ground truth ids.
+    repeated string fn_ids = 2;
+    // True positive ground truth ids. Should be of the same length with
+    // tp_pr_ids. Each pair of ids of the same index correspond to the ids of
+    // ground truth object and prediction objects which are matched.
+    repeated string tp_gt_ids = 3;
+    // True positive prediction ids.
+    repeated string tp_pr_ids = 4;
+  }
   // Number of false positives.
   optional int32 num_fps = 1;
   // Number of true positives.
   optional int32 num_tps = 2;
   // Number of false negatives.
   optional int32 num_fns = 3;
+  // If set, will include the ids of the fp/tp/fn objects. Each element
+  // corresponds to one frame of matching.
+  repeated Details details = 6;
 
   // Sum of heading accuracy (ha) for all TPs.
   optional float sum_ha = 4;

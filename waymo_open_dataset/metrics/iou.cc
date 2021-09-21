@@ -66,10 +66,11 @@ AABox2d<double> ToAABox2d(const Label::Box& box) {
   return AABox2d<double>(box.center_x(), box.center_y(), box.length() * 0.5,
                          box.width() * 0.5);
 }
+}  // namespace
 
-// Converts a box proto to a polygon.
 Polygon2d ToPolygon2d(const Label::Box& box) { return Polygon2d(ToBox2d(box)); }
 
+namespace {
 double ComputeIoU2d(const Label::Box& b1, const Label::Box& b2) {
   if (b1.length() <= kMinBoxDim || b1.width() <= kMinBoxDim ||
       b2.length() <= kMinBoxDim || b2.width() <= kMinBoxDim) {

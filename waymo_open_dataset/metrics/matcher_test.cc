@@ -58,6 +58,59 @@ TEST(Matcher, MatcherIoU) {
   EXPECT_EQ(kMaxIoU, matcher->QuantizedIoU(3, 0));
 }
 
+// A sample IOU calculation by using the smaller area of the input boxes.
+double ComputeIoU2dMin(const Label::Box& b1, const Label::Box& b2) {
+  constexpr double kMinBoxDim = 1e-2;
+  constexpr double kEpsilon = 1e-6;
+  if (b1.length() <= kMinBoxDim || b1.width() <= kMinBoxDim ||
+      b2.length() <= kMinBoxDim || b2.width() <= kMinBoxDim) {
+    LOG_EVERY_N(WARNING, 1000)
+        << "Tiny box dim seen, return 0.0 IOU."
+        << "\nb1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
+    return 0.0;
+  }
+
+  const Polygon2d p1 = ToPolygon2d(b1);
+  const Polygon2d p2 = ToPolygon2d(b2);
+
+  const double intersection_area = p1.ComputeIntersectionArea(p2);
+  const double p1_area = b1.length() * b1.width();
+  const double p2_area = b2.length() * b2.width();
+  const double min_area = std::min(p1_area, p2_area);
+  if (min_area <= kEpsilon) return 0.0;
+  const double iom = intersection_area / min_area;
+  CHECK(!std::isnan(iom)) << "b1: " << b1.DebugString()
+                          << "\nb2: " << b2.DebugString();
+  CHECK_GE(iom, -kEpsilon) << "b1: " << b1.DebugString()
+                           << "\nb2: " << b2.DebugString();
+  CHECK_LE(iom, 1.0 + kEpsilon)
+      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
+
+  return std::max(std::min(iom, 1.0), 0.0);
+}
+
+// Tests matcher with a custom IoU calculation by passing in a callback.
+TEST(Matcher, MatcherCustomIoU) {
+  Config config = BuildDefaultConfig();
+  config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
+
+  auto matcher = Matcher::Create(config);
+  matcher->SetCustomIoUComputeFunc(ComputeIoU2dMin);
+  const std::vector<Object> pds{BuildObject(0.0, 1), BuildObject(0.2, 1),
+                                BuildObject(0.6, 1), BuildObject(1.0, 1)};
+  const std::vector<Object> gts{BuildObject(1.0, 1)};
+
+  matcher->SetPredictions(pds);
+  matcher->SetGroundTruths(gts);
+  matcher->SetPredictionSubset({0, 1, 2, 3});
+  matcher->SetGroundTruthSubset({0});
+
+  EXPECT_EQ(0, matcher->QuantizedIoU(0, 0));
+  EXPECT_EQ(1.0 * kMaxIoU, matcher->QuantizedIoU(1, 0));
+  EXPECT_EQ(1.0 * kMaxIoU, matcher->QuantizedIoU(2, 0));
+  EXPECT_EQ(kMaxIoU, matcher->QuantizedIoU(3, 0));
+}
+
 namespace {
 // Tests Hungarian match.
 TEST(Matcher, HungarianMatch) {

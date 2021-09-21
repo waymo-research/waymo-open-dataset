@@ -66,9 +66,15 @@ float Matcher::IoU(int prediction_index, int ground_truth_index) const {
   }
 
   if (iou_caches_[prediction_index][ground_truth_index] < 0.0) {
-    float iou = ComputeIoU(predictions()[prediction_index].object().box(),
-                           ground_truths()[ground_truth_index].object().box(),
-                           box_type_);
+    float iou =
+        (custom_iou_func_ == nullptr)
+            ? ComputeIoU(predictions()[prediction_index].object().box(),
+                         ground_truths()[ground_truth_index].object().box(),
+                         box_type_)
+            : custom_iou_func_(
+                  predictions()[prediction_index].object().box(),
+                  ground_truths()[ground_truth_index].object().box());
+
     CHECK_GE(iou, 0.0) << "prediction_index: " << prediction_index
                        << ", ground_truth_index: " << ground_truth_index;
     CHECK_LE(iou, 1.0);

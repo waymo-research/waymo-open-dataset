@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <vector>
 
+#include "waymo_open_dataset/metrics/matcher.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
 namespace waymo {
@@ -26,6 +27,7 @@ namespace open_dataset {
 // Computes detection measurements for a single frame.
 // pds: the predicted objects.
 // gts: the ground truths.
+// custom_iou_func: an optional callback for customizing IoU calculation.
 // The output vector is ordered as:
 // [{generator_i_shard_j_difficulty_level_k}].
 // i \in [0, num_breakdown_generators).
@@ -36,7 +38,7 @@ namespace open_dataset {
 //   Requires: config.score_thresholds() is populated.
 std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
     const Config& config, const std::vector<Object>& pds,
-    const std::vector<Object>& gts);
+    const std::vector<Object>& gts, ComputeIoUFunc custom_iou_func = nullptr);
 
 // Computes detection metrics from measurements.
 // Each element of `measurements` is an output of ComputeDetectionMeasurements.
@@ -56,6 +58,7 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
 // Computes detection metrics for multiple frames.
 // pds: the predicted objects.
 // gts: the ground truths.
+// custom_iou_func: an optional callback for customizing IoU calculation.
 // The output vector is ordered as:
 // [{generator_i_shard_j_difficulty_level_k}].
 // i \in [0, num_breakdown_generators).
@@ -66,7 +69,8 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
 // Requires: 'pds', 'gts' have the same dim-0 size.
 std::vector<DetectionMetrics> ComputeDetectionMetrics(
     const Config& config, const std::vector<std::vector<Object>>& pds,
-    const std::vector<std::vector<Object>>& gts);
+    const std::vector<std::vector<Object>>& gts,
+    ComputeIoUFunc custom_iou_func = nullptr);
 
 // Estimates the score cutoffs that evenly sample the P/R curve.
 // pds: the predicted objects.
