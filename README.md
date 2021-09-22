@@ -2,6 +2,15 @@
 
 The Waymo Open Dataset was first launched in August 2019 with a perception dataset comprising high resolution sensor data and labels for 1,950 segments. We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
 
+## September 2021 Update
+
+We released v1.1 of the motion dataset to include lane connectivity information. To read more on the technical details, please read [lane_neighbors_and_boundaries.md](docs/lane_neighbors_and_boundaries.md).
+ - Added lane connections. Each lane has a list of lane IDs that enter or exit the lane.
+ - Added lane boundaries.  Each lane has a list of left and right boundary features associated with the lane and the segment of the lane where the boundary is active.
+ - Added lane neighbors. Each lane has a list of left and right neighboring lanes.  These are lanes an agent may make a lane change into.
+ - Improved timestamp precision.
+ - Improved stop sign Z values.
+
 ## March 2021 Update
 
 We expanded the Waymo Open Dataset to also include a motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset. Please refer to the [Quick Start](docs/quick_start.md).

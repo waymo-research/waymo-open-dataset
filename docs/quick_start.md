@@ -11,10 +11,22 @@ As a first step, please visit https://www.waymo.com/open to gain access to the W
 
 ## Use pre-compiled pip/pip3 packages for Linux
 
-We only pre-compiled the package for Python 3.6, 3.7, 3.8 for Linux. If you need the lib for a different python version, follow steps in pip_pkg_scripts to build pip package on your own.
+We only pre-compiled the package for Python 3.7, 3.8, 3.9 for Linux. If you need the lib for a different python version, follow steps in pip_pkg_scripts to build pip package on your own.
 
 ``` bash
 pip3 install --upgrade pip
+```
+
+### tf 2.6.0.
+
+``` bash
+pip3 install waymo-open-dataset-tf-2-6-0 --user
+```
+
+### tf 2.5.0.
+
+``` bash
+pip3 install waymo-open-dataset-tf-2-5-0 --user
 ```
 
 ### tf 2.4.0.
@@ -23,40 +35,13 @@ pip3 install --upgrade pip
 pip3 install waymo-open-dataset-tf-2-4-0 --user
 ```
 
-### tf 2.3.0.
-
-``` bash
-pip3 install waymo-open-dataset-tf-2-3-0 --user
-```
-
-### tf 2.2.0.
-
-``` bash
-pip3 install waymo-open-dataset-tf-2-2-0 --user
-```
-
-### tf 2.1.0.
-Note available for Python 3.8.
-
-``` bash
-pip3 install waymo-open-dataset-tf-2-1-0 --user
-```
-
-### tf 2.0.0
-Note available for Python 3.8.
-
-``` bash
-pip3 install waymo-open-dataset-tf-2-0-0 --user
-```
-
 ## Compile in our docker container
 Follow instructions in [pip_pkg_scripts](../pip_pkg_scripts/README.md).
 
 ## Local compilation without docker system requirements
 
 *   g++ 5 or higher.
-*   python 3.6, 3.7 with TensorFlow 2.0.0, 2.1.0, 2.2.0, 2.3.0, 2.4.0
-*   python 3.8 with TensorFlow 2.2.0, 2.3.0, 2.4.0
+*   python 3.7, 3.8, 3.9 with TensorFlow 2.4.0, 2.5.0, 2.6.0
 
 The code has two main parts. One is a utility written in C++ to compute the
 evaluation metrics. The other part is a set of
