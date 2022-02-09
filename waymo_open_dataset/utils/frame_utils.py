@@ -13,10 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Utils for Frame protos."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -25,23 +22,35 @@ from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import transform_utils
 
+RangeImages = Dict['dataset_pb2.LaserName.Name', List[dataset_pb2.MatrixFloat]]
+CameraProjections = Dict['dataset_pb2.LaserName.Name',
+                         List[dataset_pb2.MatrixInt32]]
+SegmentationLabels = Dict['dataset_pb2.LaserName.Name',
+                          List[dataset_pb2.MatrixInt32]]
+ParsedFrame = Tuple[RangeImages, CameraProjections, SegmentationLabels,
+                    Optional[dataset_pb2.MatrixFloat]]
 
-def parse_range_image_and_camera_projection(frame):
+
+def parse_range_image_and_camera_projection(
+    frame: dataset_pb2.Frame) -> ParsedFrame:
   """Parse range images and camera projections given a frame.
 
   Args:
-     frame: open dataset frame proto
+    frame: open dataset frame proto
 
   Returns:
-     range_images: A dict of {laser_name,
-       [range_image_first_return, range_image_second_return]}.
-     camera_projections: A dict of {laser_name,
-       [camera_projection_from_first_return,
-        camera_projection_from_second_return]}.
+    range_images: A dict of {laser_name,
+      [range_image_first_return, range_image_second_return]}.
+    camera_projections: A dict of {laser_name,
+      [camera_projection_from_first_return,
+      camera_projection_from_second_return]}.
+    seg_labels: segmentation labels, a dict of {laser_name,
+      [seg_label_first_return, seg_label_second_return]}
     range_image_top_pose: range image pixel pose for top lidar.
   """
   range_images = {}
   camera_projections = {}
+  seg_labels = {}
   range_image_top_pose = None
   for laser in frame.lasers:
     if len(laser.ri_return1.range_image_compressed) > 0:  # pylint: disable=g-explicit-length-test
@@ -63,6 +72,13 @@ def parse_range_image_and_camera_projection(frame):
       cp = dataset_pb2.MatrixInt32()
       cp.ParseFromString(bytearray(camera_projection_str_tensor.numpy()))
       camera_projections[laser.name] = [cp]
+
+      if len(laser.ri_return1.segmentation_label_compressed) > 0:  # pylint: disable=g-explicit-length-test
+        seg_label_str_tensor = tf.io.decode_compressed(
+            laser.ri_return1.segmentation_label_compressed, 'ZLIB')
+        seg_label = dataset_pb2.MatrixInt32()
+        seg_label.ParseFromString(bytearray(seg_label_str_tensor.numpy()))
+        seg_labels[laser.name] = [seg_label]
     if len(laser.ri_return2.range_image_compressed) > 0:  # pylint: disable=g-explicit-length-test
       range_image_str_tensor = tf.io.decode_compressed(
           laser.ri_return2.range_image_compressed, 'ZLIB')
@@ -75,7 +91,14 @@ def parse_range_image_and_camera_projection(frame):
       cp = dataset_pb2.MatrixInt32()
       cp.ParseFromString(bytearray(camera_projection_str_tensor.numpy()))
       camera_projections[laser.name].append(cp)
-  return range_images, camera_projections, range_image_top_pose
+
+      if len(laser.ri_return2.segmentation_label_compressed) > 0:  # pylint: disable=g-explicit-length-test
+        seg_label_str_tensor = tf.io.decode_compressed(
+            laser.ri_return2.segmentation_label_compressed, 'ZLIB')
+        seg_label = dataset_pb2.MatrixInt32()
+        seg_label.ParseFromString(bytearray(seg_label_str_tensor.numpy()))
+        seg_labels[laser.name].append(seg_label)
+  return range_images, camera_projections, seg_labels, range_image_top_pose
 
 
 def convert_range_image_to_cartesian(frame,
@@ -88,7 +111,7 @@ def convert_range_image_to_cartesian(frame,
   Args:
     frame: open dataset frame
     range_images: A dict of {laser_name, [range_image_first_return,
-       range_image_second_return]}.
+      range_image_second_return]}.
     range_image_top_pose: range image pixel pose for top lidar.
     ri_index: 0 for the first return, 1 for the second return.
     keep_polar_features: If true, keep the features from the polar range image
@@ -212,7 +235,7 @@ def convert_range_image_to_point_cloud(frame,
   return points, cp_points
 
 
-def convert_frame_to_dict(frame):
+def convert_frame_to_dict(frame: dataset_pb2.Frame) -> Dict[str, np.ndarray]:
   """Convert the frame proto into a dict of numpy arrays.
 
   The keys, shapes, and data types are:
@@ -254,13 +277,19 @@ def convert_frame_to_dict(frame):
   Returns:
     Dict from string field name to numpy ndarray.
   """
-  range_images, camera_projection_protos, range_image_top_pose = (
+  range_images, camera_projection_protos, _, range_image_top_pose = (
       parse_range_image_and_camera_projection(frame))
   first_return_cartesian_range_images = convert_range_image_to_cartesian(
-      frame, range_images, range_image_top_pose, ri_index=0,
+      frame,
+      range_images,
+      range_image_top_pose,
+      ri_index=0,
       keep_polar_features=True)
   second_return_cartesian_range_images = convert_range_image_to_cartesian(
-      frame, range_images, range_image_top_pose, ri_index=1,
+      frame,
+      range_images,
+      range_image_top_pose,
+      ri_index=1,
       keep_polar_features=True)
 
   data_dict = {}
@@ -276,8 +305,8 @@ def convert_frame_to_dict(frame):
           tf.constant([c.beam_inclination_min, c.beam_inclination_max]),
           height=range_images[c.name][0].shape.dims[0]).numpy()
     else:
-      data_dict[beam_inclination_key] = np.array(
-          c.beam_inclinations, np.float32)
+      data_dict[beam_inclination_key] = np.array(c.beam_inclinations,
+                                                 np.float32)
 
     data_dict[f'{laser_name_str}_LIDAR_EXTRINSIC'] = np.reshape(
         np.array(c.extrinsic.transform, np.float32), [4, 4])

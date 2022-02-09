@@ -77,6 +77,7 @@ namespace open_dataset {
 namespace {
 // Generates a simple metrics config with one difficulty level (LEVEL_2 assumed)
 // for each breakdown.
+
 Config GetConfig() {
   Config config;
   config.add_breakdown_generator_ids(Breakdown::OBJECT_TYPE);

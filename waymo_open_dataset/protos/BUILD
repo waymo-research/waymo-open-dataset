@@ -1,6 +1,7 @@
 load("//tf:build_config.bzl", "all_proto_library")
 
 
+
 package(
     default_visibility = [
         "//visibility:public",
@@ -43,7 +44,30 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "segmentation_metrics.proto",
+    deps = [
+        ":segmentation_proto",
+        "//waymo_open_dataset:dataset_proto",
+    ],
+)
+
+all_proto_library(
+    src = "segmentation_submission.proto",
+    deps = [
+        ":segmentation_metrics_proto",
+    ],
+)
+
+all_proto_library(
     src = "motion_submission.proto",
+)
+
+all_proto_library(
+    src = "occupancy_flow_metrics.proto",
+)
+
+all_proto_library(
+    src = "occupancy_flow_submission.proto",
 )
 
 all_proto_library(
@@ -60,4 +84,13 @@ all_proto_library(
         "//waymo_open_dataset:label_proto",
     ],
 )
+
+all_proto_library(
+    src = "keypoint.proto",
+)
+
+all_proto_library(
+    src = "segmentation.proto",
+)
+
 

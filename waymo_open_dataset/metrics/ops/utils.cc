@@ -319,6 +319,8 @@ ParseScenarioAndPredictonsFromTensors(
     scenario->set_scenario_id(cur_scenario_id);
     predictions->set_scenario_id(cur_scenario_id);
 
+    // A map from ground truth index to the actual track index.
+    absl::flat_hash_map<int64, int64> gt_idx_to_track_idx;
     for (int j = 0; j < num_total_agents; ++j) {
       const int64 cur_object_id = object_id.matrix<int64>()(i, j);
       bool trajectory_is_valid = false;
@@ -330,6 +332,8 @@ ParseScenarioAndPredictonsFromTensors(
       }
       if (trajectory_is_valid) {
         Track* track = scenario->add_tracks();
+        // Keep track of which track index each ground truth agent is in.
+        gt_idx_to_track_idx[j] = scenario->tracks_size() - 1;
         track->set_id(cur_object_id);
         track->set_object_type(
             static_cast<Track_ObjectType>(object_type.matrix<int64>()(i, j)));
@@ -347,24 +351,38 @@ ParseScenarioAndPredictonsFromTensors(
       }
     }
 
+    std::vector<bool> pred_group_valid(num_pred_groups, false);
     for (int m = 0; m < num_pred_groups; ++m) {
       for (int n = 0; n < num_agents_per_group; ++n) {
         if (pred_gt_indices_mask.tensor<bool, 3>()(i, m, n)) {
-          int64 index = pred_gt_indices.tensor<int64, 3>()(i, m, n);
-          CHECK_GE(index, 0);
-          CHECK_LT(index, num_total_agents);
+          // If any agent in the pred group is valid (via above check)
+          // mark the pred group as valid;
+          pred_group_valid[m] = true;
+
+          int64 gt_index = pred_gt_indices.tensor<int64, 3>()(i, m, n);
+          CHECK_GE(gt_index, 0);
+          CHECK_LT(gt_index, num_total_agents);
+          // Get the track index for that ground truth agent.
+          int64 track_index = gt_idx_to_track_idx[gt_index];
+          CHECK_GE(track_index, 0);
+          CHECK_LT(track_index, scenario->tracks_size());
           RequiredPrediction& required_track =
               *scenario->add_tracks_to_predict();
-          required_track.set_track_index(index);
+          required_track.set_track_index(track_index);
           required_track.set_difficulty(RequiredPrediction::LEVEL_1);
 
           scenario->add_objects_of_interest(
-              object_id.matrix<int64>()(i, scenario->tracks(index).id()));
+              object_id.matrix<int64>()(i, scenario->tracks(track_index).id()));
         }
       }
     }
 
     for (int m = 0; m < num_pred_groups; ++m) {
+      // If the pred group is invalid, skip creating multi_modal_prediction and
+      // joint_predictions objects.
+      if (!pred_group_valid[m]) {
+        continue;
+      }
       auto* multi_modal_predictions =
           predictions->add_multi_modal_predictions();
 
@@ -376,10 +394,15 @@ ParseScenarioAndPredictonsFromTensors(
         for (int j = 0; j < num_agents_per_group; ++j) {
           if (pred_gt_indices_mask.tensor<bool, 3>()(i, m, j)) {
             auto new_trajectory = joint_prediction->add_trajectories();
-            int64 index = pred_gt_indices.tensor<int64, 3>()(i, m, j);
-            CHECK_GE(index, 0);
-            CHECK_LT(index, num_total_agents);
-            new_trajectory->set_object_id(scenario->tracks(index).id());
+            int64 gt_index = pred_gt_indices.tensor<int64, 3>()(i, m, j);
+            CHECK_GE(gt_index, 0);
+            CHECK_LT(gt_index, num_total_agents);
+            // Get the track index for that ground truth agent.
+            int64 track_index = gt_idx_to_track_idx[gt_index];
+            CHECK_GE(track_index, 0);
+            CHECK_LT(track_index, scenario->tracks_size());
+
+            new_trajectory->set_object_id(scenario->tracks(track_index).id());
             for (int t = 0; t < num_pred_steps; ++t) {
               new_trajectory->add_center_x(
                   pred_trajectory.tensor<float, 6>()(i, m, k, j, t, 0));

@@ -9,6 +9,7 @@ licenses(["notice"])
 cc_binary(
     name = "compare_objects_file_to_submission_main",
     srcs = ["compare_objects_file_to_submission_main.cc"],
+
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset/common:integral_types",
@@ -24,6 +25,7 @@ cc_binary(
 py_binary(
     name = "make_objects_file_from_latency_results",
     srcs = ["make_objects_file_from_latency_results.py"],
+
     python_version = "PY3",
     deps = [
         # Implicit numpy dependency.

@@ -17,6 +17,8 @@ syntax = "proto2";
 
 package waymo.open_dataset;
 
+import "waymo_open_dataset/protos/keypoint.proto";
+
 message Label {
   // Upright box, zero pitch and roll.
   message Box {
@@ -81,6 +83,22 @@ message Label {
 
   // The total number of lidar points in this box.
   optional int32 num_lidar_points_in_box = 7;
+
+  oneof keypoints_oneof {
+    // Used if the Label is a part of `Frame.laser_labels`.
+    keypoints.LaserKeypoints laser_keypoints = 8;
+    // Used if the Label is a part of `Frame.camera_labels`.
+    keypoints.CameraKeypoints camera_keypoints = 9;
+  }
+
+  // Information to cross reference between labels for different modalities.
+  message Association {
+    // Currently only CameraLabels store information about associated lidar
+    // objects.
+    optional string laser_object_id = 1;
+  }
+  optional Association association = 10;
+
 
 }
 

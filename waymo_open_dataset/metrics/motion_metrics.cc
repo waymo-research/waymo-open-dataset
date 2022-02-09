@@ -456,12 +456,11 @@ Status SpeedScaleFactor(const MotionMetricsConfig& config, const Track& track,
   return OkStatus();
 }
 
-Status IsTruePositive(
-    const MotionMetricsConfig& config,
-    const JointTrajectories& joint_prediction,
-    const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
-    const MotionMetricsConfig::MeasurementStepConfig& step_config,
-    absl::optional<bool>* is_tp) {
+Status IsMatch(const MotionMetricsConfig& config,
+               const JointTrajectories& joint_prediction,
+               const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
+               const MotionMetricsConfig::MeasurementStepConfig& step_config,
+               absl::optional<bool>* is_tp) {
   // Compute the displacements at prediction_step for all trajectories.
   const int num_trajectories = joint_prediction.trajectories_size();
   std::vector<Displacement> displacements(num_trajectories);
@@ -534,8 +533,8 @@ Status ComputeMissRate(
   for (const auto& joint_prediction :
        multi_modal_prediction.joint_predictions()) {
     absl::optional<bool> true_positive;
-    Status status = IsTruePositive(config, joint_prediction, ids_to_tracks,
-                                   step_config, &true_positive);
+    Status status = IsMatch(config, joint_prediction, ids_to_tracks,
+                            step_config, &true_positive);
     if (!status.ok()) {
       return status;
     }
@@ -719,7 +718,7 @@ Status ComputeMeanAveragePrecision(
     const MotionMetricsConfig::MeasurementStepConfig& step_config,
     const MultimodalPrediction& prediction,
     const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
-    MeanAveragePrecisionStats* result) {
+    bool use_soft_mean_average_precision, MeanAveragePrecisionStats* result) {
   // Initialize all bucket vector sizes and initialize all threshold stats.
   result->pr_buckets.resize(TrajectoryType::NUM_TYPES);
 
@@ -742,22 +741,20 @@ Status ComputeMeanAveragePrecision(
   for (const auto& trajectory :
        prediction.joint_predictions(0).trajectories()) {
     ConstTrackPtr track_ptr;
-
     Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
     if (!status.ok()) {
       return status;
     }
 
+    // Find the type bucket for this trajectory.
     absl::optional<TrajectoryType> trajectory_type =
         ClassifyTrack(config.track_history_samples(), *track_ptr);
-
     if (trajectory_type) {
       if (priorities.find(*trajectory_type) == priorities.end()) {
         return InvalidArgumentError(
             absl::StrCat("trajectory_type", *trajectory_type,
                          " not defined in GetObjectTypePriority"));
       }
-
       if (priorities.at(*trajectory_type) > priorities.at(type)) {
         type = *trajectory_type;
       }
@@ -786,24 +783,33 @@ Status ComputeMeanAveragePrecision(
         prediction.joint_predictions(joint_prediction_index);
 
     // Determine if the prediction is a true positive.
-    absl::optional<bool> is_true_positive_opt;
-    Status status = IsTruePositive(config, joint_prediction, ids_to_tracks,
-                                   step_config, &is_true_positive_opt);
+    absl::optional<bool> is_match_opt;
+    Status status = IsMatch(config, joint_prediction, ids_to_tracks,
+                            step_config, &is_match_opt);
     if (!status.ok()) {
       return status;
     }
-    if (!is_true_positive_opt.has_value()) {
+    if (!is_match_opt.has_value()) {
       continue;
     }
-    const bool is_true_positive = is_true_positive_opt.value();
+    const bool is_match = is_match_opt.value();
 
-    // Store a true positive only if a true positive has not yet been stored
-    // for these joint object tracks.
-    const bool sample_result =
-        already_found_positive ? false : is_true_positive;
-    bucket.samples.push_back(
-        PredictionSample(joint_prediction.confidence(), sample_result));
-    if (is_true_positive) {
+    if (!use_soft_mean_average_precision) {
+      // Store a true positive only if a true positive has not yet been stored
+      // for these joint object tracks.
+      const bool sample_result = already_found_positive ? false : is_match;
+      bucket.samples.push_back(
+          PredictionSample(joint_prediction.confidence(), sample_result));
+    } else {
+      // Ignore a true positive if a true positive has already been found if
+      // computing the soft mAP metric.
+      const bool skip_result = is_match && already_found_positive;
+      if (!skip_result) {
+        bucket.samples.push_back(
+            PredictionSample(joint_prediction.confidence(), is_match));
+      }
+    }
+    if (is_match) {
       already_found_positive = true;
     }
     measurement_taken = true;
@@ -916,12 +922,25 @@ Status ComputeAllMetrics(
       MeanAveragePrecisionStats mean_average_precision_stats;
       status = ComputeMeanAveragePrecision(
           config, step_config, multi_modal_prediction, ids_to_tracks,
+          /*use_soft_mean_average_precision=*/false,
           &mean_average_precision_stats);
       if (!status.ok()) {
         return status;
       }
       metrics_stats.mean_average_precision.Accumulate(
           mean_average_precision_stats);
+
+      // Compute the soft mean average precision metrics.
+      MeanAveragePrecisionStats soft_mean_average_precision_stats;
+      status = ComputeMeanAveragePrecision(
+          config, step_config, multi_modal_prediction, ids_to_tracks,
+          /*use_soft_mean_average_precision=*/true,
+          &soft_mean_average_precision_stats);
+      if (!status.ok()) {
+        return status;
+      }
+      metrics_stats.soft_mean_average_precision.Accumulate(
+          soft_mean_average_precision_stats);
     }
   }
   return OkStatus();
@@ -935,6 +954,8 @@ void MetricsStats::Accumulate(const MetricsStats& metrics_stats) {
   miss_rate.Accumulate(metrics_stats.miss_rate);
   overlap_rate.Accumulate(metrics_stats.overlap_rate);
   mean_average_precision.Accumulate(metrics_stats.mean_average_precision);
+  soft_mean_average_precision.Accumulate(
+      metrics_stats.soft_mean_average_precision);
 }
 
 void PredictionStats::Accumulate(const PredictionStats& prediction_stats) {
@@ -1122,6 +1143,8 @@ void ComputeBundle(int step, Track::ObjectType object_type, MetricsStats* stats,
   bundle->set_overlap_rate(stats->overlap_rate.Mean());
   bundle->set_mean_average_precision(
       ComputeMapMetric(&stats->mean_average_precision));
+  bundle->set_soft_mean_average_precision(
+      ComputeMapMetric(&stats->soft_mean_average_precision));
 }
 
 }  // namespace

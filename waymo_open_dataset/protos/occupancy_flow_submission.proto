@@ -1,0 +1,102 @@
+/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto is used to submit results for the Waymo Open Dataset Occupancy
+// Flow Prediction Challenge.
+//
+// We use the following shorthands to refer to values defined in
+// occupancy_flow_metrics.proto:
+//
+// num_waypoints
+// grid_height
+// grid_width
+
+syntax = "proto2";
+
+package waymo.open_dataset.occupancy_flow;
+
+// Occupancy and flow predictions for a single waypoint (one-second interval).
+message Waypoint {
+  // Predicted row-major occupancy grid of currently-observed vehicles for one
+  // waypoint.  It stores a numpy array shaped [grid_height, grid_width, 1]
+  // containing probabilites in range [0, 1] quantized to *unsigned int8* in
+  // range [0, 255].  To reduce the disk space requirements, the array is
+  // stored as zlib compressed bytes:
+  //
+  // Example code:
+  // predicted_occupancy = np.random.uniform(size=[256, 256, 1], low=0, high=1)
+  // predicted_occupancy = np.round(predicted_occupancy * 255).astype(np.uint8)
+  // bytes = zlib.compress(predicted_occupancy.tobytes())
+  optional bytes observed_vehicles_occupancy = 1;
+
+  // Predicted occupancy grid of currently-occluded vehicles for one waypoint.
+  // Same representation as observed_vehicle_occupancy.
+  optional bytes occluded_vehicles_occupancy = 2;
+
+  // Predicted backward flow field of all currently-observed and currently-
+  // occluded vehicles for one waypoint.  The flow vectors are in grid cell
+  // units and represent (dx, dy) displacements of points within agent boxes.
+  // Flow is constructed between timesteps `waypoint_size` apart.  Please see
+  // occupancy_flow_grids.py for more detail.  This field should store a numpy
+  // array shaped [grid_height, grid_width, 2] containing (dx, dy) vectors.
+  // The data is stored in row-major order.  The values are quantized to
+  // *signed int8* in range [-128, 127].  To reduce the disk space requirements,
+  // the array is stored as zlib compressed bytes:
+  //
+  // Example code:
+  // predicted_flow = np.random.uniform(size=[256, 256, 2], low=-200, high=200)
+  // predicted_flow = np.clip(np.round(predicted_flow), -128, 127)
+  // predicted_flow = predicted_flow.astype(np.int8)
+  // bytes = zlib.compress(predicted_flow.tobytes())
+  optional bytes all_vehicles_flow = 3;
+}
+
+// A sequence of `num_waypoints` predictions for a single scenario.
+message ScenarioPrediction {
+  // The unique ID of the scenario being predicted. This ID must match the
+  // scenario_id field in the test or validation set tf.Example or scenario
+  // proto corresponding to this set of predictions.
+  optional string scenario_id = 1;
+
+  // Sequence of occupancy and flow predictions.  This field should be repeated
+  // `num_waypoints` times.
+  repeated Waypoint waypoints = 2;
+}
+
+// A set of ScenarioPrediction protos. A ScenarioPrediction proto for each
+// example in the test or validation set must be included for a valid
+// submission.
+message ChallengeSubmission {
+  // This must be set as the full email used to register at waymo.com/open.
+  optional string account_name = 1;
+
+  // This name needs to be short, descriptive and unique. Only the latest result
+  // of the method from a user will show up on the leaderboard.
+  optional string unique_method_name = 2;
+
+  // Author information.
+  repeated string authors = 3;
+  optional string affiliation = 4;
+
+  // A brief description of the method.
+  optional string description = 5;
+
+  // Link to paper or other link that describes the method.
+  optional string method_link = 6;
+
+  // The set of scenario predictions to evaluate. One entry should exist for
+  // every record in the test set.
+  repeated ScenarioPrediction scenario_predictions = 7;
+}

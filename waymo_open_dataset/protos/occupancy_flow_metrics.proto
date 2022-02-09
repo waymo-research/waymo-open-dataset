@@ -1,0 +1,159 @@
+/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This file defines two protos:
+// OccupancyFlowTaskConfig: Parameters for occupancy and flow prediction tasks.
+// OccupancyFlowMetrics: Holds computed metrics values.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+// Configuration for all parameters defining the occupancy flow task.
+message OccupancyFlowTaskConfig {
+  // The following default values reflect the size of sequences in the Waymo
+  // Open Motion Dataset.
+  optional int32 num_past_steps = 1 [default = 10];
+  optional int32 num_future_steps = 2 [default = 80];
+
+  // -- PREDICTION SIZE --
+
+  // Number of predicted waypoints (snapshots over time) for each scene.  The
+  // waypoints uniformly divide the future timesteps (num_future_steps) into
+  // num_waypoints equal intervals.
+  optional int32 num_waypoints = 3 [default = 8];
+
+  // When cumulative_waypoints is false, ground-truth waypoints are created by
+  // sampling individual timesteps from the future timesteps.  For example,
+  // for num_futures_steps = 80 and num_waypoints = 8, ground-truth occupancy is
+  // taken from timesteps {10, 20, 30, ..., 80}, and ground-truth flow fields
+  // are constructed from the displacements between timesteps
+  // {0 -> 10, 10 -> 20, ..., 70 -> 80} where 0 is the current time and 1-80 are
+  // the future timesteps.
+  //
+  // When cumulative_waypoints is true, ground-truth waypoints are created by
+  // aggregating occupancy and flow over all the timesteps that fall inside
+  // each waypoint.  For example, the last waypoint's occupancy is constructed
+  // by accumulating occupancy over timesteps [71, 72, ..., 80] and the last
+  // waypoint's flow field is constructed by averaging all 10 flow fields
+  // between timesteps [61 -> 71, 62 -> 72, ..., 70 -> 80].
+  //
+  // The code provided in occupancy_flow_data.py implements the above logic to
+  // construct the ground truth.
+  optional bool cumulative_waypoints = 4 [default = true];
+
+  // -- PREDICTION RESOLUTION AND SCALE --
+
+  // Whether to rotate the scene such that the SDC is heading up in ground-truth
+  // grids.
+  optional bool normalize_sdc_yaw = 12 [default = true];
+
+  // Occupancy grids are organized [grid_height_cells, grid_width_cells, 1].
+  // Flow fields are organized as [grid_height_cells, grid_width_cells, 2].
+  optional int32 grid_height_cells = 5 [default = 256];
+  optional int32 grid_width_cells = 6 [default = 256];
+  // The ground-truth occupancy and flow for all future waypoints are rendered
+  // with reference to the location of the autonomous vehicle at the current
+  // time.  The autonomous vehicle's current location is mapped to the following
+  // coordinates.
+  optional int32 sdc_y_in_grid = 7 [default = 192];
+  optional int32 sdc_x_in_grid = 8 [default = 128];
+
+  // Prediction scale.  With a value of 3.2, the 256x256 grid covers an 80mx80m
+  // area of the world.
+  optional float pixels_per_meter = 9 [default = 3.2];
+
+  // Ground-truth occupancy grids are constructed by sampling the specified
+  // number of points along the length and width from the interior of agent
+  // boxes and scattering those points on the grid.  Similarly, ground-truth
+  // flow fields are constructed from the (dx, dy) displacements of such points
+  // over time.
+  optional int32 agent_points_per_side_length = 10 [default = 48];
+  optional int32 agent_points_per_side_width = 11 [default = 16];
+}
+
+// Occupancy and flow metrics averaged over all prediction waypoints.
+// Please refer to occupancy_flow_metrics.py for an implementation of these
+// metrics.
+message OccupancyFlowMetrics {
+  // Treating occupancy in each grid cell as an independent binary prediction,
+  // this metric measures the area under the precision-recall curve of all
+  // grid cells in the future occupancy of currently-observed vehicles.
+  optional float vehicles_observed_auc = 1;
+  // Measures the soft intersection-over-union between ground-truth bounding
+  // boxes and predicted future occupancy grids of currently-observed vehicles.
+  optional float vehicles_observed_iou = 2;
+
+  // Same as above, but for currently-occluded vehicles.
+  // NOTE: All agents in future timesteps are divided into the two categories
+  // (currently-observed and currently-occluded) depending on whether the agent
+  // is present (valid) at the current timestep.  Agents which are not valid
+  // at the current time, but become valid later are considered currently-
+  // occluded.  The model is expected to predict the two categories separately,
+  // and the occupancy metrics are also computed separately for the two
+  // categories.
+  optional float vehicles_occluded_auc = 3;
+  optional float vehicles_occluded_iou = 4;
+
+  // End-point-error between ground-truth and predicted flow fields, averaged
+  // over all cells in the grid.  Flow end-point-error measures the Euclidean
+  // distance between the predicted and ground-truth flow vectors.
+  optional float vehicles_flow_epe = 5;
+
+  // The flow-warped occupancy metrics verify correctness of both predicted
+  // flow fields and predicted occupancy grids.
+  //
+  // Here is how the flow-warped occupancy metrics are computed for waypoint t:
+  //
+  // Let:
+  // ~O^b_k denote the predicted occupancy at waypoint k of observed vehicles,
+  // ~O^c_k denote the predicted occupancy at waypoint k of occluded vehicles,
+  // O^b_k denote the ground-truth occupancy at waypoint k of observed vehicles,
+  // O^c_k denote the ground-truth occupancy at waypoint k of occluded vehicles,
+  // ~F_k denote the predicted flow between waypoints k - 1 and k.
+  //
+  // First, we compute the ground-truth occupancy of all vehicles (currently
+  // observed or occluded) at waypoint k as
+  //
+  // O_k = O^b_k + O^c_k
+  //
+  // and at waypoint k - 1 as
+  //
+  // O_{k-1} = O^b_{k-1} + O^c_{k-1}.
+  //
+  // We also compute the predicted occupancy of all vehicles as
+  //
+  // ~O_k = ~O^b_k + ~O^c_k.
+  //
+  // If the predicted occupancies are accurate, we should have ~O_k == O_k.  The
+  // occupancy metrics defined above already evaluate this expectation.  To
+  // ensure correctness of predicted flow, ~F_k, we use it to warp the origin
+  // ground-truth occupancy of that flow field (O_{k-1}) as
+  //
+  // ~W_k = ~F_k o O_{k-1},
+  //
+  // where o indicates function application -- applying the flow field as a
+  // function to transform the occupancy.  If the predicted flow is accurate, we
+  // should also have ~W_k == O_k.  To combine both expectations, we multiply
+  // ~W_k element-wise with ~O_k, to get
+  //
+  // ~W_k * ~O_k.
+  //
+  // If the predicted occupancy and flow at waypoint k are accurate, this term
+  // should be equal to the ground-truth O_k.  Therefore, the flow-warped
+  // metrics compute AUC and Soft-IoU between ~W_k * ~O_k and ground-truth O_k.
+  optional float vehicles_flow_warped_occupancy_auc = 6;
+  optional float vehicles_flow_warped_occupancy_iou = 7;
+}

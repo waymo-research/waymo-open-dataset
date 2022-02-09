@@ -83,6 +83,7 @@ def initialize_model():
   run_model(np.zeros((64, 2650, 6)))
 
 
+
 def run_model(TOP_RANGE_IMAGE_FIRST_RETURN):
   """Run the model on the 6-dimensional range image.
 
@@ -111,5 +112,6 @@ def run_model(TOP_RANGE_IMAGE_FIRST_RETURN):
       # Add a "classes" field that is always CAR.
       'classes': np.full(output_tensors['box_3d'].shape[1], 1, dtype=np.uint8),
   }
+
 
 

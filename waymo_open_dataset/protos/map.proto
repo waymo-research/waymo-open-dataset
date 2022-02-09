@@ -25,6 +25,7 @@ message Map {
   // time steps.
   repeated DynamicState dynamic_states = 2;
 
+
 }
 
 message DynamicState {

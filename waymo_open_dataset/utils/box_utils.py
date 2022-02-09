@@ -14,17 +14,15 @@
 # ==============================================================================
 """Utils for upright 3d box."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 
+from waymo_open_dataset import label_pb2
 from waymo_open_dataset.utils import transform_utils
 
 __all__ = [
     'is_within_box_3d', 'compute_num_points_in_box_3d', 'is_within_box_2d',
-    'get_upright_3d_box_corners', 'transform_point', 'transform_box'
+    'get_upright_3d_box_corners', 'transform_point', 'transform_box',
+    'box_to_tensor'
 ]
 
 
@@ -215,3 +213,10 @@ def transform_box(box, from_frame_pose, to_frame_pose, name=None):
                        box[..., 0:3]) + tf.expand_dims(
                            transform[..., 0:3, 3], axis=-2)
     return tf.concat([center, box[..., 3:6], heading[..., tf.newaxis]], axis=-1)
+
+
+def box_to_tensor(b: label_pb2.Label.Box) -> tf.Tensor:
+  """Converts a box proto into tensor."""
+  return tf.constant([
+      b.center_x, b.center_y, b.center_z, b.length, b.width, b.height, b.heading
+  ])

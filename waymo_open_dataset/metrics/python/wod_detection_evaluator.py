@@ -23,7 +23,7 @@ The following snippet demonstrates the use of interfaces:
       evaluator.update_state(groundtruths, predictions)
     evaluator.result()  # finish one full eval and reset states.
 """
-
+import gc
 import six
 import tensorflow as tf
 
@@ -81,6 +81,9 @@ class WODDetectionEvaluator(object):
     """Resets internal states for a fresh run."""
     self._predictions = {}
     self._groundtruths = {}
+    # In evaluation, OOM could happen when evaluating whole dataset if GC
+    # is not enforced.
+    gc.collect()
 
   def result(self):
     """Evaluates detection results, and reset_states."""

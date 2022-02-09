@@ -268,6 +268,7 @@ TEST(MetricsUtilsTest, EstimateObjectSpeed) {
 }
 
 
+
 }  // namespace
 }  // namespace internal
 }  // namespace open_dataset

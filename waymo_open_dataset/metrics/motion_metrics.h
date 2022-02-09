@@ -134,6 +134,11 @@ struct MetricsStats {
   // equal to the overall mAP value.
   MeanAveragePrecisionStats mean_average_precision;
 
+  // Same as the above mean_average_precision field, however this version does
+  // not penalize duplicate true positive trajectories. Duplicates are ignored
+  // rather than counted as false positives.
+  MeanAveragePrecisionStats soft_mean_average_precision;
+
   // Accumulate stats from another MetricsStats object.
   void Accumulate(const MetricsStats& metrics_stats);
 };

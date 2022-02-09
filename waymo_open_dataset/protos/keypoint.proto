@@ -1,0 +1,110 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset.keypoints;
+
+message Vec2d {
+  optional double x = 1;
+  optional double y = 2;
+}
+
+message Vec3d {
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+}
+
+// Attributes related to the keypoint's visibility.
+message KeypointVisibility {
+  // Is true, if the keypoint is occluded by any object, a body part or its
+  // location can be determined only with large uncertainty.
+  // Is false if the keypoint is clearly visible.
+  optional bool is_occluded = 1;
+}
+
+// Keypoint relative to a specific camera image.
+message Keypoint2d {
+  // Camera image coordinates (in pixels, x=0, y=0 is top-left pixel).
+  optional Vec2d location_px = 1;
+  // Visibility attributes determined based on camera image only.
+  optional KeypointVisibility visibility = 2;
+}
+
+message Keypoint3d {
+  // A 3D coordinate in vehicle or camera frame (depending which message it is
+  // part of - LaserKeypoint or CameraKeypoint).
+  optional Vec3d location_m = 1;
+  // Visibility attributes determined based on all available data (camera image
+  // and or lidar).
+  optional KeypointVisibility visibility = 2;
+}
+
+// All types of keypoints except (NOSE and HEAD_CENTER) are defined as the 3D
+// location where corresponing bones meet - inside the body.
+// We use person-centric coordinates in this task. For example, the person’s
+// right shoulder will be located on the left side of the image for frontal
+// views and on the right side of the image for back views. Similarly for the
+// other body joints.
+enum KeypointType {
+  KEYPOINT_TYPE_UNSPECIFIED = 0;
+  // Tip of nose.
+  KEYPOINT_TYPE_NOSE = 1;
+  KEYPOINT_TYPE_LEFT_SHOULDER = 5;
+  KEYPOINT_TYPE_LEFT_ELBOW = 6;
+  KEYPOINT_TYPE_LEFT_WRIST = 7;
+  KEYPOINT_TYPE_LEFT_HIP = 8;
+  KEYPOINT_TYPE_LEFT_KNEE = 9;
+  KEYPOINT_TYPE_LEFT_ANKLE = 10;
+  KEYPOINT_TYPE_RIGHT_SHOULDER = 13;
+  KEYPOINT_TYPE_RIGHT_ELBOW = 14;
+  KEYPOINT_TYPE_RIGHT_WRIST = 15;
+  KEYPOINT_TYPE_RIGHT_HIP = 16;
+  KEYPOINT_TYPE_RIGHT_KNEE = 17;
+  KEYPOINT_TYPE_RIGHT_ANKLE = 18;
+  // Center of the forehead area.
+  KEYPOINT_TYPE_FOREHEAD = 19;
+  // A point in the center of head - a point in the middle between two ears.
+  // The nose and head center together create an imaginary line in the direction
+  // that the person is looking (i.e. head orientation).
+  KEYPOINT_TYPE_HEAD_CENTER = 20;
+}
+
+// A 2D keypoint on a specific camera.
+message CameraKeypoint {
+  optional KeypointType type = 1;
+  // Camera coordinates.
+  optional Keypoint2d keypoint_2d = 2;
+  // 3D keypoint in camera coordinate frame.
+  optional Keypoint3d keypoint_3d = 3;
+}
+
+// All 2D keypoints for a camera label (object).
+message CameraKeypoints {
+  repeated CameraKeypoint keypoint = 1;
+}
+
+// A 3D keypoint.
+message LaserKeypoint {
+  optional KeypointType type = 1;
+  // 3D keypoint in vehicle coordinate frame.
+  optional Keypoint3d keypoint_3d = 2;
+}
+
+// All 3D keypoints for a laser label (object).
+message LaserKeypoints {
+  repeated LaserKeypoint keypoint = 1;
+}

@@ -1,0 +1,44 @@
+/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+// Various protos to compute segmentation metrics.
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/dataset.proto";
+import "waymo_open_dataset/protos/segmentation.proto";
+
+message SegmentationFrame {
+  // Segmentation labels by lasers.
+  repeated Laser segmentation_labels = 1;
+  // These must be set when evaluating on the leaderboard.
+  // This should be set to Context.name defined in
+  // dataset.proto::Context.
+  optional string context_name = 2;
+  // This should be set to Frame.timestamp_micros defined in
+  // dataset.proto::Frame.
+  optional int64 frame_timestamp_micros = 3;
+}
+message SegmentationFrameList {
+  repeated SegmentationFrame frames = 1;
+}
+
+message SegmentationMetricsConfig {
+  // The list of segmentation_types to eval.
+  repeated Segmentation.Type segmentation_types = 1 [packed = true];
+}
+
+message SegmentationMetrics {
+  // Per class IOU (Intersection Over Union). Keyed by class index.
+  map<int32, float> per_class_iou = 1;
+  optional float miou = 2;
+}

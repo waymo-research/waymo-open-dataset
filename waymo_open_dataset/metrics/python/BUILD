@@ -1,3 +1,10 @@
+# pytype
+load("//waymo_open_dataset/utils:pytype.bzl", "pytype_strict_library")
+
+# strict
+load("//waymo_open_dataset/utils:pytype.bzl", "py_strict_test")
+
+
 
 package(
     default_visibility = [
@@ -23,6 +30,7 @@ py_library(
     deps = [
         ":config_util_py",
         # Implicit tensorflow dependency.
+
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -49,6 +57,7 @@ py_library(
     deps = [
         ":config_util_py",
         # Implicit tensorflow dependency.
+
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -72,6 +81,7 @@ py_library(
     deps = [
         ":config_util_py",
         # Implicit tensorflow dependency.
+
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -91,4 +101,30 @@ py_test(
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],
 )
+
+pytype_strict_library(
+    name = "keypoint_metrics",
+    srcs = ["keypoint_metrics.py"],
+    deps = [
+        # Implicit immutabledict dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/utils:keypoint_data",
+    ],
+)
+
+py_strict_test(
+    name = "keypoint_metrics_test",
+    srcs = ["keypoint_metrics_test.py"],
+    data = [
+        ":testdata/oks_testdata.json",
+    ],
+    deps = [
+        ":keypoint_metrics",
+        # Implicit resources dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/utils:keypoint_data",
+    ],
+)
+
 

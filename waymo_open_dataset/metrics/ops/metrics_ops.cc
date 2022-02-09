@@ -44,6 +44,7 @@ REGISTER_OP("DetectionMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
@@ -71,7 +72,7 @@ ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
 average_precision: [B]. average precision for each breakdown.
 average_precision_ha_weighted: [B]. average precision with heading accuracy
   weighted for each breakdown.
-precision_recall: [B, S, 2]. precision and recall pairs for each breakdown.
+precision_recall: [B, S, 5]. precision, recall, TP, FP, FN for each breakdown.
   S is the number of score cutoffs.
 precision_recall_ha_weighted: [B, S, 2]. precision and recall with heading
   accuracy weighted pairs for each breakdown.
@@ -97,6 +98,7 @@ REGISTER_OP("MotionMetrics")
     .Output("mean_average_precision: float")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
@@ -169,6 +171,7 @@ REGISTER_OP("TrackingMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
