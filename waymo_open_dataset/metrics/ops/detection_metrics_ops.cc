@@ -104,7 +104,7 @@ class DetectionMetricsOp final : public OpKernel {
     OutputTensors(int num_breakdowns, int num_score_cutoffs)
         : average_precision(DT_FLOAT, {num_breakdowns}),
           average_precision_ha_weighted(DT_FLOAT, {num_breakdowns}),
-          precision_recall(DT_FLOAT, {num_breakdowns, num_score_cutoffs, 2}),
+          precision_recall(DT_FLOAT, {num_breakdowns, num_score_cutoffs, 5}),
           precision_recall_ha_weighted(DT_FLOAT,
                                        {num_breakdowns, num_score_cutoffs, 2}),
           breakdown(DT_UINT8, {num_breakdowns, 3}) {}
@@ -142,6 +142,12 @@ class DetectionMetricsOp final : public OpKernel {
               metrics[i].precisions(j);
           output.precision_recall.tensor<float, 3>()(i, j, 1) =
               metrics[i].recalls(j);
+          output.precision_recall.tensor<float, 3>()(i, j, 2) =
+              metrics[i].measurements().measurements(j).num_tps();
+          output.precision_recall.tensor<float, 3>()(i, j, 3) =
+              metrics[i].measurements().measurements(j).num_fps();
+          output.precision_recall.tensor<float, 3>()(i, j, 4) =
+              metrics[i].measurements().measurements(j).num_fns();
           output.precision_recall_ha_weighted.tensor<float, 3>()(i, j, 0) =
               metrics[i].precisions_ha_weighted(j);
           output.precision_recall_ha_weighted.tensor<float, 3>()(i, j, 1) =

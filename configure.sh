@@ -28,7 +28,7 @@ else
   PYTHON="python${PYTHON_VERSION}.${PYTHON_MINOR_VERSION}"
 fi
 PIP="$PYTHON -m pip"
-update-alternatives --install /usr/bin/python3 python3 "/usr/bin/$PYTHON" 1
+update-alternatives --install /usr/bin/python3 python3 "$(which $PYTHON)" 1
 
 function write_to_bazelrc() {
   echo "$1" >> .bazelrc

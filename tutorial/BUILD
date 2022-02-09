@@ -12,6 +12,7 @@ filegroup(
     name = "framedata",
     srcs = [
         "3d_point_cloud.png",
+        "frame_with_keypoints.tfrecord",
         "frames",
     ],
 )
@@ -40,6 +41,7 @@ py_binary(
         "//waymo_open_dataset/protos:submission_proto_py_pb2",
         "//waymo_open_dataset/utils:box_utils",
         "//waymo_open_dataset/utils:frame_utils",
+        "//waymo_open_dataset/utils:keypoint_utils",
         "//waymo_open_dataset/utils:range_image_utils",
         "//waymo_open_dataset/utils:transform_utils",
     ],

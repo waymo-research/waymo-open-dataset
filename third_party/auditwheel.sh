@@ -14,12 +14,18 @@
 # limitations under the License.
 # ==============================================================================
 
-TF_SHARED_LIBRARY_NAME=$(grep -r TF_SHARED_LIBRARY_NAME .bazelrc | awk -F= '{print$2}')
+function parse_bazelrc_value() {
+  awk -F= '/'$1'/ {print(substr($2, 2, length($2)-2))}' .bazelrc
+}
+
+TF_SHARED_LIBRARY_NAME="$(parse_bazelrc_value TF_SHARED_LIBRARY_NAME)"
+TF_SHARED_LIBRARY_DIR="$(parse_bazelrc_value TF_SHARED_LIBRARY_DIR)"
 
 POLICY_JSON=$(find / -name policy.json)
 
-sed -i "s/libresolv.so.2\"/libresolv.so.2\", $TF_SHARED_LIBRARY_NAME/g" $POLICY_JSON
+sed -i "s/libresolv.so.2\"/libresolv.so.2\", \"$TF_SHARED_LIBRARY_NAME\"/g" $POLICY_JSON
 
 cat $POLICY_JSON
 
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TF_SHARED_LIBRARY_DIR"
 auditwheel $@

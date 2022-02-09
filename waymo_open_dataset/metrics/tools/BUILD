@@ -11,6 +11,8 @@ filegroup(
     srcs = [
         "fake_ground_truths.bin",
         "fake_predictions.bin",
+        "fake_segmentation_groundtruths.bin",
+        "fake_segmentation_predictions.bin",
     ],
 )
 
@@ -24,6 +26,18 @@ cc_binary(
         "//waymo_open_dataset/metrics:detection_metrics",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_binary(
+    name = "compute_segmentation_metrics_main",
+    srcs = ["compute_segmentation_metrics_main.cc"],
+    deps = [
+        "//waymo_open_dataset:dataset_cc_proto",
+        "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/metrics:segmentation_metrics",
+        "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -64,8 +78,22 @@ py_binary(
     srcs = ["create_prediction_file_example.py"],
     python_version = "PY3",
     deps = [
+        # END GOOGLE-INTERNAL
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+
+py_binary(
+    name = "create_segmentation_prediction_file_example",
+    srcs = ["create_segmentation_prediction_file_example.py"],
+    python_version = "PY3",
+    deps = [
+        "//pyglib:gfile",
+        # END GOOGLE-INTERNAL
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:segmentation_metrics_proto_py_pb2",
     ],
 )

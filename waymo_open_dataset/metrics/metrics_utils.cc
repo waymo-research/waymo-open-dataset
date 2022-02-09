@@ -283,8 +283,10 @@ float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
     last_recall = it->first;
   }
   // Override the entry for recall 0.0.
-  precision_recall[precision_recall.size() - 1].p =
-      precision_recall[precision_recall.size() - 2].p;
+  if (precision_recall.size() >= 2) {
+    precision_recall[precision_recall.size() - 1].p =
+        precision_recall[precision_recall.size() - 2].p;
+  }
 
   // Do integration to compute the area under the P/R curve to produce mAP.
   float mean_average_precision = 0.0;

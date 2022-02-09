@@ -181,8 +181,9 @@ class MotionMetricsOp final : public OpKernel {
 
     co::MotionMetricsConfig metrics_config = config_;
 
-    std::vector<std::pair<co::Scenario, co::ScenarioPredictions>> gts_pds(
-        gts_pds_map.size());
+    std::vector<std::pair<co::Scenario, co::ScenarioPredictions>> gts_pds;
+    gts_pds.reserve(gts_pds_map.size());
+
     for (const auto& gt_pd : gts_pds_map) {
       gts_pds.push_back(std::move(gt_pd.second));
     }

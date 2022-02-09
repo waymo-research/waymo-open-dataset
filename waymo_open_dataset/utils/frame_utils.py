@@ -13,10 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Utils for Frame protos."""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -25,8 +22,15 @@ from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import transform_utils
 
+RangeImages = Dict['dataset_pb2.LaserName.Name', List[dataset_pb2.MatrixFloat]]
+CameraProjections = Dict['dataset_pb2.LaserName.Name',
+                         List[dataset_pb2.MatrixInt32]]
+ParsedFrame = Tuple[RangeImages, CameraProjections,
+                    Optional[dataset_pb2.MatrixFloat]]
 
-def parse_range_image_and_camera_projection(frame):
+
+def parse_range_image_and_camera_projection(
+    frame: dataset_pb2.Frame) -> ParsedFrame:
   """Parse range images and camera projections given a frame.
 
   Args:
@@ -88,7 +92,7 @@ def convert_range_image_to_cartesian(frame,
   Args:
     frame: open dataset frame
     range_images: A dict of {laser_name, [range_image_first_return,
-       range_image_second_return]}.
+      range_image_second_return]}.
     range_image_top_pose: range image pixel pose for top lidar.
     ri_index: 0 for the first return, 1 for the second return.
     keep_polar_features: If true, keep the features from the polar range image
@@ -212,7 +216,7 @@ def convert_range_image_to_point_cloud(frame,
   return points, cp_points
 
 
-def convert_frame_to_dict(frame):
+def convert_frame_to_dict(frame: dataset_pb2.Frame) -> Dict[str, np.ndarray]:
   """Convert the frame proto into a dict of numpy arrays.
 
   The keys, shapes, and data types are:
@@ -257,10 +261,16 @@ def convert_frame_to_dict(frame):
   range_images, camera_projection_protos, range_image_top_pose = (
       parse_range_image_and_camera_projection(frame))
   first_return_cartesian_range_images = convert_range_image_to_cartesian(
-      frame, range_images, range_image_top_pose, ri_index=0,
+      frame,
+      range_images,
+      range_image_top_pose,
+      ri_index=0,
       keep_polar_features=True)
   second_return_cartesian_range_images = convert_range_image_to_cartesian(
-      frame, range_images, range_image_top_pose, ri_index=1,
+      frame,
+      range_images,
+      range_image_top_pose,
+      ri_index=1,
       keep_polar_features=True)
 
   data_dict = {}
@@ -276,8 +286,8 @@ def convert_frame_to_dict(frame):
           tf.constant([c.beam_inclination_min, c.beam_inclination_max]),
           height=range_images[c.name][0].shape.dims[0]).numpy()
     else:
-      data_dict[beam_inclination_key] = np.array(
-          c.beam_inclinations, np.float32)
+      data_dict[beam_inclination_key] = np.array(c.beam_inclinations,
+                                                 np.float32)
 
     data_dict[f'{laser_name_str}_LIDAR_EXTRINSIC'] = np.reshape(
         np.array(c.extrinsic.transform, np.float32), [4, 4])

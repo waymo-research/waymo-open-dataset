@@ -62,7 +62,16 @@ class BreakdownGeneratorAllButSign : public BreakdownGenerator {
 
   int NumShards() const override { return 2; }
 
-  std::string ShardName(int shard) const override { return "ALL_BUT_SIGN"; }
+  std::string ShardName(int shard) const override {
+    switch (shard) {
+      case 0:
+        return "ALL_BUT_SIGN";
+      case 1:
+        return "SIGN";
+      default:
+        LOG(FATAL) << "Code should not reach here.";
+    }
+  }
 };
 
 // This breakdown generator breaks down the objects based on its object type.

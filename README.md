@@ -2,6 +2,19 @@
 
 The Waymo Open Dataset was first launched in August 2019 with a perception dataset comprising high resolution sensor data and labels for 1,950 segments. We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
 
+## March 2022 Update
+
+We released v1.3 of the perception dataset and the 2022 challenges. We have updated this repository to add support for the new labels and the challenges.
+ - Added 3D semantic segmentation labels, tutorial, and metrics.
+ - Added 2D and 3D keypoint labels, tutorial, and metrics.
+ - Added correspondence between 2D and 3D labels.
+ - Added scenes with camera imagery, as a test set for Camera-Only 3D Detection Challenge.
+ - Added tutorial and metrics for Occupancy and Flow Prediction Challenge.
+ - Added the soft mAP metric for Motion Prediction Challenge.
+ - Added maps to the perception dataset and tutorials.
+
+
+
 ## September 2021 Update
 
 We released v1.1 of the motion dataset to include lane connectivity information. To read more on the technical details, please read [lane_neighbors_and_boundaries.md](docs/lane_neighbors_and_boundaries.md).
@@ -37,12 +50,23 @@ This code repository (excluding third_party) is licensed under the Apache Licens
 The Waymo Open Dataset itself is licensed under separate terms. Please visit [https://waymo.com/open/terms/](https://waymo.com/open/terms/) for details.  Code located at third_party/camera is licensed under a BSD 3-clause copyright license + an additional limited patent license applicable only when the code is used to process data from the Waymo Open Dataset as authorized by and in compliance with the Waymo Dataset License Agreement for Non-Commercial Use.  See third_party/camera for details.
 
 ## Citation
+# for perception dataset
 @inproceedings{sun2020scalability,
   title={Scalability in perception for autonomous driving: Waymo open dataset},
   author={Sun, Pei and Kretzschmar, Henrik and Dotiwalla, Xerxes and Chouard, Aurelien and Patnaik, Vijaysai and Tsui, Paul and Guo, James and Zhou, Yin and Chai, Yuning and Caine, Benjamin and others},
   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   pages={2446--2454},
   year={2020}
+}
+
+# for motion dataset
+@InProceedings{Ettinger_2021_ICCV,
+  author={Ettinger, Scott and Cheng, Shuyang and Caine, Benjamin and Liu, Chenxi and Zhao, Hang and Pradhan, Sabeek and Chai, Yuning and Sapp, Ben and Qi, Charles R. and Zhou, Yin and Yang, Zoey and Chouard, Aur\'elien and Sun, Pei and Ngiam, Jiquan and Vasudevan, Vijay and McCauley, Alexander and Shlens, Jonathon and Anguelov, Dragomir},
+  title={Large Scale Interactive Motion Forecasting for Autonomous Driving: The Waymo Open Motion Dataset},
+  booktitle= Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  month={October},
+  year={2021},
+  pages={9710-9719}
 }
 
 ## Dataset Metadata

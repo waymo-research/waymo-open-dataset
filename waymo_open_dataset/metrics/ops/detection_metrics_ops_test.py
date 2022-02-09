@@ -90,7 +90,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     ap, aph, pr, prh, breakdown = self._GetAP(pd_bbox, pd_type, pd_frameid,
                                               pd_score, gt_bbox, gt_type,
                                               gt_frameid, gt_speed=None)
-    self.assertEqual(pr.shape, (1, 11, 2))
+    self.assertEqual(pr.shape, (1, 11, 5))
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertAllEqual(
         breakdown[0, :],
@@ -103,7 +103,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
                                               gt_frameid, gt_speed=None)
     self.assertAlmostEqual(ap[0], 1.0, places=5)
     self.assertAlmostEqual(aph[0], 1.0, places=5)
-    self.assertEqual(pr.shape, (1, 11, 2))
+    self.assertEqual(pr.shape, (1, 11, 5))
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertAllEqual(
         breakdown[0, :],
@@ -114,7 +114,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
                                               gt_frameid + n, gt_speed=None)
     self.assertAlmostEqual(ap, 0.0, places=5)
     self.assertAlmostEqual(aph, 0.0, places=5)
-    self.assertEqual(pr.shape, (1, 11, 2))
+    self.assertEqual(pr.shape, (1, 11, 5))
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertAllEqual(
         breakdown[0, :],
@@ -130,10 +130,10 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
                                               gt_speed * 0)
 
     self.assertEqual(0, ap)
-    self.assertAllEqual(pr.shape, (1, 11, 2))
+    self.assertAllEqual(pr.shape, (1, 11, 5))
     # IoU for 2 boxes with all zeros params is 0.0.
-    self.assertAllEqual(pr[0, 0], [1.0, 0.0])
-    self.assertAllEqual(pr[0, 1], [1.0, 0.0])
+    self.assertAllEqual(pr[0, 0], [1.0, 0.0, 0.0, 20.0, 100.0])
+    self.assertAllEqual(pr[0, 1], [1.0, 0.0, 0.0, 20.0, 100.0])
 
   def testEmpty(self):
     # We're generating 0 prediction and 0 ground truth boxes here
@@ -146,7 +146,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
 
     self.assertEqual(0, ap)
     self.assertEqual(0, aph)
-    self.assertAllEqual(pr.shape, (1, 11, 2))
+    self.assertAllEqual(pr.shape, (1, 11, 5))
     self.assertAllEqual(prh.shape, (1, 11, 2))
     self.assertAllEqual(len(breakdown), 1)
 
@@ -164,7 +164,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
                                               gt_type, gt_frameid,
                                               gt_speed,
                                               additional_config_str)
-    self.assertEqual(pr.shape, (21, 11, 2))
+    self.assertEqual(pr.shape, (21, 11, 5))
     self.assertEqual(prh.shape, (21, 11, 2))
     self.assertAllEqual(
         breakdown[0, :],

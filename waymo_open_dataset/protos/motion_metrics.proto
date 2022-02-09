@@ -115,6 +115,10 @@ message MotionMetricsBundle {
   // The mean of the AP value across all trajectory shape buckets is equal to
   // this mAP value.
   optional float mean_average_precision = 5;
+
+  // Same as mean_average_precision but duplicate true positives per ground
+  // truth trajectory are ignored rather than counted as a false positive.
+  optional float soft_mean_average_precision = 8;
 }
 
 message MotionMetrics {

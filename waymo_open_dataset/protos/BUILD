@@ -43,6 +43,14 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "segmentation_metrics.proto",
+    deps = [
+        "//waymo_open_dataset:dataset_proto",
+        "//waymo_open_dataset:label_proto",
+    ],
+)
+
+all_proto_library(
     src = "motion_submission.proto",
 )
 
@@ -59,5 +67,9 @@ all_proto_library(
         ":metrics_proto",
         "//waymo_open_dataset:label_proto",
     ],
+)
+
+all_proto_library(
+    src = "keypoint.proto",
 )
 

@@ -239,6 +239,21 @@ message RangeImage {
   //   4: cyclist, i.e., the point corresponds to a cyclist label box.
   optional bytes range_image_flow_compressed = 5;
 
+  // Zlib compressed [H, W, 2] serialized version of MatrixInt32.
+  // To decompress:
+  // string val = ZlibDecompress(segmentation_label_compressed);
+  // MatrixInt32 segmentation_label.
+  // segmentation_label.ParseFromString(val);
+  // Inner dimensions are [instance_id, semantic_class].
+  //
+  // NOTE:
+  // 1. Only TOP LiDAR has segmentation labels.
+  // 2. Not every frame has semgmentation labels. This field is not set if a
+  //    frame is not labeled.
+  // 3. There can be points missing segmentation labels within a labeled frame.
+  //    Their label are set to TYPE_NOT_LABELED when that happens.
+  optional bytes segmentation_label_compressed = 6;
+
   // Deprecated, do not use.
   optional MatrixFloat range_image = 1 [deprecated = true];
 }

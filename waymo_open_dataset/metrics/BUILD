@@ -131,6 +131,18 @@ cc_library(
 )
 
 cc_library(
+    name = "segmentation_metrics",
+    srcs = ["segmentation_metrics.cc"],
+    hdrs = ["segmentation_metrics.h"],
+    deps = [
+        "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/common:status",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "tracking_metrics",
     srcs = ["tracking_metrics.cc"],
     hdrs = ["tracking_metrics.h"],
@@ -313,6 +325,18 @@ cc_test(
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "segmentation_metrics_test",
+    srcs = ["segmentation_metrics_test.cc"],
+    deps = [
+        ":segmentation_metrics",
+        "//waymo_open_dataset:label_cc_proto",
+        "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
