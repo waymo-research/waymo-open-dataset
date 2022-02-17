@@ -78,7 +78,6 @@ py_binary(
     srcs = ["create_prediction_file_example.py"],
     python_version = "PY3",
     deps = [
-        # END GOOGLE-INTERNAL
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
@@ -90,8 +89,6 @@ py_binary(
     srcs = ["create_segmentation_prediction_file_example.py"],
     python_version = "PY3",
     deps = [
-        "//pyglib:gfile",
-        # END GOOGLE-INTERNAL
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:segmentation_metrics_proto_py_pb2",

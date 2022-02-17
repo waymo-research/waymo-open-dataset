@@ -55,6 +55,14 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "occupancy_flow_metrics.proto",
+)
+
+all_proto_library(
+    src = "occupancy_flow_submission.proto",
+)
+
+all_proto_library(
     src = "scenario.proto",
     deps = [
         ":map_proto",

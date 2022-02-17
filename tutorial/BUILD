@@ -28,6 +28,11 @@ py_binary(
     ],
     python_version = "PY3",
     deps = [
+        # Implicit IPython dependency.
+        # Implicit matplotlib dependency.
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        # Implicit tensorflow_graphics/image:transformer dependency.
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
@@ -37,11 +42,18 @@ py_binary(
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
         "//waymo_open_dataset/protos:motion_metrics_proto_py_pb2",
         "//waymo_open_dataset/protos:motion_submission_proto_py_pb2",
+        "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:occupancy_flow_submission_proto_py_pb2",
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
         "//waymo_open_dataset/protos:submission_proto_py_pb2",
         "//waymo_open_dataset/utils:box_utils",
         "//waymo_open_dataset/utils:frame_utils",
         "//waymo_open_dataset/utils:keypoint_utils",
+        "//waymo_open_dataset/utils:occupancy_flow_data",
+        "//waymo_open_dataset/utils:occupancy_flow_grids",
+        "//waymo_open_dataset/utils:occupancy_flow_metrics",
+        "//waymo_open_dataset/utils:occupancy_flow_renderer",
+        "//waymo_open_dataset/utils:occupancy_flow_vis",
         "//waymo_open_dataset/utils:range_image_utils",
         "//waymo_open_dataset/utils:transform_utils",
     ],

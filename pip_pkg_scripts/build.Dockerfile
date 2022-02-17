@@ -29,12 +29,14 @@ RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10; do \
   done
 
 
+RUN apt-get install -y libopenexr-dev
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN for python in python3.6 python3.7 python3.8 python3.9; do \
       $python get-pip.py && \
       $python -m pip install --upgrade pip setuptools auditwheel && \
       $python -m pip install --upgrade grpcio>=1.24.3; \
       $python -m pip install --upgrade matplotlib plotly immutabledict; \
+      $python -m pip install --upgrade OpenEXR tensorflow_graphics; \
     done
 
 VOLUME /tmp/artifacts

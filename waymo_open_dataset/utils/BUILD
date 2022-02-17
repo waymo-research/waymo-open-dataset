@@ -26,6 +26,81 @@ pytype_strict_library(
     ],
 )
 
+filegroup(
+    name = "occupancy_flow_test_data",
+    srcs = [
+        "testdata/motion_data_one_example.tfrecord",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_data",
+    srcs = ["occupancy_flow_data.py"],
+    deps = [
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_grids",
+    srcs = ["occupancy_flow_grids.py"],
+    deps = [
+        ":occupancy_flow_data",
+        ":occupancy_flow_renderer",
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_metrics",
+    srcs = ["occupancy_flow_metrics.py"],
+    deps = [
+        ":occupancy_flow_grids",
+        # Implicit tensorflow dependency.
+        # Implicit tensorflow_graphics/image:transformer dependency.
+        "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_renderer",
+    srcs = ["occupancy_flow_renderer.py"],
+    deps = [
+        ":occupancy_flow_data",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_test_util",
+    srcs = ["occupancy_flow_test_util.py"],
+    data = [
+        ":occupancy_flow_test_data",
+    ],
+    deps = [
+        ":occupancy_flow_data",
+        # Implicit python proto dependency.
+        # Implicit resources dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "occupancy_flow_vis",
+    srcs = ["occupancy_flow_vis.py"],
+    deps = [
+        ":occupancy_flow_data",
+        # Implicit tensorflow dependency.
+    ],
+)
+
 pytype_strict_library(
     name = "range_image_utils",
     srcs = ["range_image_utils.py"],
@@ -89,6 +164,79 @@ py_strict_test(
         ":box_utils",
         ":test_utils",
         ":transform_utils",
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_data_test",
+    srcs = ["occupancy_flow_data_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_data",
+        ":occupancy_flow_test_util",
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_grids_test",
+    srcs = ["occupancy_flow_grids_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_data",
+        ":occupancy_flow_grids",
+        ":occupancy_flow_renderer",
+        ":occupancy_flow_test_util",
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_metrics_test",
+    srcs = ["occupancy_flow_metrics_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_grids",
+        ":occupancy_flow_metrics",
+        ":occupancy_flow_test_util",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_renderer_test",
+    srcs = ["occupancy_flow_renderer_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_data",
+        ":occupancy_flow_renderer",
+        ":occupancy_flow_test_util",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_test_util_test",
+    srcs = ["occupancy_flow_test_util_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_test_util",
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "occupancy_flow_vis_test",
+    srcs = ["occupancy_flow_vis_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":occupancy_flow_data",
+        ":occupancy_flow_grids",
+        ":occupancy_flow_test_util",
+        ":occupancy_flow_vis",
         # Implicit tensorflow dependency.
     ],
 )

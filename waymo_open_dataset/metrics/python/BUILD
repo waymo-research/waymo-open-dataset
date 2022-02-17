@@ -1,3 +1,9 @@
+# pytype
+load("//waymo_open_dataset/utils:pytype.bzl", "pytype_strict_library")
+
+# strict
+load("//waymo_open_dataset/utils:pytype.bzl", "py_strict_test")
+
 
 package(
     default_visibility = [
@@ -89,6 +95,27 @@ py_test(
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "keypoint_metrics",
+    srcs = ["keypoint_metrics.py"],
+    deps = [
+        # Implicit tensorflow dependency.
+    ],
+)
+
+py_strict_test(
+    name = "keypoint_metrics_test",
+    srcs = ["keypoint_metrics_test.py"],
+    data = [
+        ":testdata/oks_testdata.json",
+    ],
+    deps = [
+        ":keypoint_metrics",
+        # Implicit resources dependency.
+        # Implicit tensorflow dependency.
     ],
 )
 
