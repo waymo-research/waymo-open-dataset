@@ -248,7 +248,7 @@ message RangeImage {
   //
   // NOTE:
   // 1. Only TOP LiDAR has segmentation labels.
-  // 2. Not every frame has semgmentation labels. This field is not set if a
+  // 2. Not every frame has segmentation labels. This field is not set if a
   //    frame is not labeled.
   // 3. There can be points missing segmentation labels within a labeled frame.
   //    Their label are set to TYPE_NOT_LABELED when that happens.

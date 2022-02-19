@@ -20,6 +20,7 @@ import tensorflow as tf
 
 # copybara removed file resource import
 from waymo_open_dataset.metrics.python import keypoint_metrics as _lib
+from waymo_open_dataset.utils import keypoint_data as _data
 
 # Values copied from `computeOks` from pycocotools package:
 # https://github.com/matteorr/coco-analyze/blob/9eb8a0a9e57ad1e592661efc2b8964864c0e6f28/pycocotools/cocoeval.py#L216
@@ -33,6 +34,9 @@ from waymo_open_dataset.metrics.python import keypoint_metrics as _lib
 _COCO_KEYPOINT_SCALES_5X = (.26, .25, .25, .35, .35, .79, .79, .72, .72, .62,
                             .62, 1.07, 1.07, .87, .87, .89, .89)
 
+_LEFT_SHOULDER = _lib.KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER
+_RIGHT_SHOULDER = _lib.KeypointType.KEYPOINT_TYPE_RIGHT_SHOULDER
+
 
 def _coco_scales():
   # We multiply all sigmas from the referenced implementation by 2x to make it
@@ -40,18 +44,18 @@ def _coco_scales():
   return [s / 5.0 for s in _COCO_KEYPOINT_SCALES_5X]
 
 
-def _create_keypoints_tensors(testdata) -> _lib.KeypointsTensors:
+def _create_keypoints_tensors(testdata) -> _data.KeypointsTensors:
   location_and_visibility = tf.reshape(tf.constant(testdata), (-1, 3))
-  return _lib.KeypointsTensors(
+  return _data.KeypointsTensors(
       location=location_and_visibility[:, 0:2],
       visibility=location_and_visibility[:, 2])
 
 
-def _create_bbox_tensors(testdata) -> _lib.KeypointsTensors:
+def _create_bbox_tensors(testdata) -> _data.KeypointsTensors:
   bbox = tf.constant(testdata)
   top_left = bbox[:2]
   size = bbox[2:]
-  return _lib.BoundingBoxTensors(center=top_left + size / 2, size=size)
+  return _data.BoundingBoxTensors(center=top_left + size / 2, size=size)
 
 
 def _convert_sample(sample):
@@ -77,8 +81,8 @@ def _convert_testdata(testdata):
   """Converts test data into keypoints."""
   converted = [_convert_sample(s) for s in testdata]
   gts, prs, boxes, scores = zip(*converted)
-  return (_lib.stack_keypoints(gts), _lib.stack_keypoints(prs),
-          _lib.stack_boxes(boxes), scores)
+  return (_data.stack_keypoints(gts), _data.stack_keypoints(prs),
+          _data.stack_boxes(boxes), scores)
 
 
 class MiscTest(tf.test.TestCase):
@@ -88,7 +92,7 @@ class MiscTest(tf.test.TestCase):
     location = tf.constant(
         [[[0, 0], [2, 0], [4, 0], [0, 2]], [[4, 2], [0, 5], [2, 5], [4, 5]]],
         dtype=tf.float32)
-    box = _lib.BoundingBoxTensors(
+    box = _data.BoundingBoxTensors(
         center=tf.constant([[2, 2.5], [2, 2.5]], dtype=tf.float32),
         size=tf.constant([[2, 3], [2, 3]], dtype=tf.float32))
 
@@ -100,7 +104,7 @@ class MiscTest(tf.test.TestCase):
   def test_box_displacement_returns_expected_shifts_for_inside_points_2d(self):
     # batch_size=2, num_points=1
     location = tf.constant([[[2, 2]], [[2, 3]]], dtype=tf.float32)
-    box = _lib.BoundingBoxTensors(
+    box = _data.BoundingBoxTensors(
         center=tf.constant([[2, 2.5], [2, 2.5]], dtype=tf.float32),
         size=tf.constant([[2, 3], [2, 3]], dtype=tf.float32))
 
@@ -109,7 +113,7 @@ class MiscTest(tf.test.TestCase):
     self.assertAllClose(shift, [[[0, 0]], [[0, 0]]])
 
 
-class KeypointMetricsTest(tf.test.TestCase):
+class AveragePrecisionAtOKSTest(tf.test.TestCase):
 
   def test_oks_returns_exactly_same_values_as_coco_eval(self):
     testdata = _load_testdata()
@@ -138,25 +142,25 @@ class KeypointMetricsTest(tf.test.TestCase):
     # equal to 1.0, so OKS = exp(-d^2). This way for a selected threshold h we
     # can find d = sqrt(-ln(h))
     per_type_scales = [1.0 / math.sqrt(2)]
-    gt = _lib.KeypointsTensors(
+    gt = _data.KeypointsTensors(
         location=tf.constant([[[1.0, 1.0]], [[2.0, 2.0]], [[3.0, 3.0]]]),
         visibility=tf.constant([[2.0], [2.0], [2.0]]))
     d = lambda h: math.sqrt(-math.log(h))
     # Shift predictions by a delta to get required threshold value.
-    pr = _lib.KeypointsTensors(
+    pr = _data.KeypointsTensors(
         location=gt.location +
         tf.constant([[[d(0.25), 0.0]], [[d(0.7), 0.0]], [[d(0.95), 0.0]]]),
         visibility=tf.constant([[2.0], [2.0], [2.0]]))
-    box = _lib.BoundingBoxTensors(
+    box = _data.BoundingBoxTensors(
         center=gt.location[:, 0, :],
         size=tf.constant([[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]))
 
     ap = _lib.AveragePrecisionAtOKS(
-        thresholds,
         per_type_scales,
+        thresholds,
         name='All Points',
-        precision_format='{} P @ OKS>={}',
-        average_precision_format='{} AP')
+        precision_format='{name} P @ {threshold:.1f}',
+        average_precision_format='{name} AP')
 
     with self.subTest(name='correct_mean_values'):
       ap.reset_state()
@@ -166,12 +170,9 @@ class KeypointMetricsTest(tf.test.TestCase):
       self.assertIsInstance(metrics, dict)
       self.assertEqual(
           metrics.keys(),
-          set([
-              'All Points P @ OKS>=0.5', 'All Points P @ OKS>=0.9',
-              'All Points AP'
-          ]))
-      self.assertNear(metrics['All Points P @ OKS>=0.5'], 2.0 / 3, err=1e-5)
-      self.assertNear(metrics['All Points P @ OKS>=0.9'], 1.0 / 3, err=1e-5)
+          set(['All Points P @ 0.5', 'All Points P @ 0.9', 'All Points AP']))
+      self.assertNear(metrics['All Points P @ 0.5'], 2.0 / 3, err=1e-5)
+      self.assertNear(metrics['All Points P @ 0.9'], 1.0 / 3, err=1e-5)
       self.assertNear(metrics['All Points AP'], 1.0 / 2, err=1e-5)
 
     with self.subTest(name='respects_sample_weights'):
@@ -181,9 +182,423 @@ class KeypointMetricsTest(tf.test.TestCase):
       ap.update_state([gt, pr, box], sample_weight=sample_weight)
       metrics = ap.result()
 
-      self.assertNear(metrics['All Points P @ OKS>=0.5'], 1.0, err=1e-5)
-      self.assertNear(metrics['All Points P @ OKS>=0.9'], 0.5, err=1e-5)
+      self.assertNear(metrics['All Points P @ 0.5'], 1.0, err=1e-5)
+      self.assertNear(metrics['All Points P @ 0.9'], 0.5, err=1e-5)
       self.assertNear(metrics['All Points AP'], 0.75, err=1e-5)
+
+
+class MpjpeTest(tf.test.TestCase):
+
+  def test_returns_mean_square_error_for_all_keypoints(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+
+    mpjpe = _lib.MeanPerJointPositionError(name='MPJPE')
+    mpjpe.update_state([gt, pr, box])
+    metrics = mpjpe.result()
+
+    self.assertNear(metrics['MPJPE'], (1 + 2 + 3 + 4 + 5 + 6) / 6, err=1e-5)
+
+  def test_takes_into_account_keypoint_visibility(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[1.0, 2.0], [0.0, 2.0], [2.0, 0.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+
+    mpjpe = _lib.MeanPerJointPositionError(name='MPJPE')
+    mpjpe.update_state([gt, pr, box])
+    metrics = mpjpe.result()
+
+    self.assertNear(metrics['MPJPE'], (1 + 2 + 0 + 4 + 5 + 0) / 4, err=1e-5)
+
+  def test_takes_respects_sample_weights(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [0.0, 2.0], [2.0, 0.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+    sample_weight = tf.constant([0.0, 0.5, 1.0])
+
+    mpjpe = _lib.MeanPerJointPositionError(name='MPJPE')
+    mpjpe.update_state([gt, pr, box], sample_weight=sample_weight)
+    metrics = mpjpe.result()
+
+    self.assertNear(
+        metrics['MPJPE'], (0 + 0 + 0 + 4 * 0.5 + 5 * 1.0 + 0) / (0.5 + 1.0),
+        err=1e-5)
+
+
+class PckTest(tf.test.TestCase):
+
+  def test_returns_correct_result_for_a_large_abs_threshold_value(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+
+    pck = _lib.PercentageOfCorrectKeypoints(name='PCK', thresholds=[10])
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    self.assertNear(metrics['PCK @ 10.00'], 1.0, err=1e-5)
+
+  def test_returns_correct_results_for_multiple_thresholds(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+
+    pck = _lib.PercentageOfCorrectKeypoints(name='PCK', thresholds=[2, 5])
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    self.assertCountEqual(metrics.keys(), ['PCK @ 2.00', 'PCK @ 5.00'])
+    self.assertNear(metrics['PCK @ 2.00'], 2 / 6, err=1e-5)
+    self.assertNear(metrics['PCK @ 5.00'], 5 / 6, err=1e-5)
+
+  def test_takes_into_account_keypoint_visibility_abs_threshold(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 0.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[1.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+
+    pck = _lib.PercentageOfCorrectKeypoints(thresholds=[4], name='PCK')
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    self.assertNear(metrics['PCK @ 4.00'], 0.8, err=1e-5)
+
+  def test_takes_respects_sample_weights_abs_threshold(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [0.0, 2.0], [2.0, 0.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+    sample_weight = tf.constant([0.0, 1.0, 1.0])
+
+    pck = _lib.PercentageOfCorrectKeypoints(thresholds=[4.0], name='PCK')
+    pck.update_state([gt, pr, box], sample_weight=sample_weight)
+    metrics = pck.result()
+
+    # The weights exclude 2 keypoints from the sample #0, visibility mask in
+    # samples #1 and #2 excludes 2 more. Only one out of two keypoints left is
+    # closer than 4 pixels to the ground truth.
+    self.assertNear(metrics['PCK @ 4.00'], 1 / 2, err=1e-5)
+
+  def test_returns_correct_result_when_use_object_scale(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [[1, 2], [3, 4], [5, 6]] px away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Objects scales are: 1, 10, 20
+    box = _data.BoundingBoxTensors(
+        center=tf.constant([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]),
+        size=tf.constant([[1.0, 1.0], [10.0, 10.0], [20.0, 20.0]]))
+
+    pck = _lib.PercentageOfCorrectKeypoints(
+        name='PCK', thresholds=[0.5], use_object_scale=True)
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    self.assertNear(
+        metrics['PCK @ 0.50'], (0 + 0 + 1 + 1 + 1 + 1) / 6, err=1e-5)
+
+  def test_returns_correct_result_when_use_keypoint_scale(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [[1, 2], [3, 4], [5, 6]] px away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Objects scales are: 1, 10, 20
+    box = _data.BoundingBoxTensors(
+        center=tf.constant([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]),
+        size=tf.constant([[1.0, 1.0], [10.0, 10.0], [20.0, 20.0]]))
+    per_type_scales = [1.0, 0.5]
+
+    pck = _lib.PercentageOfCorrectKeypoints(
+        name='PCK',
+        thresholds=[0.5],
+        per_type_scales=per_type_scales,
+        use_object_scale=True)
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    # NOTE: Effective absolute thresholds for all keypoints will be:
+    #   [[0.5 * 1.0 * 1.0 = 0.5, 0.5 * 1.0 * 0.5 = 0.25],
+    #    [0.5 * 10.0 * 1.0 = 5.0, 0.5 * 10.0 * 0.5 = 2.5],
+    #    [0.5 * 20.0 * 1.0 = 10., 0.5 * 20.0 * 0.5 = 5]]
+    # So second keypoints in all samples are not OK now, compared to the
+    # `test_returns_correct_result_when_use_object_scale` test case.
+    self.assertNear(
+        metrics['PCK @ 0.50'], (0 + 0 + 1 + 0 + 1 + 0) / 6, err=1e-5)
+
+  def test_returns_correct_result_when_use_absolute_keypoint_scales(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [[1, 2], [3, 4], [5, 6]] px away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+    per_type_scales = [4, 6]
+
+    pck = _lib.PercentageOfCorrectKeypoints(
+        name='PCK',
+        thresholds=[0.5],
+        per_type_scales=per_type_scales,
+        use_object_scale=False)
+    pck.update_state([gt, pr, box])
+    metrics = pck.result()
+
+    # NOTE: Effective absolute thresholds for keypoint types will be:
+    #   [0.5 * 4 = 2, 0.5 * 6 = 3] in all samples in the batch.
+    self.assertNear(
+        metrics['PCK @ 0.50'], (1 + 1 + 0 + 0 + 0 + 0) / 6, err=1e-5)
+
+
+class MetricForSubsetsTest(tf.test.TestCase):
+
+  def test_returns_results_for_all_subsets(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+    src_order = (_LEFT_SHOULDER, _RIGHT_SHOULDER)
+    subsets = {
+        'LEFT': (_LEFT_SHOULDER,),
+        'RIGHT': (_RIGHT_SHOULDER,),
+    }
+    create_mpjpe = lambda n: _lib.MeanPerJointPositionError(name=f'MPJPE/{n}')
+
+    metric = _lib.MetricForSubsets(
+        src_order=src_order, subsets=subsets, create_metric_fn=create_mpjpe)
+    metric.update_state([gt, pr, box])
+    result = metric.result()
+
+    self.assertCountEqual(result.keys(), ['MPJPE/LEFT', 'MPJPE/RIGHT'])
+    self.assertNear(result['MPJPE/LEFT'], (1 + 3 + 5) / 3, err=1e-5)
+    self.assertNear(result['MPJPE/RIGHT'], (2 + 4 + 6) / 3, err=1e-5)
+
+
+class CombinedMetricTest(tf.test.TestCase):
+
+  def test_returns_results_from_all_metrics(self):
+    gt = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
+                              [[2.0, 2.0], [-2.0, -2.0]],
+                              [[3.0, 3.0], [-3.0, -3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([[[1.0, 0.0], [1.0, -1.0]],
+                              [[2.0, -1.0], [2.0, -2.0]],
+                              [[3.0, -2.0], [-3.0, 3.0]]]),
+        visibility=tf.constant([[2.0, 2.0], [2.0, 2.0], [2.0, 2.0]]))
+    box = None  # is not used by the metric
+    mpjpe = _lib.MeanPerJointPositionError(name='MPJPE')
+    pck = _lib.PercentageOfCorrectKeypoints(name='PCK', thresholds=[10])
+
+    metric = _lib.CombinedMetric([mpjpe, pck])
+    metric.update_state([gt, pr, box])
+    result = metric.result()
+
+    self.assertCountEqual(result.keys(), ['MPJPE', 'PCK @ 10.00'])
+
+
+def _random_keypoints(batch_size, num_points, dims=2):
+  return _data.KeypointsTensors(
+      location=tf.random.uniform((batch_size, num_points, dims)),
+      visibility=tf.random.uniform((batch_size, num_points),
+                                   minval=0,
+                                   maxval=2,
+                                   dtype=tf.int32))
+
+
+def _random_box(batch_size, dims=2):
+  return _data.BoundingBoxTensors(
+      center=tf.random.uniform((batch_size, dims)),
+      size=tf.random.uniform((batch_size, dims)))
+
+
+def _random_inputs(batch_size, num_points, dims=2):
+  gt = _random_keypoints(batch_size, num_points, dims=dims)
+  pr = _random_keypoints(batch_size, num_points, dims=dims)
+  box = _random_box(batch_size, dims=dims)
+  return gt, pr, box
+
+
+_ALL_METRIC_NAMES = (
+    'MPJPE/SHOULDERS', 'MPJPE/ELBOWS', 'MPJPE/WRISTS', 'MPJPE/HIPS',
+    'MPJPE/KNEES', 'MPJPE/ANKLES', 'MPJPE/ALL', 'MPJPE/HEAD',
+    'PCK/SHOULDERS @ 0.05', 'PCK/SHOULDERS @ 0.10', 'PCK/SHOULDERS @ 0.20',
+    'PCK/SHOULDERS @ 0.30', 'PCK/SHOULDERS @ 0.40', 'PCK/SHOULDERS @ 0.50',
+    'PCK/ELBOWS @ 0.05', 'PCK/ELBOWS @ 0.10', 'PCK/ELBOWS @ 0.20',
+    'PCK/ELBOWS @ 0.30', 'PCK/ELBOWS @ 0.40', 'PCK/ELBOWS @ 0.50',
+    'PCK/WRISTS @ 0.05', 'PCK/WRISTS @ 0.10', 'PCK/WRISTS @ 0.20',
+    'PCK/WRISTS @ 0.30', 'PCK/WRISTS @ 0.40', 'PCK/WRISTS @ 0.50',
+    'PCK/HIPS @ 0.05', 'PCK/HIPS @ 0.10', 'PCK/HIPS @ 0.20', 'PCK/HIPS @ 0.30',
+    'PCK/HIPS @ 0.40', 'PCK/HIPS @ 0.50', 'PCK/KNEES @ 0.05',
+    'PCK/KNEES @ 0.10', 'PCK/KNEES @ 0.20', 'PCK/KNEES @ 0.30',
+    'PCK/KNEES @ 0.40', 'PCK/KNEES @ 0.50', 'PCK/ANKLES @ 0.05',
+    'PCK/ANKLES @ 0.10', 'PCK/ANKLES @ 0.20', 'PCK/ANKLES @ 0.30',
+    'PCK/ANKLES @ 0.40', 'PCK/ANKLES @ 0.50', 'PCK/ALL @ 0.05',
+    'PCK/ALL @ 0.10', 'PCK/ALL @ 0.20', 'PCK/ALL @ 0.30', 'PCK/ALL @ 0.40',
+    'PCK/ALL @ 0.50', 'PCK/HEAD @ 0.05', 'PCK/HEAD @ 0.10', 'PCK/HEAD @ 0.20',
+    'PCK/HEAD @ 0.30', 'PCK/HEAD @ 0.40', 'PCK/HEAD @ 0.50',
+    'OKS/SHOULDERS P @ 0.50', 'OKS/SHOULDERS P @ 0.55',
+    'OKS/SHOULDERS P @ 0.60', 'OKS/SHOULDERS P @ 0.65',
+    'OKS/SHOULDERS P @ 0.70', 'OKS/SHOULDERS P @ 0.75',
+    'OKS/SHOULDERS P @ 0.80', 'OKS/SHOULDERS P @ 0.85',
+    'OKS/SHOULDERS P @ 0.90', 'OKS/SHOULDERS P @ 0.95', 'OKS/SHOULDERS AP',
+    'OKS/ELBOWS P @ 0.50', 'OKS/ELBOWS P @ 0.55', 'OKS/ELBOWS P @ 0.60',
+    'OKS/ELBOWS P @ 0.65', 'OKS/ELBOWS P @ 0.70', 'OKS/ELBOWS P @ 0.75',
+    'OKS/ELBOWS P @ 0.80', 'OKS/ELBOWS P @ 0.85', 'OKS/ELBOWS P @ 0.90',
+    'OKS/ELBOWS P @ 0.95', 'OKS/ELBOWS AP', 'OKS/WRISTS P @ 0.50',
+    'OKS/WRISTS P @ 0.55', 'OKS/WRISTS P @ 0.60', 'OKS/WRISTS P @ 0.65',
+    'OKS/WRISTS P @ 0.70', 'OKS/WRISTS P @ 0.75', 'OKS/WRISTS P @ 0.80',
+    'OKS/WRISTS P @ 0.85', 'OKS/WRISTS P @ 0.90', 'OKS/WRISTS P @ 0.95',
+    'OKS/WRISTS AP', 'OKS/HIPS P @ 0.50', 'OKS/HIPS P @ 0.55',
+    'OKS/HIPS P @ 0.60', 'OKS/HIPS P @ 0.65', 'OKS/HIPS P @ 0.70',
+    'OKS/HIPS P @ 0.75', 'OKS/HIPS P @ 0.80', 'OKS/HIPS P @ 0.85',
+    'OKS/HIPS P @ 0.90', 'OKS/HIPS P @ 0.95', 'OKS/HIPS AP',
+    'OKS/KNEES P @ 0.50', 'OKS/KNEES P @ 0.55', 'OKS/KNEES P @ 0.60',
+    'OKS/KNEES P @ 0.65', 'OKS/KNEES P @ 0.70', 'OKS/KNEES P @ 0.75',
+    'OKS/KNEES P @ 0.80', 'OKS/KNEES P @ 0.85', 'OKS/KNEES P @ 0.90',
+    'OKS/KNEES P @ 0.95', 'OKS/KNEES AP', 'OKS/ANKLES P @ 0.50',
+    'OKS/ANKLES P @ 0.55', 'OKS/ANKLES P @ 0.60', 'OKS/ANKLES P @ 0.65',
+    'OKS/ANKLES P @ 0.70', 'OKS/ANKLES P @ 0.75', 'OKS/ANKLES P @ 0.80',
+    'OKS/ANKLES P @ 0.85', 'OKS/ANKLES P @ 0.90', 'OKS/ANKLES P @ 0.95',
+    'OKS/ANKLES AP', 'OKS/ALL P @ 0.50', 'OKS/ALL P @ 0.55', 'OKS/ALL P @ 0.60',
+    'OKS/ALL P @ 0.65', 'OKS/ALL P @ 0.70', 'OKS/ALL P @ 0.75',
+    'OKS/ALL P @ 0.80', 'OKS/ALL P @ 0.85', 'OKS/ALL P @ 0.90',
+    'OKS/ALL P @ 0.95', 'OKS/ALL AP', 'OKS/HEAD P @ 0.50', 'OKS/HEAD P @ 0.55',
+    'OKS/HEAD P @ 0.60', 'OKS/HEAD P @ 0.65', 'OKS/HEAD P @ 0.70',
+    'OKS/HEAD P @ 0.75', 'OKS/HEAD P @ 0.80', 'OKS/HEAD P @ 0.85',
+    'OKS/HEAD P @ 0.90', 'OKS/HEAD P @ 0.95', 'OKS/HEAD AP')
+
+
+class AllMetricsTest(tf.test.TestCase):
+  maxDiff = 10000
+
+  def test_all_metrics_for_camera_returns_results_with_expected_names(self):
+    gt, pr, box = _random_inputs(batch_size=3, num_points=14)
+
+    metric = _lib.create_combined_metric(_lib.DEFAULT_CONFIG_CAMERA)
+    metric.update_state([gt, pr, box])
+    result = metric.result()
+
+    self.assertCountEqual(result.keys(), _ALL_METRIC_NAMES)
+
+  def test_all_metrics_for_laser_returns_expected_number_of_results(self):
+    gt, pr, box = _random_inputs(batch_size=3, num_points=14)
+
+    metric = _lib.create_combined_metric(_lib.DEFAULT_CONFIG_LASER)
+    metric.update_state([gt, pr, box])
+    result = metric.result()
+
+    self.assertCountEqual(result.keys(), _ALL_METRIC_NAMES)
+
+  def test_all_metrics_for_all_returns_expected_number_of_results(self):
+    gt, pr, box = _random_inputs(batch_size=3, num_points=15)
+
+    metric = _lib.create_combined_metric(_lib.DEFAULT_CONFIG_ALL)
+    metric.update_state([gt, pr, box])
+    result = metric.result()
+
+    self.assertCountEqual(result.keys(), _ALL_METRIC_NAMES)
 
 
 if __name__ == '__main__':

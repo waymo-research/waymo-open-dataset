@@ -18,15 +18,39 @@ limitations under the License.
 // /path/to/compute_semantic_segmentation_metrics_main pd_filename
 // gt_filename
 //
-// pd_filename is the name of a file that has prediction frames in format of
-// waymo::open_dataset::SegmentationFrameList proto.
-// gt_filename is the name of a file that has groud truth frames in format of
-// waymo::open_dataset::SegmentationFrameList proto.
+// pd_filename is the name of a file that has prediction frames, representated
+// as waymo::open_dataset::SegmentationFrameList protos
+// gt_filename is the name of a file that has groud truth frames, representated
+// as waymo::open_dataset::SegmentationFrameList protos
 //
 //
 // Results when running on ground_truths.bin and fake_predictions.bin in the
-// directory gives the following result:
-// miou=0.25
+// directory gives the following result: (Output orders might change).
+// 6 frames found in prediction.
+// 6 frames found in groundtruth.
+// TYPE_WALKABLE:0
+// TYPE_PEDESTRIAN:0
+// TYPE_POLE:0
+// TYPE_OTHER_GROUND:0
+// TYPE_CURB:0
+// TYPE_BUS:0
+// TYPE_BICYCLIST:0
+// TYPE_TREE_TRUNK:0
+// TYPE_MOTORCYCLE:0
+// TYPE_TRUCK:0
+// TYPE_TRAFFIC_LIGHT:0
+// TYPE_BICYCLE:0
+// TYPE_SIDEWALK:0
+// TYPE_LANE_MARKER:0
+// TYPE_MOTORCYCLIST:0
+// TYPE_SIGN:0
+// TYPE_VEGETATION:0
+// TYPE_ROAD:0
+// TYPE_OTHER_VEHICLE:0
+// TYPE_CAR:0.04546
+// TYPE_CONSTRUCTION_CONE:0
+// TYPE_BUILDING:0
+// miou=0.00206636
 
 #include <ctime>
 #include <fstream>
@@ -40,8 +64,8 @@ limitations under the License.
 
 #include "absl/strings/str_cat.h"
 #include "waymo_open_dataset/dataset.pb.h"
-#include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/segmentation_metrics.h"
+#include "waymo_open_dataset/protos/segmentation.pb.h"
 #include "waymo_open_dataset/protos/segmentation_metrics.pb.h"
 
 namespace waymo {
@@ -58,38 +82,88 @@ std::vector<Segmentation::Type> Flatten(MatrixInt32 frame) {
   return flattened;
 }
 
+// Helper function to create a frame with all points to be UNDEFINED.
+std::vector<Segmentation::Type> CreateEmptyPrediction(int num_points) {
+  std::vector<Segmentation::Type> flattened(num_points,
+                                            Segmentation::TYPE_UNDEFINED);
+  return flattened;
+}
+
 // Computes the 3D semantic segmentation metrics.
 void Compute(const std::string& pd_str, const std::string& gt_str) {
-  MetricsMeanIOU miou = MetricsMeanIOU(
-      {Segmentation::TYPE_VEHICLE, Segmentation::TYPE_PEDESTRIAN});
+  SegmentationMetricsConfig segmentation_metrics_config;
+  const auto segmention_type_descriptor = Segmentation::Type_descriptor();
+  for (int i = 0; i < segmention_type_descriptor->value_count(); i++) {
+    // Loop over all Segmentation::Type except the TYPE_UNDEFINED
+    Segmentation::Type segmentation_type = static_cast<Segmentation::Type>(
+        segmention_type_descriptor->value(i)->number());
+    if (segmentation_type != Segmentation::TYPE_UNDEFINED) {
+      segmentation_metrics_config.mutable_segmentation_types()->Add(
+          segmentation_type);
+    }
+  }
+  SegmentationMetricsIOU miou =
+      SegmentationMetricsIOU(segmentation_metrics_config);
   SegmentationFrameList pd_frames;
   if (!pd_frames.ParseFromString(pd_str)) {
     std::cerr << "Failed to parse predictions.";
     return;
   }
+  std::cout << pd_frames.frames_size() << " frames found in prediction.\n";
   SegmentationFrameList gt_frames;
   if (!gt_frames.ParseFromString(gt_str)) {
     std::cerr << "Failed to parse ground truths.";
     return;
   }
-  if (gt_frames.frames().size() != pd_frames.frames().size()) {
-    std::cerr << "Two files contain different numbers of frames.";
-    return;
+  std::cout << gt_frames.frames_size() << " frames found in groundtruth.\n";
+  std::map<std::pair<std::string, int64>, SegmentationFrame> pd_map;
+  std::map<std::pair<std::string, int64>, SegmentationFrame> gt_map;
+  std::set<std::pair<std::string, int64>> all_example_keys;
+  auto get_key = [](const SegmentationFrame& segmentation_frame) {
+    return std::make_pair(segmentation_frame.context_name(),
+                          segmentation_frame.frame_timestamp_micros());
+  };
+  for (auto& f : *pd_frames.mutable_frames()) {
+    const auto key = get_key(f);
+    pd_map[key] = std::move(f);
+    all_example_keys.insert(key);
   }
-  for (size_t i = 0; i != gt_frames.frames().size(); ++i) {
-    if (gt_frames.frames()[i].has_segmentation_labels() &&
-        pd_frames.frames()[i].has_segmentation_labels()) {
-      MatrixInt32 gt_matrix, pd_matrix;
-      gt_matrix.ParseFromString(gt_frames.frames()[i]
-                                    .segmentation_labels()
-                                    .segmentation_label_compressed());
-      pd_matrix.ParseFromString(pd_frames.frames()[i]
-                                    .segmentation_labels()
-                                    .segmentation_label_compressed());
-      miou.Update(Flatten(pd_matrix), Flatten(gt_matrix));
+  for (auto& f : *gt_frames.mutable_frames()) {
+    const auto key = get_key(f);
+    gt_map[key] = std::move(f);
+    all_example_keys.insert(key);
+  }
+  for (auto& example_key : all_example_keys) {
+    auto gt_it = gt_map.find(example_key);
+    if (gt_it == gt_map.end() || !gt_it->second.has_segmentation_labels()) {
+      // We skip frames which do not have ground truth.
+      continue;
     }
+    MatrixInt32 gt_matrix;
+    gt_matrix.ParseFromString(
+        gt_it->second.segmentation_labels().segmentation_label_compressed());
+    const int num_points = gt_matrix.data().size();
+    auto pd_it = pd_map.find(example_key);
+    std::vector<Segmentation::Type> pd_vector;
+    if (pd_it == pd_map.end() || !pd_it->second.has_segmentation_labels()) {
+      pd_vector = CreateEmptyPrediction(num_points);
+    } else {
+      MatrixInt32 pd_matrix;
+      pd_matrix.ParseFromString(
+          pd_it->second.segmentation_labels().segmentation_label_compressed());
+      pd_vector = Flatten(pd_matrix);
+    }
+    miou.Update(pd_vector, Flatten(gt_matrix));
   }
-  std::cout << "miou=" << miou.ComputeMeanIOU() << std::endl;
+  const SegmentationMetrics segmentation_metrics = miou.ComputeIOU();
+  for (auto it = segmentation_metrics.per_class_iou().begin();
+       it != segmentation_metrics.per_class_iou().end(); it++) {
+    std::cout << Segmentation::Type_Name(static_cast<Segmentation::Type>(
+                     it->first))    // string (key)
+              << ':' << it->second  // string's value
+              << std::endl;
+  }
+  std::cout << "miou=" << segmentation_metrics.miou() << std::endl;
 }
 }  // namespace
 }  // namespace open_dataset

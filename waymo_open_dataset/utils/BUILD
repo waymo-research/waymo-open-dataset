@@ -142,14 +142,36 @@ pytype_strict_library(
 )
 
 pytype_strict_library(
-    name = "keypoint_utils",
-    srcs = ["keypoint_utils.py"],
+    name = "keypoint_data",
+    srcs = ["keypoint_data.py"],
     deps = [
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "keypoint_draw",
+    srcs = ["keypoint_draw.py"],
+    deps = [
+        ":keypoint_data",
         # Implicit immutabledict dependency.
         # Implicit matplotlib dependency.
         # Implicit numpy dependency.
         # Implicit plotly dependency.
-        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+    ],
+)
+
+pytype_strict_library(
+    name = "keypoint_test_util",
+    testonly = True,
+    srcs = ["keypoint_test_util.py"],
+    deps = [
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
     ],
@@ -264,15 +286,29 @@ py_strict_test(
 )
 
 py_strict_test(
-    name = "keypoint_utils_test",
-    srcs = ["keypoint_utils_test.py"],
+    name = "keypoint_data_test",
+    srcs = ["keypoint_data_test.py"],
     deps = [
-        ":keypoint_utils",
+        ":keypoint_data",
+        ":keypoint_test_util",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset:label_proto_py_pb2",
+    ],
+)
+
+py_strict_test(
+    name = "keypoint_draw_test",
+    srcs = ["keypoint_draw_test.py"],
+    deps = [
+        ":keypoint_data",
+        ":keypoint_draw",
+        ":keypoint_test_util",
         # Implicit matplotlib dependency.
         # Implicit numpy dependency.
         # Implicit plotly dependency.
         # Implicit tensorflow dependency.
-        "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
     ],

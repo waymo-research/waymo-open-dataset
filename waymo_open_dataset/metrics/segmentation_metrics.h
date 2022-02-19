@@ -19,19 +19,23 @@ limitations under the License.
 
 #include "absl/container/flat_hash_map.h"
 #include "waymo_open_dataset/common/status.h"
-#include "waymo_open_dataset/label.pb.h"
+#include "waymo_open_dataset/protos/segmentation.pb.h"
+#include "waymo_open_dataset/protos/segmentation_metrics.pb.h"
 
 namespace waymo {
 namespace open_dataset {
 
-class MetricsMeanIOU {
-  // A class for calculating mean intersection over union.
-  // IOU = true_positive / (true_positive + false_positive + false_negative)
+class SegmentationMetricsIOU {
+  // A class for calculating mean intersection over union for 3D semantic
+  // segmentation.
+  // IOU = true_positive / (true_positive + false_positive +
+  // false_negative)
   // Mean IOU is the average of all classes.
-  // If one class does not appear in the groundtruth, it will be ignored during
-  // mean-iou calculation.
+  // If a class does not ever appear in the groundtruth, its IOU will be counted
+  // as 1.0
  public:
-  MetricsMeanIOU(const std::vector<Segmentation::Type>& segmentation_types);
+  SegmentationMetricsIOU(
+      const SegmentationMetricsConfig segmentation_metrics_config);
 
   // Update the metrics with predictions and groud_truth. The results will be
   // accumulated.
@@ -41,14 +45,15 @@ class MetricsMeanIOU {
   // Reset the metrics states and clear all previous updates.
   void Reset();
 
-  // Compute and return mean-iou. If there is no class with valid iou, it will
-  // return 0.0.
-  float ComputeMeanIOU();
+  // Compute and return per class iou and mean iou.
+  // If there is no point for a given class in all frames, including both
+  // prediction and ground truth, the IOU for that class will be 1.0.
+  SegmentationMetrics ComputeIOU();
 
  private:
   // Classes to be evaluated. Prediction and groundtruth that are not in this
   // list will be ignored and will not impact calculation.
-  std::vector<Segmentation::Type> segmentation_types_;
+  const SegmentationMetricsConfig segmentation_metrics_config_;
   // Number of classes to be evaluated.
   int num_classes_;
   // Confusion matrix, accumulated with all predictions.

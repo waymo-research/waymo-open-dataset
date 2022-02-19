@@ -36,8 +36,8 @@ message OccupancyFlowWaypoint {
   // stored as zlib compressed bytes:
   //
   // Example code:
-  // predicted_occupancy = np.zeros([256, 256, 1], dtype=np.float32)
-  // predicted_occupancy = np.round(predicted_occupancy).astype(np.uint8)
+  // predicted_occupancy = np.random.uniform(size=[256, 256, 1], low=0, high=1)
+  // predicted_occupancy = np.round(predicted_occupancy * 255).astype(np.uint8)
   // bytes = zlib.compress(predicted_occupancy.tobytes())
   optional bytes observed_vehicles_occupancy = 1;
 
@@ -57,8 +57,9 @@ message OccupancyFlowWaypoint {
   // requirements, the array is stored as zlib compressed bytes:
   //
   // Example code:
-  // predicted_flow = np.zeros([256, 256, 2], dtype=np.float32)
-  // predicted_flow = np.round(predicted_flow).astype(np.int8)
+  // predicted_flow = np.random.uniform(size=[256, 256, 2], low=-200, high=200)
+  // predicted_flow = np.clip(np.round(predicted_flow), -128, 127)
+  // predicted_flow = predicted_flow.astype(np.int8)
   // bytes = zlib.compress(predicted_flow.tobytes())
   optional bytes all_vehicles_flow = 3;
 }

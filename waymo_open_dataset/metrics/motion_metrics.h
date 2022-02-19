@@ -136,7 +136,7 @@ struct MetricsStats {
 
   // Same as the above mean_average_precision field, however this version does
   // not penalize duplicate true positive trajectories. Duplicates are ignored
-  // rather than counting as false positives.
+  // rather than counted as false positives.
   MeanAveragePrecisionStats soft_mean_average_precision;
 
   // Accumulate stats from another MetricsStats object.

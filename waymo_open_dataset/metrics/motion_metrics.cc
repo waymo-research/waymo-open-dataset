@@ -456,12 +456,11 @@ Status SpeedScaleFactor(const MotionMetricsConfig& config, const Track& track,
   return OkStatus();
 }
 
-Status IsTruePositive(
-    const MotionMetricsConfig& config,
-    const JointTrajectories& joint_prediction,
-    const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
-    const MotionMetricsConfig::MeasurementStepConfig& step_config,
-    absl::optional<bool>* is_tp) {
+Status IsMatch(const MotionMetricsConfig& config,
+               const JointTrajectories& joint_prediction,
+               const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
+               const MotionMetricsConfig::MeasurementStepConfig& step_config,
+               absl::optional<bool>* is_tp) {
   // Compute the displacements at prediction_step for all trajectories.
   const int num_trajectories = joint_prediction.trajectories_size();
   std::vector<Displacement> displacements(num_trajectories);
@@ -534,8 +533,8 @@ Status ComputeMissRate(
   for (const auto& joint_prediction :
        multi_modal_prediction.joint_predictions()) {
     absl::optional<bool> true_positive;
-    Status status = IsTruePositive(config, joint_prediction, ids_to_tracks,
-                                   step_config, &true_positive);
+    Status status = IsMatch(config, joint_prediction, ids_to_tracks,
+                            step_config, &true_positive);
     if (!status.ok()) {
       return status;
     }
@@ -784,34 +783,33 @@ Status ComputeMeanAveragePrecision(
         prediction.joint_predictions(joint_prediction_index);
 
     // Determine if the prediction is a true positive.
-    absl::optional<bool> is_true_positive_opt;
-    Status status = IsTruePositive(config, joint_prediction, ids_to_tracks,
-                                   step_config, &is_true_positive_opt);
+    absl::optional<bool> is_match_opt;
+    Status status = IsMatch(config, joint_prediction, ids_to_tracks,
+                            step_config, &is_match_opt);
     if (!status.ok()) {
       return status;
     }
-    if (!is_true_positive_opt.has_value()) {
+    if (!is_match_opt.has_value()) {
       continue;
     }
-    const bool is_true_positive = is_true_positive_opt.value();
+    const bool is_match = is_match_opt.value();
 
     if (!use_soft_mean_average_precision) {
       // Store a true positive only if a true positive has not yet been stored
       // for these joint object tracks.
-      const bool sample_result =
-          already_found_positive ? false : is_true_positive;
+      const bool sample_result = already_found_positive ? false : is_match;
       bucket.samples.push_back(
           PredictionSample(joint_prediction.confidence(), sample_result));
     } else {
       // Ignore a true positive if a true positive has already been found if
       // computing the soft mAP metric.
-      const bool skip_result = is_true_positive && already_found_positive;
+      const bool skip_result = is_match && already_found_positive;
       if (!skip_result) {
         bucket.samples.push_back(
-            PredictionSample(joint_prediction.confidence(), is_true_positive));
+            PredictionSample(joint_prediction.confidence(), is_match));
       }
     }
-    if (is_true_positive) {
+    if (is_match) {
       already_found_positive = true;
     }
     measurement_taken = true;

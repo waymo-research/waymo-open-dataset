@@ -117,7 +117,7 @@ message MotionMetricsBundle {
   optional float mean_average_precision = 5;
 
   // Same as mean_average_precision but duplicate true positives per ground
-  // truth trajectory are ignored rather than counted as a false positive.
+  // truth trajectory are ignored rather than counted as false positives.
   optional float soft_mean_average_precision = 8;
 }
 

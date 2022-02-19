@@ -26,7 +26,6 @@ py_binary(
     srcs = ["make_objects_file_from_latency_results.py"],
     python_version = "PY3",
     deps = [
-        # END GOOGLE-INTERNAL
         # Implicit numpy dependency.
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",

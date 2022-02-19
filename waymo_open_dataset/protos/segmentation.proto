@@ -1,0 +1,62 @@
+/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+message Segmentation {
+  enum Type {
+    TYPE_UNDEFINED = 0;
+    TYPE_CAR = 1;
+    TYPE_TRUCK = 2;
+    TYPE_BUS = 3;
+    // Other small vehicles (e.g. pedicab) and large vehicles (e.g. construction
+    // vehicles, RV, limo, tram).
+    TYPE_OTHER_VEHICLE = 4;
+    TYPE_MOTORCYCLIST = 5;
+    TYPE_BICYCLIST = 6;
+    TYPE_PEDESTRIAN = 7;
+    TYPE_SIGN = 8;
+    TYPE_TRAFFIC_LIGHT = 9;
+    // Lamp post, traffic sign pole etc.
+    TYPE_POLE = 10;
+    // Construction cone/pole.
+    TYPE_CONSTRUCTION_CONE = 11;
+    TYPE_BICYCLE = 12;
+    TYPE_MOTORCYCLE = 13;
+    TYPE_BUILDING = 14;
+    // Bushes, tree branches, tall grasses, flowers etc.
+    TYPE_VEGETATION = 15;
+    TYPE_TREE_TRUNK = 16;
+    // Curb on the edge of roads. This does not include road boundaries if
+    // there’s no curb.
+    TYPE_CURB = 17;
+    // Surface a vehicle could drive on. This include the driveway connecting
+    // parking lot and road over a section of sidewalk.
+    TYPE_ROAD = 18;
+    // Marking on the road that’s specifically for defining lanes such as
+    // single/double white/yellow lines.
+    TYPE_LANE_MARKER = 19;
+    // Marking on the road other than lane markers, bumps, cateyes, railtracks
+    // etc.
+    TYPE_OTHER_GROUND = 20;
+    // Most horizontal surface that’s not drivable, e.g. grassy hill,
+    // pedestrian walkway stairs etc.
+    TYPE_WALKABLE = 21;
+    // Nicely paved walkable surface when pedestrians most likely to walk on.
+    TYPE_SIDEWALK = 22;
+  }
+}

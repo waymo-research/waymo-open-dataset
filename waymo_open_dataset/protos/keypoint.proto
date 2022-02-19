@@ -31,7 +31,7 @@ message Vec3d {
 // Attributes related to the keypoint's visibility.
 message KeypointVisibility {
   // Is true, if the keypoint is occluded by any object, a body part or its
-  // location can be determined with large uncertainty.
+  // location can be determined only with large uncertainty.
   // Is false if the keypoint is clearly visible.
   optional bool is_occluded = 1;
 }
@@ -83,7 +83,7 @@ enum KeypointType {
   KEYPOINT_TYPE_HEAD_CENTER = 20;
 }
 
-// A keypoint relative to a specific camera.
+// A 2D keypoint on a specific camera.
 message CameraKeypoint {
   optional KeypointType type = 1;
   // Camera coordinates.
@@ -92,19 +92,19 @@ message CameraKeypoint {
   optional Keypoint3d keypoint_3d = 3;
 }
 
-// All keypoints for an object relative to a specific camera.
+// All 2D keypoints for a camera label (object).
 message CameraKeypoints {
   repeated CameraKeypoint keypoint = 1;
 }
 
-// A keypoint relative to laser point cloud.
+// A 3D keypoint.
 message LaserKeypoint {
   optional KeypointType type = 1;
   // 3D keypoint in vehicle coordinate frame.
   optional Keypoint3d keypoint_3d = 2;
 }
 
-// All keypoints for an object relative to laser point cloud.
+// All 3D keypoints for a laser label (object).
 message LaserKeypoints {
   repeated LaserKeypoint keypoint = 1;
 }

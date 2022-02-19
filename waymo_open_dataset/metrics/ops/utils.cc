@@ -319,7 +319,7 @@ ParseScenarioAndPredictonsFromTensors(
     scenario->set_scenario_id(cur_scenario_id);
     predictions->set_scenario_id(cur_scenario_id);
 
-    // A map of ground truth index to the actual track index.
+    // A map from ground truth index to the actual track index.
     absl::flat_hash_map<int64, int64> gt_idx_to_track_idx;
     for (int j = 0; j < num_total_agents; ++j) {
       const int64 cur_object_id = object_id.matrix<int64>()(i, j);

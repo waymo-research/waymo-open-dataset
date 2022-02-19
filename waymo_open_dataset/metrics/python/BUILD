@@ -102,7 +102,10 @@ pytype_strict_library(
     name = "keypoint_metrics",
     srcs = ["keypoint_metrics.py"],
     deps = [
+        # Implicit immutabledict dependency.
         # Implicit tensorflow dependency.
+        "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/utils:keypoint_data",
     ],
 )
 
@@ -116,6 +119,7 @@ py_strict_test(
         ":keypoint_metrics",
         # Implicit resources dependency.
         # Implicit tensorflow dependency.
+        "//waymo_open_dataset/utils:keypoint_data",
     ],
 )
 

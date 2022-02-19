@@ -81,7 +81,7 @@ class WODDetectionEvaluator(object):
     """Resets internal states for a fresh run."""
     self._predictions = {}
     self._groundtruths = {}
-    # On TPU evaluation, OOM could happen when evaluating whole dataset if GC
+    # In evaluation, OOM could happen when evaluating whole dataset if GC
     # is not enforced.
     gc.collect()
 

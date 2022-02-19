@@ -15,7 +15,7 @@
 """Tools related to working with human keypoints."""
 import abc
 import dataclasses
-from typing import Collection, Dict, Mapping, Optional, Tuple
+from typing import Collection, Mapping, Optional, Tuple
 
 import immutabledict
 from matplotlib import collections as mc
@@ -23,130 +23,16 @@ from matplotlib import pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 
-from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import keypoint_pb2
+from waymo_open_dataset.utils import keypoint_data as _data
 
-
-@dataclasses.dataclass(frozen=True)
-class Point:
-  """Point in space.
-
-  It is a geometric primitive.
-
-  Attributes:
-    location: 2D or 3D coordinate.
-    is_occluded: Is True, if the keypoint is occluded by any object or a body
-      part. Is False if the keypoint is clearly visible
-  """
-  location: np.ndarray
-  is_occluded: bool = False
-
-
-CameraType = dataset_pb2.CameraName.Name
-ObjectType = label_pb2.Label.Type
 KeypointType = keypoint_pb2.KeypointType
-PointByType = Mapping['KeypointType', Point]
 ColorByType = Mapping['KeypointType', str]
 
 DEFAULT_COLOR = '#424242'
 OCCLUDED_COLOR = '#000000'
 OCCLUDED_BORDER_WIDTH = 3
-
-
-@dataclasses.dataclass(frozen=True)
-class LaserLabel:
-  """A dataclass to store laser label for keypoint visualization.
-
-  Attributes:
-    object_type: type of the object.
-    box: 3D bounding box.
-    keypoints: an optional list of labeled 3D keypoints.
-  """
-  object_type: 'ObjectType'
-  box: label_pb2.Label.Box
-  keypoints: Optional[Collection[keypoint_pb2.LaserKeypoint]] = None
-
-
-@dataclasses.dataclass(frozen=True)
-class CameraLabel:
-  """A dataclass to store camera label for keypoint visualization.
-
-  Attributes:
-    box: 2D bounding box.
-    keypoints: an optional list of labeled 2D keypoints.
-  """
-  box: label_pb2.Label.Box
-  keypoints: Optional[Collection[keypoint_pb2.CameraKeypoint]] = None
-
-
-# A mapping between camera type and all its camera labels.
-CameraLabelByType = Dict['CameraType', CameraLabel]
-
-
-@dataclasses.dataclass(frozen=True)
-class ObjectLabel:
-  """A dataclass to store object label for keypoint visualization.
-
-  Attributes:
-    laser: laser labels.
-    camera: camera labels.
-    object_type: type of the object.
-  """
-  laser: LaserLabel
-  camera: CameraLabelByType = dataclasses.field(default_factory=dict)
-
-  @property
-  def object_type(self) -> ObjectType:
-    return self.laser.object_type
-
-
-def _index_laser_labels(frame: dataset_pb2.Frame) -> Dict[str, LaserLabel]:
-  labels = {}
-  for ll in frame.laser_labels:
-    labels[ll.id] = LaserLabel(
-        object_type=ll.type,
-        box=ll.box,
-        keypoints=getattr(ll, 'laser_keypoints', None))
-  return labels
-
-
-def _get_accosiated_id(label: label_pb2.Label) -> Optional[str]:
-  if label.HasField('association'):
-    return label.association.laser_object_id
-  return None
-
-
-def _index_camera_labels(
-    frame: dataset_pb2.Frame) -> Dict[Optional[str], CameraLabelByType]:
-  labels = {}
-  for cl in frame.camera_labels:
-    for l in cl.labels:
-      laser_object_id = _get_accosiated_id(l)
-      labels.setdefault(laser_object_id, {})[cl.name] = CameraLabel(
-          box=l.box, keypoints=getattr(l, 'camera_keypoints', None))
-  return labels
-
-
-def group_object_labels(frame: dataset_pb2.Frame) -> Dict[str, ObjectLabel]:
-  """Groups all object labels laser object id.
-
-  It uses 2d-to-3d assosiation labels to find which camera labels correspond to
-  which laser labels.
-
-  Args:
-    frame: a Frame proto to extract labels for keypoint visualization.
-
-  Returns:
-    a dictionary where keys are laser object ids and values are labels.
-  """
-  object_labels = {}
-  laser_labels = _index_laser_labels(frame)
-  camera_labels = _index_camera_labels(frame)
-  for object_id, ll in laser_labels.items():
-    object_labels[object_id] = ObjectLabel(
-        laser=ll, camera=camera_labels.get(object_id))
-  return object_labels
 
 
 @dataclasses.dataclass(frozen=True)
@@ -211,7 +97,7 @@ class Edge(abc.ABC):
   """Base class for all wireframe edges."""
 
   @abc.abstractmethod
-  def create_lines(self, point_by_type: PointByType,
+  def create_lines(self, point_by_type: _data.PointByType,
                    colors: ColorByType) -> Collection[Line]:
     """Creates all lines to visualize an edge.
 
@@ -237,7 +123,7 @@ class SolidLineEdge(Edge):
   end: 'KeypointType'
   width: float
 
-  def create_lines(self, point_by_type: PointByType,
+  def create_lines(self, point_by_type: _data.PointByType,
                    colors: Mapping['KeypointType', str]) -> Collection[Line]:
     """See base class."""
     if self.start not in point_by_type or self.end not in point_by_type:
@@ -261,7 +147,7 @@ def _bicolor_lines(start: np.ndarray, start_color: str, end: np.ndarray,
 class BicoloredEdge(SolidLineEdge):
   """Edge with two line segments colored according to keypoint type."""
 
-  def create_lines(self, point_by_type: PointByType,
+  def create_lines(self, point_by_type: _data.PointByType,
                    colors: Mapping['KeypointType', str]) -> Collection[Line]:
     """See base class."""
     if self.start not in point_by_type or self.end not in point_by_type:
@@ -282,12 +168,12 @@ def _combine_colors(colors: Collection[str]) -> str:
 
 @dataclasses.dataclass(frozen=True)
 class MultipointEdge(Edge):
-  """Edge with two line segments, which end and start points are averaged."""
+  """An edge with start/end points computed by averaging input coordinates."""
   start_avg: Collection['KeypointType']
   end_avg: Collection['KeypointType']
   width: float
 
-  def create_lines(self, point_by_type: PointByType,
+  def create_lines(self, point_by_type: _data.PointByType,
                    colors: Mapping['KeypointType', str]) -> Collection[Line]:
     """See base class."""
     has_start = set(self.start_avg).issubset(point_by_type.keys())
@@ -430,7 +316,7 @@ def point_name(point_type: 'KeypointType') -> str:
   return _removeprefix(name, 'KEYPOINT_TYPE_')
 
 
-def _build_wireframe(point_by_type: PointByType,
+def _build_wireframe(point_by_type: _data.PointByType,
                      config: WireframeConfig) -> Wireframe:
   """Creates a wireframe for a collection of keypoint coordinates."""
   lines = []
@@ -450,49 +336,19 @@ def _build_wireframe(point_by_type: PointByType,
   return Wireframe(lines=lines, dots=dots)
 
 
-def _vec2d_as_array(location_px: keypoint_pb2.Vec2d) -> np.ndarray:
-  return np.array([location_px.x, location_px.y])
-
-
-def _point_from_camera(k: keypoint_pb2.CameraKeypoint) -> Point:
-  return Point(
-      location=_vec2d_as_array(k.keypoint_2d.location_px),
-      is_occluded=k.keypoint_2d.visibility.is_occluded)
-
-
-def _camera_keypoint_coordinates(
-    keypoints: Collection[keypoint_pb2.CameraKeypoint]) -> PointByType:
-  return {k.type: _point_from_camera(k) for k in keypoints}
-
-
 def build_camera_wireframe(
     keypoints: Collection[keypoint_pb2.CameraKeypoint],
     config: WireframeConfig = DEFAULT_CAMERA_WIREFRAME_CONFIG) -> Wireframe:
   """Creates a wireframe for camera keypoints."""
-  point_by_type = _camera_keypoint_coordinates(keypoints)
+  point_by_type = _data.camera_keypoint_coordinates(keypoints)
   return _build_wireframe(point_by_type, config)
-
-
-def _vec3d_as_array(location_m: keypoint_pb2.Vec3d) -> np.ndarray:
-  return np.array([location_m.x, location_m.y, location_m.z])
-
-
-def _point_from_laser(k: keypoint_pb2.LaserKeypoint) -> Point:
-  return Point(
-      location=_vec3d_as_array(k.keypoint_3d.location_m),
-      is_occluded=k.keypoint_3d.visibility.is_occluded)
-
-
-def _laser_keypoint_coordinates(
-    keypoints: Collection[keypoint_pb2.LaserKeypoint]) -> PointByType:
-  return {k.type: _point_from_laser(k) for k in keypoints}
 
 
 def build_laser_wireframe(
     keypoints: Collection[keypoint_pb2.LaserKeypoint],
     config: WireframeConfig = DEFAULT_LASER_WIREFRAME_CONFIG) -> Wireframe:
   """Creates a wireframe for laser keypoints."""
-  point_by_type = _laser_keypoint_coordinates(keypoints)
+  point_by_type = _data.laser_keypoint_coordinates(keypoints)
   return _build_wireframe(point_by_type, config)
 
 

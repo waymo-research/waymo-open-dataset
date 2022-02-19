@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-"""Tests for keypoint_utils."""
+"""Tests for keypoint_draw."""
 
 from matplotlib import collections as mc
 from matplotlib import pyplot as plt
@@ -20,70 +20,15 @@ import numpy as np
 import plotly.graph_objects as go
 import tensorflow as tf
 
-from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import keypoint_pb2
-from waymo_open_dataset.utils import keypoint_utils as _lib
+from waymo_open_dataset.utils import keypoint_data as _data
+from waymo_open_dataset.utils import keypoint_draw as _lib
+from waymo_open_dataset.utils import keypoint_test_util as _util
 
 _NOSE = keypoint_pb2.KeypointType.KEYPOINT_TYPE_NOSE
 _LEFT_SHOULDER = keypoint_pb2.KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER
 _RIGHT_SHOULDER = keypoint_pb2.KeypointType.KEYPOINT_TYPE_RIGHT_SHOULDER
-
-
-def _laser_keypoint(point_type=_NOSE, location_m=(0, 0, 0), is_occluded=False):
-  x, y, z = location_m
-  return keypoint_pb2.LaserKeypoint(
-      type=point_type,
-      keypoint_3d=keypoint_pb2.Keypoint3d(
-          location_m=keypoint_pb2.Vec3d(x=x, y=y, z=z),
-          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded)))
-
-
-def _laser_object(obj_id,
-                  box_fields=None,
-                  has_keypoints=False,
-                  object_type=_lib.ObjectType.TYPE_UNKNOWN):
-  if has_keypoints:
-    # Populate a single keypoint for testing purposes.
-    laser_keypoints = keypoint_pb2.LaserKeypoints(keypoint=[_laser_keypoint()])
-  else:
-    laser_keypoints = None
-  if box_fields is None:
-    box = None
-  else:
-    box = label_pb2.Label.Box(**box_fields)
-  return label_pb2.Label(
-      id=obj_id, box=box, laser_keypoints=laser_keypoints, type=object_type)
-
-
-def _camera_keypoint(point_type=_NOSE, location_px=(0, 0), is_occluded=False):
-  x, y = location_px
-  return keypoint_pb2.CameraKeypoint(
-      type=point_type,
-      keypoint_2d=keypoint_pb2.Keypoint2d(
-          location_px=keypoint_pb2.Vec2d(x=x, y=y),
-          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded)))
-
-
-def _camera_object(camera_obj_id,
-                   laser_obj_id,
-                   box_fields=None,
-                   has_keypoints=False):
-  if has_keypoints:
-    # Populate a single keypoint for testing purposes.
-    camera_keypoints = keypoint_pb2.CameraKeypoints(
-        keypoint=[_camera_keypoint()])
-  else:
-    camera_keypoints = None
-  if box_fields is None:
-    box = None
-  else:
-    box = label_pb2.Label.Box(**box_fields)
-  return label_pb2.Label(
-      id=camera_obj_id,
-      box=box,
-      association=label_pb2.Label.Association(laser_object_id=laser_obj_id),
-      camera_keypoints=camera_keypoints)
 
 
 def _get_collection(ax, col_type):
@@ -100,8 +45,8 @@ class EdgeTest(tf.test.TestCase):
 
   def test_simple_edge_between_two_points_creates_single_line(self):
     coords = {
-        _LEFT_SHOULDER: _lib.Point([0, 0]),
-        _RIGHT_SHOULDER: _lib.Point([1, 1])
+        _LEFT_SHOULDER: _data.Point([0, 0]),
+        _RIGHT_SHOULDER: _data.Point([1, 1])
     }
     colors = {_LEFT_SHOULDER: '#AAAAAA', _RIGHT_SHOULDER: '#BBBBBB'}
 
@@ -114,8 +59,8 @@ class EdgeTest(tf.test.TestCase):
 
   def test_bicolored_edge_between_two_points_creates_two_lines(self):
     coords = {
-        _LEFT_SHOULDER: _lib.Point([0, 0]),
-        _RIGHT_SHOULDER: _lib.Point([1, 1])
+        _LEFT_SHOULDER: _data.Point([0, 0]),
+        _RIGHT_SHOULDER: _data.Point([1, 1])
     }
     colors = {_LEFT_SHOULDER: '#AAAAAA', _RIGHT_SHOULDER: '#BBBBBB'}
 
@@ -128,9 +73,9 @@ class EdgeTest(tf.test.TestCase):
 
   def test_multipoint_edge_averages_locations_to_get_ends(self):
     coords = {
-        _LEFT_SHOULDER: _lib.Point([2, 0]),
-        _RIGHT_SHOULDER: _lib.Point([0, 2]),
-        _NOSE: _lib.Point([3, 3])
+        _LEFT_SHOULDER: _data.Point([2, 0]),
+        _RIGHT_SHOULDER: _data.Point([0, 2]),
+        _NOSE: _data.Point([3, 3])
     }
     colors = {
         _LEFT_SHOULDER: '#AAAAAA',
@@ -150,125 +95,13 @@ class EdgeTest(tf.test.TestCase):
     self.assertEqual(lines[1].color, '#CCCCCC')
 
 
-class KeypointUtilsTest(tf.test.TestCase):
-
-  def test_group_object_labels_populates_object_type(self):
-    frame = dataset_pb2.Frame(laser_labels=[
-        _laser_object('fake', object_type=_lib.ObjectType.TYPE_PEDESTRIAN),
-    ])
-
-    objects = _lib.group_object_labels(frame)
-
-    self.assertEqual(list(objects.keys()), ['fake'])
-    self.assertEqual(objects['fake'].object_type,
-                     _lib.ObjectType.TYPE_PEDESTRIAN)
-
-  def test_group_object_labels_populates_laser_box_fields(self):
-    frame = dataset_pb2.Frame(laser_labels=[
-        _laser_object(
-            'fake',
-            box_fields=dict(
-                center_x=1,
-                center_y=2,
-                center_z=3,
-                width=4,
-                height=5,
-                length=6,
-                heading=7)),
-    ])
-
-    objects = _lib.group_object_labels(frame)
-
-    self.assertEqual(list(objects.keys()), ['fake'])
-    b = objects['fake'].laser.box
-    self.assertEqual(b.center_x, 1)
-    self.assertEqual(b.center_y, 2)
-    self.assertEqual(b.center_z, 3)
-    self.assertEqual(b.width, 4)
-    self.assertEqual(b.height, 5)
-    self.assertEqual(b.length, 6)
-    self.assertEqual(b.heading, 7)
-
-  def test_group_object_labels_populates_laser_keypoints(self):
-    frame = dataset_pb2.Frame(laser_labels=[
-        _laser_object('fake', has_keypoints=True),
-    ])
-
-    objects = _lib.group_object_labels(frame)
-
-    self.assertEqual(list(objects.keys()), ['fake'])
-    self.assertNotEmpty(objects['fake'].laser.keypoints.keypoint)
-    self.assertTrue(
-        objects['fake'].laser.keypoints.keypoint[0].HasField('keypoint_3d'))
-
-  def test_group_object_labels_associates_camera_with_laser_labels_by_id(self):
-    frame = dataset_pb2.Frame(
-        laser_labels=[
-            _laser_object('fake', has_keypoints=True),
-        ],
-        camera_labels=[
-            dataset_pb2.CameraLabels(
-                name=_lib.CameraType.FRONT,
-                labels=[
-                    _camera_object(
-                        camera_obj_id='vbb_fake',
-                        laser_obj_id='fake',
-                        box_fields=dict(
-                            center_x=1,
-                            center_y=2,
-                            width=4,
-                            length=6,
-                            heading=7))
-                ])
-        ])
-
-    objects = _lib.group_object_labels(frame)
-
-    self.assertEqual(list(objects.keys()), ['fake'])
-    self.assertEqual(
-        list(objects['fake'].camera.keys()), [_lib.CameraType.FRONT])
-    b = objects['fake'].camera[_lib.CameraType.FRONT].box
-    self.assertEqual(b.center_x, 1)
-    self.assertEqual(b.center_y, 2)
-    self.assertEqual(b.width, 4)
-    self.assertEqual(b.length, 6)
-    self.assertEqual(b.heading, 7)
-
-  def test_group_object_labels_populates_camera_keypoints(self):
-    frame = dataset_pb2.Frame(
-        laser_labels=[
-            _laser_object('fake', has_keypoints=True),
-        ],
-        camera_labels=[
-            dataset_pb2.CameraLabels(
-                name=_lib.CameraType.FRONT,
-                labels=[
-                    _camera_object(
-                        camera_obj_id='vbb_fake',
-                        laser_obj_id='fake',
-                        box_fields=dict(
-                            center_x=1,
-                            center_y=2,
-                            width=4,
-                            length=6,
-                            heading=7),
-                        has_keypoints=True)
-                ])
-        ])
-
-    objects = _lib.group_object_labels(frame)
-
-    self.assertEqual(list(objects.keys()), ['fake'])
-    self.assertEqual(
-        list(objects['fake'].camera.keys()), [_lib.CameraType.FRONT])
-    camera_label = objects['fake'].camera[_lib.CameraType.FRONT]
-    self.assertTrue(camera_label.keypoints.keypoint[0].HasField('keypoint_2d'))
+class WireframeTest(tf.test.TestCase):
 
   def test_build_camera_wireframe_dot_and_lines_have_correct_attributes(self):
     camera_keypoints = [
-        _camera_keypoint(_NOSE, location_px=(2, 1), is_occluded=True),
-        _camera_keypoint(_LEFT_SHOULDER, location_px=(1, 0)),
-        _camera_keypoint(_RIGHT_SHOULDER, location_px=(3, 0))
+        _util.camera_keypoint(_NOSE, location_px=(2, 1), is_occluded=True),
+        _util.camera_keypoint(_LEFT_SHOULDER, location_px=(1, 0)),
+        _util.camera_keypoint(_RIGHT_SHOULDER, location_px=(3, 0))
     ]
     config = _lib.WireframeConfig(
         edges=[_lib.BicoloredEdge(_LEFT_SHOULDER, _RIGHT_SHOULDER, width=2)],
@@ -309,9 +142,9 @@ class KeypointUtilsTest(tf.test.TestCase):
 
   def test_build_laser_wireframe_dot_and_lines_have_correct_attributes(self):
     laser_keypoints = [
-        _laser_keypoint(_NOSE, location_m=(2, 1, 1), is_occluded=True),
-        _laser_keypoint(_LEFT_SHOULDER, location_m=(1, 0, 1)),
-        _laser_keypoint(_RIGHT_SHOULDER, location_m=(3, 0, 1))
+        _util.laser_keypoint(_NOSE, location_m=(2, 1, 1), is_occluded=True),
+        _util.laser_keypoint(_LEFT_SHOULDER, location_m=(1, 0, 1)),
+        _util.laser_keypoint(_RIGHT_SHOULDER, location_m=(3, 0, 1))
     ]
     config = _lib.WireframeConfig(
         edges=[_lib.BicoloredEdge(_LEFT_SHOULDER, _RIGHT_SHOULDER, width=2)],
@@ -355,9 +188,9 @@ class KeypointUtilsTest(tf.test.TestCase):
 
   def test_build_camera_wireframe_factors_modify_sizes(self):
     camera_keypoints = [
-        _camera_keypoint(_NOSE, location_px=(2, 1)),
-        _camera_keypoint(_LEFT_SHOULDER, location_px=(1, 0)),
-        _camera_keypoint(_RIGHT_SHOULDER, location_px=(3, 0))
+        _util.camera_keypoint(_NOSE, location_px=(2, 1)),
+        _util.camera_keypoint(_LEFT_SHOULDER, location_px=(1, 0)),
+        _util.camera_keypoint(_RIGHT_SHOULDER, location_px=(3, 0))
     ]
     config = _lib.WireframeConfig(
         edges=[_lib.BicoloredEdge(_LEFT_SHOULDER, _RIGHT_SHOULDER, width=2)],
@@ -380,6 +213,9 @@ class KeypointUtilsTest(tf.test.TestCase):
       self.assertEqual([l.width for l in wireframe.lines], [6, 6])
     with self.subTest(name='ModifiesDotSizes'):
       self.assertEqual([l.size for l in wireframe.dots], [2, 4, 6])
+
+
+class DrawTest(tf.test.TestCase):
 
   def test_draw_camera_wireframe_adds_collections_to_the_axis(self):
     wireframe = _lib.Wireframe(
@@ -429,8 +265,8 @@ class KeypointUtilsTest(tf.test.TestCase):
   def test_crop_camera_keypoints_returns_updated_keypoints_and_image(self):
     image = np.zeros((450, 250, 3))
     camera_keypoints = [
-        _camera_keypoint(location_px=(100, 200)),
-        _camera_keypoint(location_px=(150, 200)),
+        _util.camera_keypoint(location_px=(100, 200)),
+        _util.camera_keypoint(location_px=(150, 200)),
     ]
     # NOTE: Box.length is along OX, Box.width is along OY
     box = label_pb2.Label.Box(center_x=100, center_y=200, length=100, width=200)

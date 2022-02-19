@@ -19,31 +19,35 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <glog/logging.h>
 #include "waymo_open_dataset/common/status.h"
-#include "waymo_open_dataset/label.pb.h"
 
 namespace waymo {
 namespace open_dataset {
 
-MetricsMeanIOU::MetricsMeanIOU(
-    const std::vector<Segmentation::Type>& segmentation_types)
-    : segmentation_types_(segmentation_types) {
-  num_classes_ = segmentation_types_.size();
-  // We use index `num_classes` to store num of points with classes that not in
-  // the allowed segmentation_types.
+SegmentationMetricsIOU::SegmentationMetricsIOU(
+    const SegmentationMetricsConfig segmentation_metrics_config)
+    : segmentation_metrics_config_(segmentation_metrics_config) {
+  num_classes_ = segmentation_metrics_config_.segmentation_types().size();
+  // We use index `num_classes` to store points with classes that are not
+  // in the allowed segmentation_types.
   confusion_matrix_ = std::vector<std::vector<int>>(
       num_classes_ + 1, std::vector<int>(num_classes_ + 1, 0));
   for (int i = 0; i < num_classes_; ++i) {
-    auto index = segmentation_type_mapper_.find(segmentation_types_[i]);
+    auto index = segmentation_type_mapper_.find(static_cast<Segmentation::Type>(
+        segmentation_metrics_config_.segmentation_types()[i]));
     // Input list of segmentation typs should not have duplicates.
     CHECK(index == segmentation_type_mapper_.end());
-    segmentation_type_mapper_.insert({segmentation_types_[i], i});
+    segmentation_type_mapper_.insert(
+        {static_cast<Segmentation::Type>(
+             segmentation_metrics_config_.segmentation_types()[i]),
+         i});
   }
 }
 
-Status MetricsMeanIOU::Update(
+Status SegmentationMetricsIOU::Update(
     const std::vector<Segmentation::Type>& prediction,
     const std::vector<Segmentation::Type>& ground_truth) {
   if (prediction.size() != ground_truth.size()) {
@@ -66,7 +70,7 @@ Status MetricsMeanIOU::Update(
   return OkStatus();
 }
 
-void MetricsMeanIOU::Reset() {
+void SegmentationMetricsIOU::Reset() {
   for (int i = 0; i < num_classes_ + 1; ++i) {
     for (int j = 0; j < num_classes_ + 1; ++j) {
       confusion_matrix_[i][j] = 0;
@@ -74,8 +78,9 @@ void MetricsMeanIOU::Reset() {
   }
 }
 
-float MetricsMeanIOU::ComputeMeanIOU() {
-  std::vector<float> ious(num_classes_, -1.0);
+SegmentationMetrics SegmentationMetricsIOU::ComputeIOU() {
+  SegmentationMetrics results;
+  std::vector<float> ious(num_classes_, 1.0);
   for (int i = 0; i < num_classes_; ++i) {
     int num_intersection = confusion_matrix_[i][i];
     int num_union = -num_intersection;
@@ -89,16 +94,16 @@ float MetricsMeanIOU::ComputeMeanIOU() {
     if (num_union > 0) {
       ious[i] = 1.0f * num_intersection / num_union;
     }
+    results.mutable_per_class_iou()->insert(
+        {segmentation_metrics_config_.segmentation_types()[i], ious[i]});
   }
-  float total_iou = 0;
-  int total_valid = 0;
+  float mean_iou = 0;
   for (const auto iou : ious) {
-    if (iou >= 0) {
-      total_iou += iou;
-      ++total_valid;
-    }
+    mean_iou += iou;
   }
-  return (total_valid > 0) ? total_iou / total_valid : 0.0;
+  mean_iou = mean_iou / ious.size();
+  results.set_miou(mean_iou);
+  return results;
 }
 }  // namespace open_dataset
 }  // namespace waymo

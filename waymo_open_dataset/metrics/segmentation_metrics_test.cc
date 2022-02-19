@@ -21,20 +21,31 @@ limitations under the License.
 
 #include <gtest/gtest.h>
 #include "absl/status/status.h"
-#include "waymo_open_dataset/label.pb.h"
+#include "waymo_open_dataset/protos/segmentation.pb.h"
 
 namespace waymo {
 namespace open_dataset {
 namespace {
 
-TEST(SegmentationMetricsTest, MetricsMeanIOU) {
-  std::vector<Segmentation::Type> segmentation_typs{
-      Segmentation::TYPE_CAR, Segmentation::TYPE_PEDESTRIAN};
-  MetricsMeanIOU mean_iou(segmentation_typs);
+TEST(SegmentationMetricsTest, SegmentationMetricsIOU) {
+  SegmentationMetricsConfig segmentation_metrics_config;
+  segmentation_metrics_config.mutable_segmentation_types()->Add(
+      Segmentation::TYPE_CAR);
+  segmentation_metrics_config.mutable_segmentation_types()->Add(
+      Segmentation::TYPE_PEDESTRIAN);
+  SegmentationMetricsIOU mean_iou(segmentation_metrics_config);
   {
-    // If we do not have valid points it should return 0.
-    float miou = mean_iou.ComputeMeanIOU();
-    EXPECT_NEAR(miou, 0.0, 1e-4);
+    // If we do not have any valid points, per class iou should be 1.0
+    SegmentationMetrics segmentation_metrics = mean_iou.ComputeIOU();
+    EXPECT_NEAR(segmentation_metrics.miou(), 1.0, 1e-4);
+    auto iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_CAR));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
+    iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_PEDESTRIAN));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
   }
 
   {  // miou should be 1.0 for perfect predictions.
@@ -44,8 +55,16 @@ TEST(SegmentationMetricsTest, MetricsMeanIOU) {
         Segmentation::TYPE_PEDESTRIAN};
     Status status = mean_iou.Update(ground_truth, ground_truth);
     EXPECT_TRUE(status.ok());
-    float miou = mean_iou.ComputeMeanIOU();
-    EXPECT_NEAR(miou, 1.0, 1e-4);
+    SegmentationMetrics segmentation_metrics = mean_iou.ComputeIOU();
+    EXPECT_NEAR(segmentation_metrics.miou(), 1.0, 1e-4);
+    auto iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_CAR));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
+    iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_PEDESTRIAN));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
   }
 
   {
@@ -58,22 +77,38 @@ TEST(SegmentationMetricsTest, MetricsMeanIOU) {
         Segmentation::TYPE_CAR, Segmentation::TYPE_PEDESTRIAN};
     Status status = mean_iou.Update(prediction, ground_truth);
     EXPECT_TRUE(status.ok());
-    float miou = mean_iou.ComputeMeanIOU();
-    EXPECT_NEAR(miou, 0.5833, 1e-4);
+    SegmentationMetrics segmentation_metrics = mean_iou.ComputeIOU();
+    EXPECT_NEAR(segmentation_metrics.miou(), 0.5833, 1e-4);
+    auto iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_CAR));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 0.6666, 1e-4);
+    iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_PEDESTRIAN));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 0.5, 1e-4);
   }
 
   {  // Ground truth contains class that is not to be evaluated.
     mean_iou.Reset();
     std::vector<Segmentation::Type> ground_truth = {
         Segmentation::TYPE_CAR, Segmentation::TYPE_CAR, Segmentation::TYPE_CAR,
-        Segmentation::TYPE_UNKNOWN};
+        Segmentation::TYPE_UNDEFINED};
     std::vector<Segmentation::Type> prediction = {
         Segmentation::TYPE_CAR, Segmentation::TYPE_CAR, Segmentation::TYPE_CAR,
         Segmentation::TYPE_PEDESTRIAN};
     Status status = mean_iou.Update(prediction, ground_truth);
     EXPECT_TRUE(status.ok());
-    float miou = mean_iou.ComputeMeanIOU();
-    EXPECT_NEAR(miou, 1.0, 1e-4);
+    SegmentationMetrics segmentation_metrics = mean_iou.ComputeIOU();
+    EXPECT_NEAR(segmentation_metrics.miou(), 1.0, 1e-4);
+    auto iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_CAR));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
+    iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_PEDESTRIAN));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
   }
   {  // Prediction contains class that is not to be evaluated.
     mean_iou.Reset();
@@ -82,11 +117,19 @@ TEST(SegmentationMetricsTest, MetricsMeanIOU) {
         Segmentation::TYPE_PEDESTRIAN};
     std::vector<Segmentation::Type> prediction = {
         Segmentation::TYPE_CAR, Segmentation::TYPE_CAR, Segmentation::TYPE_CAR,
-        Segmentation::TYPE_UNKNOWN};
+        Segmentation::TYPE_UNDEFINED};
     Status status = mean_iou.Update(prediction, ground_truth);
     EXPECT_TRUE(status.ok());
-    float miou = mean_iou.ComputeMeanIOU();
-    EXPECT_NEAR(miou, 0.5, 1e-4);
+    SegmentationMetrics segmentation_metrics = mean_iou.ComputeIOU();
+    EXPECT_NEAR(segmentation_metrics.miou(), 0.5, 1e-4);
+    auto iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_CAR));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 1.0, 1e-4);
+    iou_it = segmentation_metrics.per_class_iou().find(
+        static_cast<int>(Segmentation::TYPE_PEDESTRIAN));
+    EXPECT_NE(iou_it, segmentation_metrics.per_class_iou().end());
+    EXPECT_NEAR(iou_it->second, 0.0, 1e-4);
   }
 }
 
