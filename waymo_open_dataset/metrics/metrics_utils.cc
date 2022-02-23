@@ -282,7 +282,8 @@ float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
     precision_recall.emplace_back(max_precision, it->first);
     last_recall = it->first;
   }
-  // Override the entry for recall 0.0.
+  // Override the entry for recall 0.0 to use the same precision as the largest
+  // precision from real data. Note that P/R (1.0, 0.0) entry is fake.
   if (precision_recall.size() >= 2) {
     precision_recall[precision_recall.size() - 1].p =
         precision_recall[precision_recall.size() - 2].p;
