@@ -35,10 +35,12 @@ cc_binary(
     srcs = ["compute_segmentation_metrics_main.cc"],
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
+        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:segmentation_metrics",
         "//waymo_open_dataset/protos:segmentation_cc_proto",
         "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",
         "@com_google_absl//absl/strings",
+        "@zlib",
     ],
 )
 

@@ -53,6 +53,7 @@ message CameraName {
     FRONT_RIGHT = 3;
     SIDE_LEFT = 4;
     SIDE_RIGHT = 5;
+
   }
 }
 
@@ -65,6 +66,7 @@ message LaserName {
     SIDE_LEFT = 3;
     SIDE_RIGHT = 4;
     REAR = 5;
+
   }
 }
 
@@ -126,6 +128,7 @@ message LaserCalibration {
   optional double beam_inclination_max = 4;
   // Lidar frame to vehicle frame.
   optional Transform extrinsic = 5;
+
 
 }
 
@@ -302,6 +305,7 @@ message CameraImage {
   // the exposure time and the actual sensor readout time.
   optional double camera_trigger_time = 7;
   optional double camera_readout_done_time = 8;
+
 }
 
 // The camera labels associated with a given camera image. This message

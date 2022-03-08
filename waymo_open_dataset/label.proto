@@ -99,6 +99,7 @@ message Label {
   }
   optional Association association = 10;
 
+
 }
 
 // Non-self-intersecting 2d polygons. This polygon is not necessarily convex.

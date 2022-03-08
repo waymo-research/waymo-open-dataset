@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "waymo_open_dataset/metrics/motion_metrics.h"
 
+
 #include <glog/logging.h>
 #include "google/protobuf/text_format.h"
 #include <gmock/gmock.h>
@@ -71,6 +72,7 @@ ScenarioPredictions CreateTestSubmissionProto(
   return submission;
 }
 }  // namespace
+
 
 
 // Creates a sythetic test ScenarioPredictions proto.

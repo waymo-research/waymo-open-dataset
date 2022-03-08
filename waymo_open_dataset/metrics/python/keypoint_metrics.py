@@ -82,7 +82,7 @@ def object_keypoint_similarity(
   respect to ground truth keypoints and takes into account number of
   available keypoints. If a sample has no keypoints available (e.g. ground
   truth box has no keypoints labeled) then it computes a surrogate OKS using
-  distances between keypoints and a box 3X larger than the ground trurh.
+  distances between keypoints and a box 3X larger than the ground truth.
 
   For the detailed description refer to
   https://cocodataset.org/#keypoints-eval
@@ -93,7 +93,9 @@ def object_keypoint_similarity(
     gt: ground truth keypoints.
     pr: predicted keypoints.
     box: ground truth box. Used to compute object scale (area or volume) and
-      bound predicted keypoints too far away from the ground truth.
+      bound predicted keypoints too far away from the ground truth (e.g.
+      distance from a predicted keypoint is larger than 3x of the  object size,
+      see the comment above).
     per_type_scales: a list of num_points floats, with scale values for each
       keypoint type in the same order as keypoints stored in `gt` and `pr`.
     sample_weight: an optional weights for keypoints, a float tensor with shape
@@ -244,9 +246,9 @@ class AveragePrecisionAtOKS(KeypointsMetric):
       per_type_scales: a list of scale values for each type of keypoint.
       thresholds: a list of thresholds for OKS to compute precision values.
         Usually generated using `tf.range(start=0.5, limit=1.0, delta=0.05)`
-      precision_format: a format string for names for precision sub metrics.
+      precision_format: a format string of precision sub metrics.
         Meant to be used with kwargs: name=<str>, threshold=<float>.
-      average_precision_format: a format string for the averal precision
+      average_precision_format: a format string for the average precision
         metrics. Meant to be used with kwargs: name=<str>.
       name: an optional name for the metrics, which is also used as a part of
         all submetrics.
@@ -343,21 +345,23 @@ class PercentageOfCorrectKeypoints(KeypointsMetric):
     arguments.
 
     Args:
-      thresholds: a list of float numbers to be used a the threshold, depending
-        on values of other parameters it could be an absolute threshold in
-        meters or pixels as well as a value relative to the object's or
+      thresholds: a list of float numbers to be used as the threshold, depending
+        on the values of the other parameters. It could be an absolute threshold
+        in meters or pixels, as well as a value relative to the object's or
         keypoint's scale.
       per_type_scales: an optional list of scale values for each type of
         keypoint. If specified will use keypoint specific scales to determine
         threshold values. The scales are absolute if use_object_scale=False and
         relative to the object's scale if use_object_scale=True.
-      use_object_scale: if True will use object's scale to determine threshold
-        values. If it is False values in `thresholds` and/or `per_type_scales`
-        will be used to compute absolute thresholds regardless of the object's
-        scale. Object scale is defined as square root from the box's area for 2D
-        case and cubic root of object's volume in 3D case.
-      metric_name_format: a format string for names for PCK metric at different
-        thresholds. Meant to be used with kwargs: name=<str>, threshold=<float>.
+      use_object_scale: if True, will use the object scale to determine
+        threshold values. If it is False, values in `thresholds` and/or
+         `per_type_scales` will be used to compute absolute thresholds
+          regardless of the object scale. Object scale is defined as the square
+          root from the box area for 2D case and the cubic root of the object
+          volume in the 3D case.
+      metric_name_format: a format string for PCK metric names at different
+        thresholds. Meant to be used with kwargs: name=<str>,
+        threshold=<float>.
       name: an optional name for the metric's name.
     """
     super().__init__(name=name)
@@ -545,7 +549,7 @@ class CombinedMetricsConfig:
     return [self.per_type_scales[t] for t in types]
 
 
-# Values for corresponding types we copied and adjusted from `computeOks`
+# We maintain consistency of scales for corresponding types with `computeOks`
 # from pycocotools package:
 # https://github.com/matteorr/coco-analyze/blob/9eb8a0a9e57ad1e592661efc2b8964864c0e6f28/pycocotools/cocoeval.py#L216
 # Note, the hardcoded constant in `computeOks` defines 5x scales in the
@@ -556,8 +560,8 @@ class CombinedMetricsConfig:
 # https://github.com/matteorr/coco-analyze/blob/9eb8a0a9e57ad1e592661efc2b8964864c0e6f28/pycocotools/cocoanalyze.py#L928
 # NOTE: There is no forehead or head center keypoint in COCO, so we used a
 # similar method to determine scales for these keypoint types.
-# NOTE: These scales are subject to change in the dataset grows and we get more
-# accurate statistic.
+# NOTE: These scales are subject to change if the dataset grows and we get more
+# accurate statistics.
 DEFAULT_PER_TYPE_SCALES = immutabledict.immutabledict({
     KeypointType.KEYPOINT_TYPE_NOSE: 0.052,
     KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER: 0.158,

@@ -236,6 +236,9 @@ def _flow_warp(
 ) -> List[tf.Tensor]:
   """Warps ground-truth flow-origin occupancies according to predicted flows.
 
+  Performs bilinear interpolation and samples from 4 pixels for each flow
+  vector.
+
   Args:
     config: OccupancyFlowTaskConfig proto message.
     true_waypoints: Set of num_waypoints ground truth labels.

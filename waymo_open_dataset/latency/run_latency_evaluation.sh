@@ -24,6 +24,7 @@ LATENCY_EVALUATOR_PATH="wod_latency_evaluator.py"
 MAKE_OBJS_CMD="bazel run :make_objects_file_from_latency_results -- "
 COMPARE_OBJS_TO_SUBMISSION_CMD="bazel run :compare_objects_file_to_submission_main -- "
 
+
 # Process the arguments.
 if [[ "$#" -ne 4 ]]; then
   echo "Needs four arguments: the data directory, the image name, the submission pb, and the output latency file."

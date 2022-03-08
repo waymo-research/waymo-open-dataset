@@ -56,6 +56,7 @@ cc_library(
     name = "iou",
     srcs = ["iou.cc"],
     hdrs = ["iou.h"],
+
     deps = [
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/math:aabox2d",
@@ -71,6 +72,7 @@ cc_library(
     name = "hungarian",
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
+
     deps = [
         "@com_google_glog//:glog",
     ],
@@ -80,6 +82,7 @@ cc_library(
     name = "matcher",
     srcs = ["matcher.cc"],
     hdrs = ["matcher.h"],
+
     deps = [
         ":hungarian",
         ":iou",
@@ -213,9 +216,11 @@ cc_test(
 cc_test(
     name = "motion_metrics_test",
     srcs = ["motion_metrics_test.cc"],
+
     deps = [
         ":motion_metrics",
         "@com_google_glog//:glog",
+
         # Implicit proto dependency.
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",

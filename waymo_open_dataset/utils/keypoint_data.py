@@ -53,9 +53,7 @@ CANONICAL_ORDER_ALL = _SHARED_TYPES + (KeypointType.KEYPOINT_TYPE_FOREHEAD,
 
 @dataclasses.dataclass(frozen=True)
 class Point:
-  """Point in space.
-
-  It is a geometric primitive.
+  """Point location in space.
 
   Attributes:
     location: 2D or 3D coordinate.
@@ -74,7 +72,7 @@ PointByType = Mapping['KeypointType', Point]
 
 @dataclasses.dataclass(frozen=True)
 class LaserLabel:
-  """A dataclass to store laser label for keypoint visualization.
+  """A dataclass to store laser labels for keypoint visualization.
 
   Attributes:
     object_type: type of the object.
@@ -88,7 +86,7 @@ class LaserLabel:
 
 @dataclasses.dataclass(frozen=True)
 class CameraLabel:
-  """A dataclass to store camera label for keypoint visualization.
+  """A dataclass to store camera labels for keypoint visualization.
 
   Attributes:
     box: 2D bounding box.
@@ -104,7 +102,7 @@ CameraLabelByType = Dict['CameraType', CameraLabel]
 
 @dataclasses.dataclass(frozen=True)
 class ObjectLabel:
-  """A dataclass to store object label for keypoint visualization.
+  """A dataclass to store object labels for keypoint visualization.
 
   Attributes:
     laser: laser labels.
@@ -255,7 +253,7 @@ class KeypointsTensors:
 
   Attributes:
     location: a float tensor with shape [B, N, D] or [N, D].
-    visibility: a float tensor with shape [B, N] or [N], with values: 0 -
+    visibility: a int32 tensor with shape [B, N] or [N], with values: 0 -
       corresponding point is missing (not labeled or not detected), 1 - present,
       but marked as occluded, 2 - marked as visible or not occluded.
     mask: a float tensor with shape [B, N], with values: 0 - if corresponding
@@ -386,8 +384,11 @@ class BoundingBoxTensors:
   Attributes:
     center: a float tensor with shape [B, D] or [D].
     size: a float tensor with shape [B, D] or [D].
-    heading: a float tensor with shape [B]. Boxes are axis aligned in 2D, it is
-      None for camera bounding boxes.
+    heading: The heading of the bounding box (in radians). It is a float tensor
+      with shape [B]. Boxes are axis aligned in 2D, so it is None for camera
+      bounding boxes. For 3D boxes the heading is the angle required to rotate
+      +x to the surface normal of the box front face. It is normalized to [-pi,
+      pi).
     scale: a float tensor with shape [B] or [], which means square root of the
       box's area in 2D and cubic root the volume in 3D.
     min_corner: corner with smallest coordinates, e.g. top left corner for a 2D

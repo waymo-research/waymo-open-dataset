@@ -15,6 +15,7 @@
 # ==============================================================================*/
 """A simple example to generate a file that contains a serialized SegmentationFrameList proto."""
 
+import zlib
 import waymo_open_dataset.dataset_pb2 as open_dataset
 from waymo_open_dataset.protos import segmentation_metrics_pb2
 from waymo_open_dataset.protos import segmentation_pb2
@@ -29,14 +30,27 @@ def _create_single_frame_seg_pd_file_example():
   for c in range(NUM_CONTEXT):
     for f in range(NUM_FRAMES):
       frame = segmentation_metrics_pb2.SegmentationFrame()
+      segmentation_label = open_dataset.Laser()
+      segmentation_label.name = open_dataset.LaserName.TOP
+      # Add prediction for the first return image.
       pd = open_dataset.MatrixInt32()
       for _ in range(50):
         for _ in range(1000):
           pd.data.append(segmentation_pb2.Segmentation.TYPE_CAR)
       pd.shape.dims.append(50)
       pd.shape.dims.append(1000)
-      pd_str = pd.SerializeToString()
-      frame.segmentation_labels.segmentation_label_compressed = pd_str
+      pd_str = zlib.compress(pd.SerializeToString())
+      segmentation_label.ri_return1.segmentation_label_compressed = pd_str
+      # Add prediction for the second return image.
+      pd = open_dataset.MatrixInt32()
+      for _ in range(50):
+        for _ in range(1000):
+          pd.data.append(segmentation_pb2.Segmentation.TYPE_PEDESTRIAN)
+      pd.shape.dims.append(50)
+      pd.shape.dims.append(1000)
+      pd_str = zlib.compress(pd.SerializeToString())
+      segmentation_label.ri_return2.segmentation_label_compressed = pd_str
+      frame.segmentation_labels.append(segmentation_label)
       frame.context_name = f'dummy_context_name_{c}'
       frame.frame_timestamp_micros = f * 1000000
       frames.frames.append(frame)

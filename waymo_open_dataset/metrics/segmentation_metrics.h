@@ -31,8 +31,8 @@ class SegmentationMetricsIOU {
   // IOU = true_positive / (true_positive + false_positive +
   // false_negative)
   // Mean IOU is the average of all classes.
-  // If a class does not ever appear in the groundtruth, its IOU will be counted
-  // as 1.0
+  // If a class does not ever appear in the groundtruth or prediction, aka both
+  // intersection and union are zeros, its IOU will be counted as 1.0
  public:
   SegmentationMetricsIOU(
       const SegmentationMetricsConfig segmentation_metrics_config);

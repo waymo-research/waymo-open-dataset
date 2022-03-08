@@ -19,6 +19,3 @@ area | a float number equal to `width * height` of the bbox
 
 2D coordinates were randomly generated, expected OKS values were computed using `computeOks` function from [cocoeval.py](https://github.com/matteorr/coco-analyze/blob/9eb8a0a9e57ad1e592661efc2b8964864c0e6f28/pycocotools/cocoeval.py#L203).
 
-<!-- BEGIN GOOGLE-INTERNAL -->
-Data file was created using [Generate test data for OKS metric (colab)](http://colab/drive/17gObU1xQW-3bcXbFQ2RBV43jr1EqOiE-?resourcekey=0-Veo4ZJnsw8ZBhnRgEObD2Q).
-<!-- END GOOGLE-INTERNAL -->

@@ -18,7 +18,8 @@ import "waymo_open_dataset/dataset.proto";
 import "waymo_open_dataset/protos/segmentation.proto";
 
 message SegmentationFrame {
-  optional RangeImage segmentation_labels = 1;
+  // Segmentation labels by lasers.
+  repeated Laser segmentation_labels = 1;
   // These must be set when evaluating on the leaderboard.
   // This should be set to Context.name defined in
   // dataset.proto::Context.
@@ -32,6 +33,7 @@ message SegmentationFrameList {
 }
 
 message SegmentationMetricsConfig {
+  // The list of segmentation_types to eval.
   repeated Segmentation.Type segmentation_types = 1 [packed = true];
 }
 

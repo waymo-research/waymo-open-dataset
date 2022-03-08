@@ -25,10 +25,10 @@ limitations under the License.
 
 syntax = "proto2";
 
-package waymo.open_dataset;
+package waymo.open_dataset.occupancy_flow;
 
-// Occupancy and flow predictions for a single waypoint (snapshot in time).
-message OccupancyFlowWaypoint {
+// Occupancy and flow predictions for a single waypoint (one-second interval).
+message Waypoint {
   // Predicted row-major occupancy grid of currently-observed vehicles for one
   // waypoint.  It stores a numpy array shaped [grid_height, grid_width, 1]
   // containing probabilites in range [0, 1] quantized to *unsigned int8* in
@@ -51,10 +51,9 @@ message OccupancyFlowWaypoint {
   // Flow is constructed between timesteps `waypoint_size` apart.  Please see
   // occupancy_flow_grids.py for more detail.  This field should store a numpy
   // array shaped [grid_height, grid_width, 2] containing (dx, dy) vectors.
-  // The data is stored in C-style order, with the last axis index changing
-  // fastest, and the first axis index changing slowest.  The values are
-  // quantized to *signed int8* in range [-128, 127].  To reduce the disk space
-  // requirements, the array is stored as zlib compressed bytes:
+  // The data is stored in row-major order.  The values are quantized to
+  // *signed int8* in range [-128, 127].  To reduce the disk space requirements,
+  // the array is stored as zlib compressed bytes:
   //
   // Example code:
   // predicted_flow = np.random.uniform(size=[256, 256, 2], low=-200, high=200)
@@ -65,7 +64,7 @@ message OccupancyFlowWaypoint {
 }
 
 // A sequence of `num_waypoints` predictions for a single scenario.
-message ScenarioOccupancyFlowPrediction {
+message ScenarioPrediction {
   // The unique ID of the scenario being predicted. This ID must match the
   // scenario_id field in the test or validation set tf.Example or scenario
   // proto corresponding to this set of predictions.
@@ -73,13 +72,13 @@ message ScenarioOccupancyFlowPrediction {
 
   // Sequence of occupancy and flow predictions.  This field should be repeated
   // `num_waypoints` times.
-  repeated OccupancyFlowWaypoint waypoints = 2;
+  repeated Waypoint waypoints = 2;
 }
 
 // A set of ScenarioPrediction protos. A ScenarioPrediction proto for each
 // example in the test or validation set must be included for a valid
 // submission.
-message OccupancyFlowChallengeSubmission {
+message ChallengeSubmission {
   // This must be set as the full email used to register at waymo.com/open.
   optional string account_name = 1;
 
@@ -99,6 +98,5 @@ message OccupancyFlowChallengeSubmission {
 
   // The set of scenario predictions to evaluate. One entry should exist for
   // every record in the test set.
-  repeated ScenarioOccupancyFlowPrediction occupancy_flow_scenario_predictions =
-      7;
+  repeated ScenarioPrediction scenario_predictions = 7;
 }

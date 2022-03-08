@@ -388,7 +388,7 @@ def render_roadgraph_from_inputs(
       inputs['roadgraph_samples/xyz'].shape.as_list())
   topdown_shape = [batch_size, grid_height_cells, grid_width_cells, 1]
 
-  # Translate the roadgraph points such that the autonomous vehicle is at the
+  # Translate the roadgraph points so that the autonomous vehicle is at the
   # origin.
   sdc_xyz = tf.concat(
       [

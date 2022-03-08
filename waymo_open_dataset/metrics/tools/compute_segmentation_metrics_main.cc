@@ -18,59 +18,75 @@ limitations under the License.
 // /path/to/compute_semantic_segmentation_metrics_main pd_filename
 // gt_filename
 //
-// pd_filename is the name of a file that has prediction frames, representated
+// pd_filename is the name of a file that has prediction frames, represented
 // as waymo::open_dataset::SegmentationFrameList protos
-// gt_filename is the name of a file that has groud truth frames, representated
+// gt_filename is the name of a file that has groud truth frames, represented
 // as waymo::open_dataset::SegmentationFrameList protos
 //
 //
 // Results when running on ground_truths.bin and fake_predictions.bin in the
-// directory gives the following result: (Output orders might change).
+// directory gives the following result: (Output orders might vary).
 // 6 frames found in prediction.
 // 6 frames found in groundtruth.
-// TYPE_WALKABLE:0
-// TYPE_PEDESTRIAN:0
-// TYPE_POLE:0
-// TYPE_OTHER_GROUND:0
-// TYPE_CURB:0
-// TYPE_BUS:0
+// TYPE_CAR:0.0434832
 // TYPE_BICYCLIST:0
-// TYPE_TREE_TRUNK:0
-// TYPE_MOTORCYCLE:0
-// TYPE_TRUCK:0
-// TYPE_TRAFFIC_LIGHT:0
-// TYPE_BICYCLE:0
-// TYPE_SIDEWALK:0
+// TYPE_CONSTRUCTION_CONE:0
 // TYPE_LANE_MARKER:0
-// TYPE_MOTORCYCLIST:0
+// TYPE_TRUCK:0
+// TYPE_PEDESTRIAN:0.0434832
+// TYPE_BICYCLE:0
+// TYPE_OTHER_GROUND:0
+// TYPE_BUS:0
 // TYPE_SIGN:0
+// TYPE_MOTORCYCLE:0
+// TYPE_TREE_TRUNK:0
+// TYPE_WALKABLE:0
+// TYPE_OTHER_VEHICLE:0
+// TYPE_TRAFFIC_LIGHT:0
+// TYPE_BUILDING:0
+// TYPE_SIDEWALK:0
+// TYPE_CURB:0
+// TYPE_MOTORCYCLIST:0
+// TYPE_POLE:0
 // TYPE_VEGETATION:0
 // TYPE_ROAD:0
-// TYPE_OTHER_VEHICLE:0
-// TYPE_CAR:0.04546
-// TYPE_CONSTRUCTION_CONE:0
-// TYPE_BUILDING:0
-// miou=0.00206636
+// miou=0.00395302
 
-#include <ctime>
 #include <fstream>
 #include <iostream>
-#include <ostream>
+#include <map>
+#include <set>
 #include <streambuf>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/metrics/segmentation_metrics.h"
 #include "waymo_open_dataset/protos/segmentation.pb.h"
 #include "waymo_open_dataset/protos/segmentation_metrics.pb.h"
+#include "zlib.h"
 
 namespace waymo {
 namespace open_dataset {
 namespace {
+
+// Util function for Zlib uncompression.
+std::string Uncompress(std::string const& s) {
+  unsigned int source_size = s.size();
+  const char* source = s.c_str();
+  constexpr int kMaxUncompressedLen = 1 << 30;  // 1GB
+  uLongf max_len = kMaxUncompressedLen;
+  char* destination = new char[kMaxUncompressedLen];
+  int result = uncompress((unsigned char*)destination, &max_len,
+                          (const unsigned char*)source, source_size);
+  if (result != Z_OK)
+    std::cerr << "Uncompress error occured! Error code: " << result << "\n";
+  // Since we don't know the output size, we use the max len.
+  return std::string(destination, max_len);
+}
 
 // Helper function to convert a frame into a vector.
 std::vector<Segmentation::Type> Flatten(MatrixInt32 frame) {
@@ -92,6 +108,9 @@ std::vector<Segmentation::Type> CreateEmptyPrediction(int num_points) {
 // Computes the 3D semantic segmentation metrics.
 void Compute(const std::string& pd_str, const std::string& gt_str) {
   SegmentationMetricsConfig segmentation_metrics_config;
+  // Create a segmentation_metrics_config, where we evaluate:
+  // 1. All classes except the TYPE_UNDEFINED
+  // 2. The TOP lidar and both return range images.
   const auto segmention_type_descriptor = Segmentation::Type_descriptor();
   for (int i = 0; i < segmention_type_descriptor->value_count(); i++) {
     // Loop over all Segmentation::Type except the TYPE_UNDEFINED
@@ -106,13 +125,13 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
       SegmentationMetricsIOU(segmentation_metrics_config);
   SegmentationFrameList pd_frames;
   if (!pd_frames.ParseFromString(pd_str)) {
-    std::cerr << "Failed to parse predictions.";
+    std::cerr << "Failed to parse predictions.\n";
     return;
   }
   std::cout << pd_frames.frames_size() << " frames found in prediction.\n";
   SegmentationFrameList gt_frames;
   if (!gt_frames.ParseFromString(gt_str)) {
-    std::cerr << "Failed to parse ground truths.";
+    std::cerr << "Failed to parse ground truths.\n";
     return;
   }
   std::cout << gt_frames.frames_size() << " frames found in groundtruth.\n";
@@ -135,23 +154,52 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   }
   for (auto& example_key : all_example_keys) {
     auto gt_it = gt_map.find(example_key);
-    if (gt_it == gt_map.end() || !gt_it->second.has_segmentation_labels()) {
+    if (gt_it == gt_map.end() || gt_it->second.segmentation_labels().empty()) {
       // We skip frames which do not have ground truth.
       continue;
     }
-    MatrixInt32 gt_matrix;
-    gt_matrix.ParseFromString(
-        gt_it->second.segmentation_labels().segmentation_label_compressed());
-    const int num_points = gt_matrix.data().size();
+    if (gt_it->second.segmentation_labels().size() > 1 ||
+        gt_it->second.segmentation_labels()[0].name() != LaserName::TOP) {
+      std::cerr << "Only TOP laser is supported right now.\n";
+      return;
+    }
     auto pd_it = pd_map.find(example_key);
+    bool has_valid_prediction =
+        pd_it != pd_map.end() &&
+        pd_it->second.segmentation_labels().size() == 1 &&
+        pd_it->second.segmentation_labels()[0].name() == LaserName::TOP;
+    MatrixInt32 gt_matrix;
+    // Measure the first return range image.
+    gt_matrix.ParseFromString(Uncompress(gt_it->second.segmentation_labels()[0]
+                                             .ri_return1()
+                                             .segmentation_label_compressed()));
+    const int num_points = gt_matrix.data().size();
+
     std::vector<Segmentation::Type> pd_vector;
-    if (pd_it == pd_map.end() || !pd_it->second.has_segmentation_labels()) {
-      pd_vector = CreateEmptyPrediction(num_points);
-    } else {
+    if (has_valid_prediction) {
       MatrixInt32 pd_matrix;
       pd_matrix.ParseFromString(
-          pd_it->second.segmentation_labels().segmentation_label_compressed());
+          Uncompress(pd_it->second.segmentation_labels()[0]
+                         .ri_return1()
+                         .segmentation_label_compressed()));
       pd_vector = Flatten(pd_matrix);
+    } else {
+      pd_vector = CreateEmptyPrediction(num_points);
+    }
+    miou.Update(pd_vector, Flatten(gt_matrix));
+    // Measure the second return range image.
+    gt_matrix.ParseFromString(Uncompress(gt_it->second.segmentation_labels()[0]
+                                             .ri_return2()
+                                             .segmentation_label_compressed()));
+    if (has_valid_prediction) {
+      MatrixInt32 pd_matrix;
+      pd_matrix.ParseFromString(
+          Uncompress(pd_it->second.segmentation_labels()[0]
+                         .ri_return2()
+                         .segmentation_label_compressed()));
+      pd_vector = Flatten(pd_matrix);
+    } else {
+      pd_vector = CreateEmptyPrediction(num_points);
     }
     miou.Update(pd_vector, Flatten(gt_matrix));
   }

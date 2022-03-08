@@ -23,6 +23,7 @@ limitations under the License.
 #include <tuple>
 #include <vector>
 
+
 #include <glog/logging.h>
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -226,6 +227,7 @@ int Compute(const std::string& latency_result_filename,
 }  // namespace waymo
 
 int main(int argc, char* argv[]) {
+
   absl::ParseCommandLine(argc, argv);
 
   const std::string latency_result_filename =

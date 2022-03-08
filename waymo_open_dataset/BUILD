@@ -3,6 +3,7 @@
 load("//tf:build_config.bzl", "all_proto_library")
 
 
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -17,8 +18,10 @@ all_proto_library(
 )
 
 
+
 all_proto_library(
     src = "label.proto",
     deps = ["//waymo_open_dataset/protos:keypoint_proto"],
 )
+
 

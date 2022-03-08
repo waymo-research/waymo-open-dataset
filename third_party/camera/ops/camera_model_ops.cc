@@ -217,6 +217,7 @@ REGISTER_OP("WorldToImage")
     .Input("global_coordinate: T")
     .Output("image_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
@@ -246,6 +247,7 @@ REGISTER_OP("ImageToWorld")
     .Input("image_coordinate: T")
     .Output("global_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(

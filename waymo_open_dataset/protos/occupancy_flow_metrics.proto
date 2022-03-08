@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-// Various protos to compute tracking and detection metrics.
+// This file defines two protos:
+// OccupancyFlowTaskConfig: Parameters for occupancy and flow prediction tasks.
+// OccupancyFlowMetrics: Holds computed metrics values.
 
 syntax = "proto2";
 
@@ -21,7 +23,8 @@ package waymo.open_dataset;
 
 // Configuration for all parameters defining the occupancy flow task.
 message OccupancyFlowTaskConfig {
-  // The following fields reflect the Waymo Open Motion Dataset parameters.
+  // The following default values reflect the size of sequences in the Waymo
+  // Open Motion Dataset.
   optional int32 num_past_steps = 1 [default = 10];
   optional int32 num_future_steps = 2 [default = 80];
 

@@ -44,6 +44,7 @@ REGISTER_OP("DetectionMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
@@ -97,6 +98,7 @@ REGISTER_OP("MotionMetrics")
     .Output("mean_average_precision: float")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
@@ -169,6 +171,7 @@ REGISTER_OP("TrackingMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+
       return Status::OK();
     })
     .Doc(R"doc(
