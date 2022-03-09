@@ -560,8 +560,7 @@ class CombinedMetricsConfig:
 # https://github.com/matteorr/coco-analyze/blob/9eb8a0a9e57ad1e592661efc2b8964864c0e6f28/pycocotools/cocoanalyze.py#L928
 # NOTE: There is no forehead or head center keypoint in COCO, so we used a
 # similar method to determine scales for these keypoint types.
-# NOTE: These scales are subject to change if the dataset grows and we get more
-# accurate statistics.
+# NOTE: These scales are subject to change.
 DEFAULT_PER_TYPE_SCALES = immutabledict.immutabledict({
     KeypointType.KEYPOINT_TYPE_NOSE: 0.052,
     KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER: 0.158,
