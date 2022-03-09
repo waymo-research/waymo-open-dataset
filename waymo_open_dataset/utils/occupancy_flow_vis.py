@@ -79,6 +79,8 @@ def flow_rgb_image(
   Returns:
     [batch_size, height, width, 3] float32 RGB image.
   """
+  # Swap x, y for compatibilty with published visualizations.
+  flow = tf.roll(flow, shift=1, axis=-1)
   # saturate_magnitude=-1 normalizes highest intensity to largest magnitude.
   flow_image = _optical_flow_to_rgb(flow, saturate_magnitude=-1)
   # Add roadgraph.

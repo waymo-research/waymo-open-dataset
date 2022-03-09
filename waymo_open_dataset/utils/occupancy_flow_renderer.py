@@ -15,6 +15,7 @@
 """Renders occupancy and flow ground truth from inputs."""
 
 import dataclasses
+import math
 from typing import List, Mapping, Sequence, Tuple
 
 import numpy as np
@@ -412,6 +413,10 @@ def render_roadgraph_from_inputs(
   assert_shapes([(rg_x, [batch_size, num_rg_points]),
                  (rg_y, [batch_size, num_rg_points])])
 
+  if config.normalize_sdc_yaw:
+    angle = math.pi / 2 - inputs['sdc/current/bbox_yaw']
+    rg_x, rg_y = rotate_points_around_origin(rg_x, rg_y, angle)
+
   # Transform from world coordinates to topdown image coordinates.
   # All 3 have shape: [batch, num_rg_points]
   rg_x, rg_y, point_is_in_fov = _transform_to_image_coordinates(
@@ -535,6 +540,7 @@ def _sample_and_filter_agent_points(
       points_per_side_length=config.agent_points_per_side_length,
       points_per_side_width=config.agent_points_per_side_width,
       translate_sdc_to_origin=True,
+      normalize_sdc_yaw=config.normalize_sdc_yaw,
   )
 
   field_shape = [batch_size, num_agents, num_steps, points_per_agent]
@@ -585,7 +591,8 @@ def _sample_agent_points(
     times: Sequence[str],
     points_per_side_length: int,
     points_per_side_width: int,
-    translate_sdc_to_origin: bool = True,
+    translate_sdc_to_origin: bool,
+    normalize_sdc_yaw: bool,
 ) -> _SampledPoints:
   """Creates a set of points to represent agents in the scene.
 
@@ -599,10 +606,15 @@ def _sample_agent_points(
     points_per_side_width: The number of points along the width of the agent.
     translate_sdc_to_origin: If true, translate the points such that the
       autonomous vehicle is at the origin.
+    normalize_sdc_yaw: If true, transform the scene such that the autonomous
+      vehicle is heading up at the current time.
 
   Returns:
     _SampledPoints object.
   """
+  if normalize_sdc_yaw and not translate_sdc_to_origin:
+    raise ValueError('normalize_sdc_yaw requires translate_sdc_to_origin.')
+
   # All fields: [batch_size, num_agents, num_steps, 1].
   x = _stack_field(inputs, times, 'x')
   y = _stack_field(inputs, times, 'y')
@@ -632,6 +644,12 @@ def _sample_agent_points(
     x = x - sdc_x
     y = y - sdc_y
     z = z - sdc_z
+
+  if normalize_sdc_yaw:
+    angle = math.pi / 2 - inputs['sdc/current/bbox_yaw'][:, tf.newaxis,
+                                                         tf.newaxis, :]
+    x, y = rotate_points_around_origin(x, y, angle)
+    bbox_yaw = bbox_yaw + angle
 
   return _sample_points_from_agent_boxes(
       x=x,
@@ -732,6 +750,26 @@ def _sample_points_from_agent_boxes(
   valid = tf.broadcast_to(valid, tx.shape)
 
   return _SampledPoints(x=tx, y=ty, z=tz, agent_type=agent_type, valid=valid)
+
+
+def rotate_points_around_origin(
+    x: tf.Tensor,
+    y: tf.Tensor,
+    angle: tf.Tensor,
+) -> Tuple[tf.Tensor, tf.Tensor]:
+  """Rotates points around the origin.
+
+  Args:
+    x: Tensor of shape [batch_size, ...].
+    y: Tensor of shape [batch_size, ...].
+    angle: Tensor of shape [batch_size, ...].
+
+  Returns:
+    Rotated x, y, each with shape [batch_size, ...].
+  """
+  tx = tf.cos(angle) * x - tf.sin(angle) * y
+  ty = tf.sin(angle) * x + tf.cos(angle) * y
+  return tx, ty
 
 
 def _stack_field(

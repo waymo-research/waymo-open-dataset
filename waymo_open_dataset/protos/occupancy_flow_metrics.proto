@@ -56,6 +56,10 @@ message OccupancyFlowTaskConfig {
 
   // -- PREDICTION RESOLUTION AND SCALE --
 
+  // Whether to rotate the scene such that the SDC is heading up in ground-truth
+  // grids.
+  optional bool normalize_sdc_yaw = 12 [default = true];
+
   // Occupancy grids are organized [grid_height_cells, grid_width_cells, 1].
   // Flow fields are organized as [grid_height_cells, grid_width_cells, 2].
   optional int32 grid_height_cells = 5 [default = 256];
@@ -64,7 +68,7 @@ message OccupancyFlowTaskConfig {
   // with reference to the location of the autonomous vehicle at the current
   // time.  The autonomous vehicle's current location is mapped to the following
   // coordinates.
-  optional int32 sdc_y_in_grid = 7 [default = 128];
+  optional int32 sdc_y_in_grid = 7 [default = 192];
   optional int32 sdc_x_in_grid = 8 [default = 128];
 
   // Prediction scale.  With a value of 3.2, the 256x256 grid covers an 80mx80m

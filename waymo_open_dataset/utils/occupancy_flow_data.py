@@ -186,4 +186,6 @@ def add_sdc_fields(inputs: Dict[str, tf.Tensor]) -> Dict[str, tf.Tensor]:
   inputs['sdc/current/x'] = tf.gather_nd(inputs['state/current/x'], sdc_indices)
   inputs['sdc/current/y'] = tf.gather_nd(inputs['state/current/y'], sdc_indices)
   inputs['sdc/current/z'] = tf.gather_nd(inputs['state/current/z'], sdc_indices)
+  inputs['sdc/current/bbox_yaw'] = tf.gather_nd(
+      inputs['state/current/bbox_yaw'], sdc_indices)
   return inputs
