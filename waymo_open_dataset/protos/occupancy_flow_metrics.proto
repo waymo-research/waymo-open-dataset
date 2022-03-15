@@ -52,7 +52,7 @@ message OccupancyFlowTaskConfig {
   //
   // The code provided in occupancy_flow_data.py implements the above logic to
   // construct the ground truth.
-  optional bool cumulative_waypoints = 4 [default = true];
+  optional bool cumulative_waypoints = 4 [default = false];
 
   // -- PREDICTION RESOLUTION AND SCALE --
 
@@ -115,7 +115,7 @@ message OccupancyFlowMetrics {
   // The flow-warped occupancy metrics verify correctness of both predicted
   // flow fields and predicted occupancy grids.
   //
-  // Here is how the flow-warped occupancy metrics are computed for waypoint t:
+  // Here is how the flow-warped occupancy metrics are computed for waypoint k:
   //
   // Let:
   // ~O^b_k denote the predicted occupancy at waypoint k of observed vehicles,
@@ -145,15 +145,20 @@ message OccupancyFlowMetrics {
   // ~W_k = ~F_k o O_{k-1},
   //
   // where o indicates function application -- applying the flow field as a
-  // function to transform the occupancy.  If the predicted flow is accurate, we
-  // should also have ~W_k == O_k.  To combine both expectations, we multiply
-  // ~W_k element-wise with ~O_k, to get
+  // function to transform the occupancy.  If the predicted flow is accurate, it
+  // should be able to reach and cover the future occupancy O_k.  Note that
+  // since we predict backward flow fields, ~W_k may predict expansion of
+  // occupancy in different directions and reach a larger area beyond O_k.
+  // Therefore we multiply ~W_k element-wise with ~O_k, to get
   //
   // ~W_k * ~O_k.
   //
   // If the predicted occupancy and flow at waypoint k are accurate, this term
-  // should be equal to the ground-truth O_k.  Therefore, the flow-warped
-  // metrics compute AUC and Soft-IoU between ~W_k * ~O_k and ground-truth O_k.
+  // should be equal to the ground-truth O_k.  In other words, for a grid cell
+  // to be marked as occupied in ~W_k * ~O_k, it should be supported by both
+  // occupancy and flow predictions.  Therefore, the flow-warped metrics compute
+  // AUC and Soft-IoU between ~W_k * ~O_k and ground-truth O_k.
+
   optional float vehicles_flow_warped_occupancy_auc = 6;
   optional float vehicles_flow_warped_occupancy_iou = 7;
 }

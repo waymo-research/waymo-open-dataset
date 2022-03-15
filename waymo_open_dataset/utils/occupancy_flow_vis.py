@@ -25,6 +25,7 @@ from waymo_open_dataset.utils import occupancy_flow_data
 def occupancy_rgb_image(
     agent_grids: occupancy_flow_data.AgentGrids,
     roadgraph_image: tf.Tensor,
+    gamma: float = 1.6,
 ) -> tf.Tensor:
   """Visualize predictions or ground-truth occupancy.
 
@@ -32,6 +33,7 @@ def occupancy_rgb_image(
     agent_grids: AgentGrids object containing optional
       vehicles/pedestrians/cyclists.
     roadgraph_image: Road graph image [batch_size, height, width, 1] float32.
+    gamma: Amplify predicted probabilities so that they are easier to see.
 
   Returns:
     [batch_size, height, width, 3] float32 RGB image.
@@ -43,6 +45,10 @@ def occupancy_rgb_image(
   veh = zeros if agents.vehicles is None else agents.vehicles
   ped = zeros if agents.pedestrians is None else agents.pedestrians
   cyc = zeros if agents.cyclists is None else agents.cyclists
+
+  veh = tf.math.pow(veh, 1 / gamma)
+  ped = tf.math.pow(ped, 1 / gamma)
+  cyc = tf.math.pow(cyc, 1 / gamma)
 
   # Convert layers to RGB.
   rg_rgb = tf.concat([zeros, zeros, zeros], axis=-1)
