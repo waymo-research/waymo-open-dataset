@@ -45,6 +45,7 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
   int num_false_positives = 0;
   int num_false_negatives = 0;
   float sum_heading_accuracy = 0.0;
+  float sum_localization_affinity = 0.0;
 
   DetectionMeasurement measurement;
   DetectionMeasurement::Details* details = nullptr;
@@ -70,12 +71,22 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
       const float heading_accuracy =
           internal::ComputeHeadingAccuracy(matcher, pd_index, gt_index);
       if (heading_accuracy <= config.min_heading_accuracy()) continue;
+      sum_heading_accuracy += heading_accuracy;
+      // If LET is not enabled, every true positive is considered as perfect
+      // localization, resulting in APL equals AP.
+      const float localization_affinity =
+          config.let_metric_config().enabled()
+              ? matcher.LocalizationAffinity(pd_index, gt_index)
+              : 1.0;
+      sum_localization_affinity += localization_affinity;
       ++num_true_positives;
       if (details != nullptr) {
         details->add_tp_pr_ids(pd_id);
         details->add_tp_gt_ids(matcher.ground_truths()[gt_index].object().id());
+        details->add_tp_ious(matcher.IoU(pd_index, gt_index));
+        details->add_tp_heading_accuracies(heading_accuracy);
+        details->add_tp_localization_affinities(localization_affinity);
       }
-      sum_heading_accuracy += heading_accuracy;
     }
     // This is a false positive only if
     // 1) This prediction does not match to any ground truth.
@@ -122,6 +133,7 @@ DetectionMeasurement ComputeDetectionMeasurementFromMatchingResult(
   measurement.set_num_fps(num_false_positives);
   measurement.set_num_fns(num_false_negatives);
   measurement.set_sum_ha(sum_heading_accuracy);
+  measurement.set_sum_localization_affinity(sum_localization_affinity);
   if (details != nullptr &&
       details->tp_gt_ids_size() != details->tp_pr_ids_size()) {
     LOG(FATAL) << "True positive sizes should be equal. pr size: "
@@ -193,6 +205,7 @@ DetectionMeasurement MergeDetectionMeasurement(const DetectionMeasurement& m1,
   ADD_FIELD(num_tps);
   ADD_FIELD(num_fns);
   ADD_FIELD(sum_ha);
+  ADD_FIELD(sum_localization_affinity);
 #undef ADD_FIELD
 
   // If we enables details population, appends it as a new frame. The new
@@ -257,27 +270,37 @@ DetectionMetrics ToDetectionMetrics(const Config& config,
     if (tp_fp_sum <= 0) {
       metrics.add_precisions(0.0);
       metrics.add_precisions_ha_weighted(0.0);
+      metrics.add_precisions_localization_affinity_weighted(0.0);
     } else {
       const float precision =
           static_cast<float>(measurement.num_tps()) / tp_fp_sum;
       const float precision_ha = measurement.sum_ha() / tp_fp_sum;
+      const float precision_localization_affinity =
+          measurement.sum_localization_affinity() / tp_fp_sum;
 
       metrics.add_precisions(precision < config.min_precision() ? 0.0
                                                                 : precision);
       metrics.add_precisions_ha_weighted(
           precision_ha < config.min_precision() ? 0.0 : precision_ha);
+      metrics.add_precisions_localization_affinity_weighted(
+          precision_localization_affinity < config.min_precision()
+              ? 0.0
+              : precision_localization_affinity);
     }
 
     const int tp_fn_sum = measurement.num_tps() + measurement.num_fns();
     if (tp_fn_sum <= 0) {
       metrics.add_recalls(0.0);
       metrics.add_recalls_ha_weighted(0.0);
+      metrics.add_recalls_localization_affinity_weighted(0.0);
     } else {
       metrics.add_recalls(static_cast<float>(measurement.num_tps()) /
                           tp_fn_sum);
       // Use num_tps directly instead of sum_ha as none of the existing matcher
       // implementations takes heading accuracy into account.
       metrics.add_recalls_ha_weighted(
+          static_cast<float>(measurement.num_tps()) / tp_fn_sum);
+      metrics.add_recalls_localization_affinity_weighted(
           static_cast<float>(measurement.num_tps()) / tp_fn_sum);
     }
     // If recall = 0.0, manually set precision = 1.0.
@@ -287,11 +310,17 @@ DetectionMetrics ToDetectionMetrics(const Config& config,
     if (*metrics.recalls_ha_weighted().rbegin() == 0.0) {
       *metrics.mutable_precisions_ha_weighted()->rbegin() = 1.0;
     }
+    if (*metrics.recalls_localization_affinity_weighted().rbegin() == 0.0) {
+      *metrics.mutable_precisions_localization_affinity_weighted()->rbegin() =
+          1.0;
+    }
   }
   std::vector<float> precisions;
   std::vector<float> recalls;
   std::vector<float> precisions_ha_weighted;
   std::vector<float> recalls_ha_weighted;
+  std::vector<float> precisions_localization_affinity_weighted;
+  std::vector<float> recalls_localization_affinity_weighted;
   std::copy(metrics.precisions().begin(), metrics.precisions().end(),
             std::back_inserter(precisions));
   std::copy(metrics.recalls().begin(), metrics.recalls().end(),
@@ -302,12 +331,22 @@ DetectionMetrics ToDetectionMetrics(const Config& config,
   std::copy(metrics.recalls_ha_weighted().begin(),
             metrics.recalls_ha_weighted().end(),
             std::back_inserter(recalls_ha_weighted));
+  std::copy(metrics.precisions_localization_affinity_weighted().begin(),
+            metrics.precisions_localization_affinity_weighted().end(),
+            std::back_inserter(precisions_localization_affinity_weighted));
+  std::copy(metrics.recalls_localization_affinity_weighted().begin(),
+            metrics.recalls_localization_affinity_weighted().end(),
+            std::back_inserter(recalls_localization_affinity_weighted));
 
   metrics.set_mean_average_precision(internal::ComputeMeanAveragePrecision(
       precisions, recalls, desired_recall_delta));
   metrics.set_mean_average_precision_ha_weighted(
       internal::ComputeMeanAveragePrecision(
           precisions_ha_weighted, recalls_ha_weighted, desired_recall_delta));
+  metrics.set_mean_average_precision_localization_affinity_weighted(
+      internal::ComputeMeanAveragePrecision(
+          precisions_localization_affinity_weighted,
+          recalls_localization_affinity_weighted, desired_recall_delta));
 
   return metrics;
 }

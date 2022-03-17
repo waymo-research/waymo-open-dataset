@@ -339,12 +339,13 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
 // coordinate space instead of going to the distortion space. The testing
 // results show that we get sufficiently good results already in normalized
 // coordinate space.
-bool CameraModel::WorldToImage(double x, double y, double z,
-                               bool check_image_bounds, double* u_d,
-                               double* v_d) const {
+bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
+                                        bool check_image_bounds, double* u_d,
+                                        double* v_d, double* depth) const {
   if (calibration_.rolling_shutter_direction() ==
       CameraCalibration::GLOBAL_SHUTTER) {
-    return WorldToImageGlobalShutter(x, y, z, check_image_bounds, u_d, v_d);
+    return WorldToImageWithDepthGlobalShutter(x, y, z, check_image_bounds, u_d,
+                                              v_d, depth);
   }
 
   // The initial guess is the center of the image.
@@ -361,10 +362,16 @@ bool CameraModel::WorldToImage(double x, double y, double z,
   Eigen::Vector2d normalized_coord;
   double residual = 2 * kThreshold;
   double jacobian = 0.;
+  double point_depth = -1;
 
   while (std::fabs(residual) > kThreshold && iter_num < kMaxIterNum) {
-    if (!ComputeResidualAndJacobian(n_pos_f, t_h, &normalized_coord, &residual,
-                                    &jacobian)) {
+    if (!ComputeDepthResidualAndJacobian(n_pos_f, t_h, &normalized_coord,
+                                         &point_depth, &residual, &jacobian)) {
+      // The point is behind camera or the radial distortion is too large.
+      *u_d = -1;
+      *v_d = -1;
+      if (depth)
+        *depth = -1;
       return false;
     }
 
@@ -375,10 +382,19 @@ bool CameraModel::WorldToImage(double x, double y, double z,
   }
 
   // Get normalized coordinate.
-  if (!ComputeResidualAndJacobian(n_pos_f, t_h, &normalized_coord, &residual,
-                                  /*jacobian=*/nullptr)) {
+  if (!ComputeDepthResidualAndJacobian(n_pos_f, t_h, &normalized_coord,
+                                       &point_depth, &residual,
+                                       /*jacobian=*/nullptr)) {
+    // The point is behind camera or the radial distortion is too large.
+    *u_d = -1;
+    *v_d = -1;
+    if (depth)
+      *depth = -1;
     return false;
   }
+
+  if (depth)
+    *depth = point_depth;
 
   if (!DirectionToImage(normalized_coord(0), normalized_coord(1), u_d, v_d)) {
     return false;
@@ -390,6 +406,13 @@ bool CameraModel::WorldToImage(double x, double y, double z,
   }
 
   return true;
+}
+
+bool CameraModel::WorldToImage(double x, double y, double z,
+                               bool check_image_bounds, double* u_d,
+                               double* v_d) const {
+  return WorldToImageWithDepth(
+      x, y, z, check_image_bounds, u_d, v_d, nullptr);
 }
 
 void CameraModel::ImageToWorld(double u_d, double v_d, double depth, double* x,
@@ -440,13 +463,15 @@ void CameraModel::ImageToWorldGlobalShutter(double u_d, double v_d,
   *z = wp(2);
 }
 
-bool CameraModel::CameraToImage(double x, double y, double z,
-                                bool check_image_bounds, double* u_d,
-                                double* v_d) const {
+bool CameraModel::CameraToImageWithDepth(double x, double y, double z,
+                                         bool check_image_bounds, double* u_d,
+                                         double* v_d, double* depth) const {
   // Return if the 3D point is behind the camera.
   if (x <= 0.0) {
     *u_d = -1.0;
     *v_d = -1.0;
+    if (depth)
+      *depth = -1.0;
     return false;
   }
 
@@ -454,10 +479,18 @@ bool CameraModel::CameraToImage(double x, double y, double z,
   // the limits, still compute u_d and v_d but return false.
   const double u = -y / x;
   const double v = -z / x;
+  if (depth)
+    *depth = x;
   if (!DirectionToImage(u, v, u_d, v_d)) return false;
 
   // If requested, check if the projected pixel is inside the image.
   return check_image_bounds ? InImage(*u_d, *v_d) : true;
+}
+
+bool CameraModel::CameraToImage(double x, double y, double z,
+                                bool check_image_bounds, double* u_d,
+                                double* v_d) const {
+  return CameraToImageWithDepth(x, y, z, check_image_bounds, u_d, v_d, nullptr);
 }
 
 bool CameraModel::InImage(double u, double v) const {
@@ -466,14 +499,24 @@ bool CameraModel::InImage(double u, double v) const {
   return u >= 0.0 && u < max_u && v >= 0.0 && v < max_v;
 }
 
-bool CameraModel::WorldToImageGlobalShutter(double x, double y, double z,
-                                            bool check_image_bounds,
-                                            double* u_d, double* v_d) const {
+bool CameraModel::WorldToImageWithDepthGlobalShutter(double x, double y,
+                                                     double z,
+                                                     bool check_image_bounds,
+                                                     double* u_d, double* v_d,
+                                                     double* depth) const {
   CHECK(u_d);
   CHECK(v_d);
   const Eigen::Vector3d cp =
       global_shutter_state_->cam_tfm_n * Eigen::Vector3d(x, y, z);
-  return CameraToImage(cp(0), cp(1), cp(2), check_image_bounds, u_d, v_d);
+  return CameraToImageWithDepth(cp(0), cp(1), cp(2), check_image_bounds, u_d,
+                                v_d, depth);
+}
+
+bool CameraModel::WorldToImageGlobalShutter(double x, double y, double z,
+                                            bool check_image_bounds,
+                                            double* u_d, double* v_d) const {
+  return WorldToImageWithDepthGlobalShutter(x, y, z, check_image_bounds, u_d,
+                                            v_d, nullptr);
 }
 
 void CameraModel::ImageToDirection(double u_d, double v_d, double* u_n,
@@ -537,12 +580,12 @@ bool CameraModel::DirectionToImage(double u_n, double v_n, double* u_d,
   return true;
 }
 
-bool CameraModel::ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
-                                             double t_h,
-                                             Eigen::Vector2d* normalized_coord,
-                                             double* residual,
-                                             double* jacobian) const {
+bool CameraModel::ComputeDepthResidualAndJacobian(
+    const Eigen::Vector3d& n_pos_f, double t_h,
+    Eigen::Vector2d* normalized_coord, double* depth, double* residual,
+    double* jacobian) const {
   // The jacobian is allowed to be a nullptr.
+  // The depth is allowed to be a nullptr.
   CHECK(normalized_coord);
   CHECK(residual);
   CHECK(rolling_shutter_state_);
@@ -562,6 +605,8 @@ bool CameraModel::ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
 
   (*normalized_coord)(0) = -cam_pos_f(1) / cam_pos_f(0);
   (*normalized_coord)(1) = -cam_pos_f(2) / cam_pos_f(0);
+  if (depth)
+    *depth = cam_pos_f(0);
 
   const double normalized_spacing =
       rolling_shutter_state.readout_horizontal_direction
@@ -590,6 +635,15 @@ bool CameraModel::ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
   }
 
   return true;
+}
+
+bool CameraModel::ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
+                                             double t_h,
+                                             Eigen::Vector2d* normalized_coord,
+                                             double* residual,
+                                             double* jacobian) const {
+  return ComputeDepthResidualAndJacobian(n_pos_f, t_h, normalized_coord,
+                                         nullptr, residual, jacobian);
 }
 
 }  // namespace open_dataset

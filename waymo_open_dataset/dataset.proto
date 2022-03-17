@@ -115,6 +115,8 @@ message CameraCalibration {
     GLOBAL_SHUTTER = 5;
   }
   optional RollingShutterReadOutDirection rolling_shutter_direction = 6;
+
+
 }
 
 message LaserCalibration {
