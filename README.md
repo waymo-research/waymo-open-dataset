@@ -4,20 +4,22 @@ We have released the Waymo Open Dataset publicly to aid the research community i
 
 The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 1,950 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
 
+## April 2022 Update
+We released v1.3.1 of the Perception dataset to support the 2022 Challenges and have updated this repository accordingly.
+ - Added metrics (LET-3D-APL and LET-3D-AP) for the 3D Camera-Only Detection Challenge.
+ - Added 80 segments of 20-second camera imagery, as a test set for the 3D Camera-Only Detection Challenge.
+ - Added z-axis speed and acceleration in [lidar label metadata](waymo_open_dataset/label.proto#L53-L60).
+ - Updated the default configuration for the Occupancy and Flow Challenge, switching from aggregate waypoints to [subsampled waypoints](waymo_open_dataset/protos/occupancy_flow_metrics.proto#L38-L55).
+ - Updated the [tutorial](waymo-open-dataset/tutorial/tutorial_3d_semseg.ipynb) for 3D Semantic Segmentation Challenge with more detailed instructions.
 
 ## March 2022 Update
 
-We released v1.3 of the Perception dataset and the 2022 challenges. We have updated this repository to add support for the new labels and the challenges.
+We released v1.3.0 of the Perception dataset and the 2022 challenges. We have updated this repository to add support for the new labels and the challenges.
  - Added 3D semantic segmentation labels, tutorial, and metrics.
  - Added 2D and 3D keypoint labels, tutorial, and metrics.
  - Added correspondence between 2D and 3D labels.
  - Added tutorial and utilities for Occupancy Flow Prediction Challenge.
  - Added the soft mAP metric for Motion Prediction Challenge.
-
-Coming soon:
- - Add scenes with camera imagery, as a test set for the Camera-Only 3D Detection Challenge.
- - Add a new metric for the Camera-Only 3D Detection Challenge
-
 
 ## September 2021 Update
 

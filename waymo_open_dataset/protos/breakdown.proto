@@ -50,6 +50,9 @@ message Breakdown {
 
     // Shard by the object size (the max of length, width, height).
     SIZE = 9;
+
+    // Shard by the corresponding camera.
+    CAMERA = 10;
   }
 
   // The breakdown generator ID.

@@ -53,8 +53,10 @@ message Label {
   message Metadata {
     optional double speed_x = 1;
     optional double speed_y = 2;
+    optional double speed_z = 5;
     optional double accel_x = 3;
     optional double accel_y = 4;
+    optional double accel_z = 6;
   }
   optional Metadata metadata = 2;
 
@@ -98,6 +100,35 @@ message Label {
     optional string laser_object_id = 1;
   }
   optional Association association = 10;
+
+  // Used by Lidar labels to store in which camera it is mostly visible.
+  optional string most_visible_camera_name = 11;
+  // Used by Lidar labels to store a camera-synchronized box corresponding to
+  // the camera indicated by `most_visible_camera_name`. Currently, the boxes
+  // are shifted to the time when the most visible camera captures the center of
+  // the box, taking into account the rolling shutter of that camera.
+  // Specifically, given the object box living at the start of the Open Dataset
+  // frame (t_frame) with center position (c) and velocity (v), we aim to find
+  // the camera capture time (t_capture), when the camera indicated by
+  // `most_visible_camera_name` captures the center of the object. To this end,
+  //  we solve the rolling shutter optimization considering both ego and object
+  //  motion:
+  //   t_capture = image_column_to_time(
+  //       camera_projection(c + v * (t_capture - t_frame),
+  //                         transform_vehicle(t_capture - t_ref),
+  //                         cam_params)),
+  // where transform_vehicle(t_capture - t_frame) is the vehicle transform from
+  // a pose reference time t_ref to t_capture considering the ego motion, and
+  // cam_params is the camera extrinsic and intrinsic parameters.
+  // We then move the label box to t_capture by updating the center of the box
+  // as follows:
+  //   c_camra_synced = c + v * (t_capture - t_frame),
+  // while keeping the box dimensions and heading direction.
+  // We use the camera_synced_box as the ground truth box for the 3D Camera-Only
+  // Detection Challenge. This makes the assumption that the users provide the
+  // detection at the same time as the most visible camera captures the object
+  // center.
+  optional Box camera_synced_box = 12;
 
 
 }

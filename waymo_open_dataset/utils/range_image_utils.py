@@ -407,14 +407,14 @@ def build_camera_depth_image(range_image_cartesian,
     extrinsic: [B, 4, 4] tensor. Camera extrinsic.
     camera_projection: [B, H, W, 6] tensor. Each range image pixel is associated
       with at most two camera projections. See dataset.proto for more details.
-    camera_image_size: a list of [width, height] integers.
+    camera_image_size: a list of [height, width] integers.
     camera_name: an integer that identifies a camera. See dataset.proto.
     pool_method: pooling method when multiple lidar points are projected to one
       image pixel.
     scope: the name scope.
 
   Returns:
-    image: [B, width, height] depth image generated.
+    image: [B, height, width] depth image generated.
   """
   with tf.compat.v1.name_scope(
       scope, 'BuildCameraDepthImage',

@@ -111,6 +111,60 @@ message Config {
   // precision.
   optional float desired_recall_delta = 8 [default = 0.05];
 
+  // Localization error tolerant (LET) metrics config for Camera-Only (Mono) 3D
+  // Detection.
+  // By enabling this metric, the prediction-groundtruth matching will be more
+  // tolerant to the localization noise, rather than just use IoU.
+  // The tolerance is larger in the long range, but only along the line of sight
+  // from the sensor origin.
+  message LocalizationErrorTolerantConfig{
+    // When enabled, calculate the localization error tolerant 3D AP
+    // (LET-3D-AP).
+    optional bool enabled = 1;
+
+    // Location in 3D space described in a Cartersian coordinate system.
+    message Location3D{
+      optional double x = 1;
+      optional double y = 2;
+      optional double z = 3;
+    }
+    // Location of the sensor used to infer the predictions (e.g., camera). The
+    // location is related to the vehicle origin. It is used to translate the
+    // centers of prediction and ground truth boxes to the sensor cooridinate
+    // system so that the range to the sensor origin can be calculated
+    // correctly.
+    optional Location3D sensor_location = 2;
+    // The percentage of allowed longitudinal error for a given ground truth
+    // object.
+    // The final longitudinal tolerance tol_lon in meters given a ground truth
+    // object with range r_gt is computed as:
+    // tol_r = max(longitudinal_tolerance_percentage* r_gt,
+    //             min_range_tolerance_meter),
+    // where min_longitudinal_tolerance_meter is introduced to handle near-range
+    // ground truth objects so that it has a minimum longitudinal error
+    // tolerance in meters.
+    // A prediction bounding box can be matched with a ground truth bounding box
+    // only if the range error between them is less than the tolerance.
+    optional float longitudinal_tolerance_percentage = 3;
+    optional float min_longitudinal_tolerance_meter = 4;
+
+    // Describes how a prediction box aligns with a ground truth box to minimize
+    // the localization error.
+    enum AlignType{
+      TYPE_UNKNOWN = 0;
+      // No alignment is performed.
+      TYPE_NOT_ALIGNED = 1;
+      // The center of the prediction box moves along the line of sight such
+      // that it has the closest distance to the center of the ground truth box.
+      TYPE_RANGE_ALIGNED = 2;
+      // The center of the prediction box moves to the center of the ground
+      // truth box, which means no localization error after alignment.
+      TYPE_CENTER_ALIGNED = 3;
+    }
+    optional AlignType align_type = 5 [default = TYPE_RANGE_ALIGNED];
+  }
+  optional LocalizationErrorTolerantConfig let_metric_config = 12;
+
   ////////////////////////////////////////////////////////////////////////////
   // Users do not need to modify the following features.
   ////////////////////////////////////////////////////////////////////////////
@@ -132,11 +186,17 @@ message DetectionMeasurement {
     // False negative ground truth ids.
     repeated string fn_ids = 2;
     // True positive ground truth ids. Should be of the same length with
-    // tp_pr_ids. Each pair of ids of the same index correspond to the ids of
-    // ground truth object and prediction objects which are matched.
+    // tp_pr_ids, tp_ious. Each pair of ids of the same index correspond to
+    // the ids of ground truth object and prediction objects which are matched.
     repeated string tp_gt_ids = 3;
     // True positive prediction ids.
     repeated string tp_pr_ids = 4;
+    // IoU values of the true positive pairs.
+    repeated float tp_ious = 5;
+    // Heading accuracies of the true positive pairs.
+    repeated float tp_heading_accuracies = 6;
+    // Localization affinities of the true positive pairs.
+    repeated float tp_localization_affinities = 7;
   }
   // Number of false positives.
   optional int32 num_fps = 1;
@@ -150,6 +210,9 @@ message DetectionMeasurement {
 
   // Sum of heading accuracy (ha) for all TPs.
   optional float sum_ha = 4;
+
+  // Sum of localization affinity for all TPs.
+  optional float sum_localization_affinity = 7;
 
   // The score cutoff used to compute this measurement. Optional.
   optional float score_cutoff = 5;
@@ -165,11 +228,15 @@ message DetectionMetrics {
   optional float mean_average_precision = 1;
   // Heading accuracy weighted mean average precision.
   optional float mean_average_precision_ha_weighted = 2;
+  // Localization affinity weighted mean average precision.
+  optional float mean_average_precision_localization_affinity_weighted = 10;
 
   repeated float precisions = 3;
   repeated float recalls = 4;
   repeated float precisions_ha_weighted = 5;
   repeated float recalls_ha_weighted = 6;
+  repeated float precisions_localization_affinity_weighted = 11;
+  repeated float recalls_localization_affinity_weighted = 12;
   repeated float score_cutoffs = 7;
 
   // The breakdown the detection metrics are computed for.

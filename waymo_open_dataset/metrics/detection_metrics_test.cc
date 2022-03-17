@@ -190,6 +190,119 @@ TEST(DetectionMetricsTest, OneShardWithDetails) {
   }
 }
 
+TEST(DetectionMetricsTest, OneShardWithLetDetails) {
+  Config config = BuildConfig(/*add_details=*/true);
+  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  *config.mutable_let_metric_config() = std::move(let_config);
+  std::vector<Object> pds{BuildObject("pd0", 0.9, Label::TYPE_VEHICLE),
+                          BuildObject("pd1", 0.6, Label::TYPE_VEHICLE)};
+  for (int i = 0, sz = pds.size(); i < sz; ++i) {
+    pds[i].set_score(i * 1.0 / sz);
+  }
+  const std::vector<Object> gts{BuildObject("gt0", 1.0, Label::TYPE_VEHICLE)};
+
+  const std::vector<DetectionMeasurements> measurements =
+      ComputeDetectionMeasurements(config, pds, gts);
+  EXPECT_EQ(measurements.size(), 1);
+  EXPECT_EQ(measurements[0].measurements_size(), 3);
+
+  {
+    const auto& m = measurements[0].measurements(0);
+    // Score cutoff 0.0.
+    EXPECT_EQ(m.num_tps(), 1);
+    EXPECT_EQ(m.num_fps(), 1);
+    EXPECT_EQ(m.num_fns(), 0);
+
+    ASSERT_EQ(m.details_size(), 1);
+    const auto& details = m.details(0);
+    ASSERT_EQ(details.tp_pr_ids().size(), 1);
+    EXPECT_EQ(details.tp_pr_ids()[0], "pd0");
+    ASSERT_EQ(details.tp_gt_ids().size(), 1);
+    EXPECT_EQ(details.tp_gt_ids()[0], "gt0");
+    ASSERT_EQ(details.tp_ious().size(), 1);
+    EXPECT_NEAR(details.tp_ious()[0], 0.9, 1e-6);
+    ASSERT_EQ(details.tp_heading_accuracies().size(), 1);
+    EXPECT_NEAR(details.tp_heading_accuracies()[0], 1.0, 1e-6);
+    ASSERT_EQ(details.tp_localization_affinities().size(), 1);
+    EXPECT_NEAR(details.tp_localization_affinities()[0], 1.0, 1e-6);
+    ASSERT_EQ(details.fp_ids().size(), 1);
+    EXPECT_EQ(details.fp_ids()[0], "pd1");
+    EXPECT_TRUE(details.fn_ids().empty());
+  }
+  {
+    // Score cutoff 0.5.
+    const auto& m = measurements[0].measurements(1);
+    EXPECT_EQ(m.num_tps(), 1);
+    EXPECT_EQ(m.num_fps(), 0);
+    EXPECT_EQ(m.num_fns(), 0);
+
+    ASSERT_EQ(m.details_size(), 1);
+    const auto& details = m.details(0);
+    ASSERT_EQ(details.tp_pr_ids().size(), 1);
+    EXPECT_EQ(details.tp_pr_ids()[0], "pd1");
+    ASSERT_EQ(details.tp_gt_ids().size(), 1);
+    EXPECT_EQ(details.tp_gt_ids()[0], "gt0");
+    ASSERT_EQ(details.tp_ious().size(), 1);
+    EXPECT_NEAR(details.tp_ious()[0], 0.6, 1e-6);
+    ASSERT_EQ(details.tp_heading_accuracies().size(), 1);
+    EXPECT_NEAR(details.tp_heading_accuracies()[0], 1.0, 1e-6);
+    ASSERT_EQ(details.tp_localization_affinities().size(), 1);
+    EXPECT_NEAR(details.tp_localization_affinities()[0], 1.0, 1e-6);
+    EXPECT_TRUE(details.fp_ids().empty());
+    EXPECT_TRUE(details.fn_ids().empty());
+  }
+  {
+    // Score cutoff 1.0.
+    const auto& m = measurements[0].measurements(2);
+    EXPECT_EQ(m.num_tps(), 0);
+    EXPECT_EQ(m.num_fps(), 0);
+    EXPECT_EQ(m.num_fns(), 1);
+
+    ASSERT_EQ(m.details_size(), 1);
+    const auto& details = m.details(0);
+    EXPECT_TRUE(details.tp_pr_ids().empty());
+    EXPECT_TRUE(details.tp_gt_ids().empty());
+    EXPECT_TRUE(details.tp_ious().empty());
+    EXPECT_TRUE(details.tp_heading_accuracies().empty());
+    EXPECT_TRUE(details.tp_localization_affinities().empty());
+    EXPECT_TRUE(details.fp_ids().empty());
+    ASSERT_EQ(details.fn_ids().size(), 1);
+    EXPECT_EQ(details.fn_ids()[0], "gt0");
+  }
+
+  const std::vector<DetectionMetrics> metrics =
+      ComputeDetectionMetrics(config, {pds, pds}, {gts, gts});
+  EXPECT_EQ(metrics.size(), 1);
+  // p/r curve:
+  // p(r=1) = 0.5, p(r=1) = 1.0, p(r=0) = 1.0
+  // mAP = 1.0
+  EXPECT_NEAR(metrics[0].recalls()[0], 1.0, 1e-6);
+  EXPECT_NEAR(metrics[0].precisions()[0], 0.5, 1e-6);
+  EXPECT_NEAR(metrics[0].recalls()[1], 1.0, 1e-6);
+  EXPECT_NEAR(metrics[0].precisions()[1], 1.0, 1e-6);
+  EXPECT_NEAR(metrics[0].recalls()[2], 0.0, 1e-6);
+  EXPECT_NEAR(metrics[0].precisions()[2], 1.0, 1e-6);
+  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[0], 1.0,
+              1e-6);
+  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[0], 0.5,
+              1e-6);
+  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[1], 1.0,
+              1e-6);
+  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[1], 1.0,
+              1e-6);
+  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[2], 0.0,
+              1e-6);
+  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[2], 1.0,
+              1e-6);
+  EXPECT_NEAR(metrics[0].mean_average_precision(), 1.0, 1e-6);
+  // Angles are perfectly matched.
+  EXPECT_NEAR(metrics[0].mean_average_precision_ha_weighted(), 1.0, 1e-6);
+  // Center locations are perfectly matched.
+  EXPECT_NEAR(
+      metrics[0].mean_average_precision_localization_affinity_weighted(), 1.0,
+      1e-6);
+}
+
 TEST(DetectionMetricsTest, MultipleTypes) {
   Config config = BuildConfig();
   std::vector<Object> pds{BuildObject("pd0", 0.9, Label::TYPE_VEHICLE),

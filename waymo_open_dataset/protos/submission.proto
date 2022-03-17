@@ -32,6 +32,7 @@ message Submission {
     TRACKING_2D = 3;
     TRACKING_3D = 4;
     DOMAIN_ADAPTATION = 5;
+    CAMERA_ONLY_DETECTION_3D = 6;
   }
 
   enum SensorType {

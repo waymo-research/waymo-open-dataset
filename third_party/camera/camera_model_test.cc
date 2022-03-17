@@ -154,6 +154,173 @@ TEST_F(CameraModelTest, GlobalShutter) {
   EXPECT_NEAR(x, -4091.97180, 0.1);
   EXPECT_NEAR(y, 11527.48092, 0.1);
   EXPECT_NEAR(z, 84.46586, 0.1);
+
+  camera_model.ImageToVehicleGlobalShutter(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, 21.44064, 0.1);
+  EXPECT_NEAR(y, 8.32240, 0.1);
+  EXPECT_NEAR(z, -1.62938, 0.1);
+}
+
+TEST_F(CameraModelTest, WorldToImageBehindCameraRollingShutter) {
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, -4091.97180, 0.1);
+  EXPECT_NEAR(y, 11527.48092, 0.1);
+  EXPECT_NEAR(z, 84.46586, 0.1);
+
+  double x_shift = x + 200;
+  double u_d, v_d;
+  EXPECT_FALSE(camera_model.WorldToImage(x_shift, y, z,
+                                         /*check_image_bounds=*/true, &u_d,
+                                         &v_d));
+  EXPECT_NEAR(u_d, -1, 1e-3);
+  EXPECT_NEAR(v_d, -1, 1e-3);
+}
+
+TEST_F(CameraModelTest, WorldToImageBehindCameraGlobalShutter) {
+  calibration_.set_rolling_shutter_direction(CameraCalibration::GLOBAL_SHUTTER);
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, -4091.97180, 0.1);
+  EXPECT_NEAR(y, 11527.48092, 0.1);
+  EXPECT_NEAR(z, 84.46586, 0.1);
+
+  double x_shift = x + 200;
+  double u_d, v_d;
+  EXPECT_FALSE(camera_model.WorldToImage(x_shift, y, z,
+                                         /*check_image_bounds=*/true, &u_d,
+                                         &v_d));
+  EXPECT_NEAR(u_d, -1, 1e-3);
+  EXPECT_NEAR(v_d, -1, 1e-3);
+}
+
+TEST_F(CameraModelTest, RollingShutterWithDepth) {
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+
+  double u_d, v_d, depth;
+  EXPECT_TRUE(camera_model.WorldToImageWithDepth(
+      x, y, z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, 100, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20, 1e-3);
+  EXPECT_NEAR(x, -4091.88016, 0.1);
+  EXPECT_NEAR(y, 11527.42299, 0.1);
+  EXPECT_NEAR(z, 84.46667, 0.1);
+}
+
+TEST_F(CameraModelTest, RollingShutterMovingPointWithDepth) {
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, -4091.88016, 0.1);
+  EXPECT_NEAR(y, 11527.42299, 0.1);
+  EXPECT_NEAR(z, 84.46667, 0.1);
+
+  double v_x, v_y, v_z;
+  double u_d, v_d, depth;
+
+  v_x = 0;
+  v_y = 0;
+  v_z = 0;
+  EXPECT_TRUE(camera_model.WorldToImageMovingPointWithDepth(
+      x, y, z, v_x, v_y, v_z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, 100, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20, 1e-3);
+
+  // Check WorldToImage has same results given zero velocity.
+  EXPECT_TRUE(camera_model.WorldToImage(x, y, z, /*check_image_bounds=*/true,
+                                        &u_d, &v_d));
+  EXPECT_NEAR(u_d, 100, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20, 1e-3);
+
+  v_x = 1.0;
+  v_y = 2.0;
+  v_z = 0.1;
+  EXPECT_TRUE(camera_model.WorldToImageMovingPointWithDepth(
+      x, y, z, v_x, v_y, v_z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, 94.114, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20.00349, 1e-3);
+
+  constexpr double t_h = -0.0272851;
+  EXPECT_TRUE(camera_model.WorldToImageMovingPointWithDepth(
+      x + t_h * v_x, y + t_h * v_y, z + t_h * v_z, 0.0, 0.0, 0.0,
+      /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, 94.114, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20.00349, 1e-3);
+}
+
+TEST_F(CameraModelTest, GlobalShutterWithDepth) {
+  calibration_.set_rolling_shutter_direction(CameraCalibration::GLOBAL_SHUTTER);
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+
+  double u_d, v_d, depth;
+  EXPECT_TRUE(camera_model.WorldToImageWithDepth(
+      x, y, z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, 100, 0.1);
+  EXPECT_NEAR(v_d, 1000, 0.1);
+  EXPECT_NEAR(depth, 20, 1e-3);
+  EXPECT_NEAR(x, -4091.97180, 0.1);
+  EXPECT_NEAR(y, 11527.48092, 0.1);
+  EXPECT_NEAR(z, 84.46586, 0.1);
+}
+
+TEST_F(CameraModelTest, WorldToImageWithDepthBehindCameraRollingShutter) {
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, -4091.97180, 0.1);
+  EXPECT_NEAR(y, 11527.48092, 0.1);
+  EXPECT_NEAR(z, 84.46586, 0.1);
+
+  double x_shift = x + 200;
+  double u_d, v_d, depth;
+  EXPECT_FALSE(camera_model.WorldToImageWithDepth(
+      x_shift, y, z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, -1, 1e-3);
+  EXPECT_NEAR(v_d, -1, 1e-3);
+  EXPECT_NEAR(depth, -1, 1e-3);
+}
+
+TEST_F(CameraModelTest, WorldToImageWithDepthBehindCameraGlobalShutter) {
+  calibration_.set_rolling_shutter_direction(CameraCalibration::GLOBAL_SHUTTER);
+  CameraModel camera_model(calibration_);
+  camera_model.PrepareProjection(camera_image_);
+
+  double x, y, z;
+  camera_model.ImageToWorld(100, 1000, 20, &x, &y, &z);
+  EXPECT_NEAR(x, -4091.97180, 0.1);
+  EXPECT_NEAR(y, 11527.48092, 0.1);
+  EXPECT_NEAR(z, 84.46586, 0.1);
+
+  double x_shift = x + 200;
+  double u_d, v_d, depth;
+  EXPECT_FALSE(camera_model.WorldToImageWithDepth(
+      x_shift, y, z, /*check_image_bounds=*/true, &u_d, &v_d, &depth));
+  EXPECT_NEAR(u_d, -1, 1e-3);
+  EXPECT_NEAR(v_d, -1, 1e-3);
+  EXPECT_NEAR(depth, -1, 1e-3);
 }
 
 TEST_F(CameraModelTest, SubPixelChangeInPrinciplePointChangesPoseTimeOffset) {

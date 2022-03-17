@@ -92,7 +92,8 @@ py_binary(
     python_version = "PY3",
     deps = [
         "//waymo_open_dataset:dataset_proto_py_pb2",
-        "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:segmentation_metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:segmentation_proto_py_pb2",
+        "//waymo_open_dataset/protos:segmentation_submission_proto_py_pb2",
     ],
 )

@@ -11,6 +11,7 @@ cc_library(
     srcs = ["breakdown_generator.cc"],
     hdrs = ["breakdown_generator.h"],
     deps = [
+        "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
@@ -63,6 +64,7 @@ cc_library(
         "//waymo_open_dataset/math:box2d",
         "//waymo_open_dataset/math:polygon2d",
         "//waymo_open_dataset/math:vec2d",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_glog//:glog",
     ],
@@ -237,6 +239,7 @@ cc_test(
         ":iou",
         ":test_utils",
         "//waymo_open_dataset:label_cc_proto",
+        "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -248,6 +251,7 @@ cc_test(
     deps = [
         ":breakdown_generator",
         ":test_utils",
+        "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",

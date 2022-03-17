@@ -148,6 +148,8 @@ class CameraModelOpsTest(tf.test.TestCase):
       image_points_t = py_camera_model_ops.world_to_image(
           extrinsic, intrinsic, metadata, camera_image_metadata, global_points)
 
+    self.assertEqual(image_points_t.shape[-1], 3)
+
     with self.test_session(graph=g) as sess:
       image_points, image_points_t, global_points = sess.run(
           [image_points, image_points_t, global_points])

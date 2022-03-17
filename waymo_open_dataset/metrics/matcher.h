@@ -18,6 +18,7 @@ limitations under the License.
 
 #include <math.h>
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -41,10 +42,13 @@ namespace open_dataset {
 //
 // Coding convention: We put prediction related logic first whenever we need to
 // deal with both prediction and ground_truth.
+class Matcher;
+using CanMatchFunc = std::function<bool(const Matcher&, int, int)>;
+using ComputeMatchingWeightFunc = std::function<int(const Matcher&, int, int)>;
+
 class Matcher {
  public:
-  explicit Matcher(const std::vector<float>& iou_thresholds,
-                   Label::Box::Type box_type)
+  Matcher(const std::vector<float>& iou_thresholds, Label::Box::Type box_type)
       : iou_thresholds_(iou_thresholds), box_type_(box_type) {}
 
   virtual ~Matcher() = default;
@@ -54,10 +58,40 @@ class Matcher {
       MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
       Label::Box::Type box_type);
 
+  // Creates a matcher instance with Localization Error Tolerant (LET) metrics
+  // config.
+  // If LET config is enabled, the following components of the matcher will be
+  // set as LET customized version:
+  //
+  // iou_func: Computes the localization error tolerant IoU (LET-IoU).
+  // The boxes will be first transformed into the sensor coordinate system,
+  // then the IoU will be computed between the aligned prediction box and the
+  // ground truth box.
+  //
+  // localization_affinity_func: Computes the localization affinity between
+  // a precition bounding box and a ground truth bounding box based on
+  // the longitudinal error. See more details at mertics/iou.h.
+  //
+  // can_match_func: Returns true if the prediction can match the ground truth
+  // under the localization error tolerance and the LET-IoU is greater than the
+  // threshold.
+  //
+  // matching_weight_func: the matching weight (LET-IoU) is discounted by the
+  // localization affinity so that predictions with more localization noise
+  // are assigned smaller matching weights.
+  static std::unique_ptr<Matcher> Create(
+      MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
+      Label::Box::Type box_type,
+      const Config::LocalizationErrorTolerantConfig& let_metric_config);
+
   static std::unique_ptr<Matcher> Create(const Config& config) {
     const std::vector<float> iou_thresholds(config.iou_thresholds().begin(),
                                             config.iou_thresholds().end());
-    return Create(config.matcher_type(), iou_thresholds, config.box_type());
+    if (config.let_metric_config().enabled())
+      return Create(config.matcher_type(), iou_thresholds, config.box_type(),
+                    config.let_metric_config());
+    else
+      return Create(config.matcher_type(), iou_thresholds, config.box_type());
   }
 
   // Sets all the predictions. The index of each element in the provided
@@ -67,6 +101,7 @@ class Matcher {
   void SetPredictions(const std::vector<Object>& predictions) {
     predictions_ = &predictions;
     iou_caches_.clear();
+    localization_affinity_caches_.clear();
   }
 
   // Sets all the ground truths. The index of each element in the provided
@@ -77,6 +112,7 @@ class Matcher {
   void SetGroundTruths(const std::vector<Object>& ground_truths) {
     ground_truths_ = &ground_truths;
     iou_caches_.clear();
+    localization_affinity_caches_.clear();
   }
 
   // Sets the subset of predictions to be considered for the future Match
@@ -95,7 +131,27 @@ class Matcher {
 
   // Sets a custom IOU calculation function to replace the default function.
   void SetCustomIoUComputeFunc(ComputeIoUFunc custom_iou_func) {
-    custom_iou_func_ = custom_iou_func;
+    custom_iou_func_ = std::move(custom_iou_func);
+  }
+
+  // Sets a custom Localization Affinity calculation function to replace the
+  // default function.
+  void SetCustomLocalizationAffinityFunc(
+      ComputeLocalizationAffinityFunc custom_localization_affinity_func) {
+    custom_localization_affinity_func_ =
+        std::move(custom_localization_affinity_func);
+  }
+
+  // Sets a custom CanMatch function to replace the default function.
+  void SetCustomCanMatchFunc(CanMatchFunc custom_can_match_func) {
+    custom_can_match_func_ = std::move(custom_can_match_func);
+  }
+
+  // Sets a custom MatchingWeight calculation function to replace the default
+  // function.
+  void SetCustomMatchingWeightFunc(
+      ComputeMatchingWeightFunc custom_matching_weight_func) {
+    custom_matching_weight_func_ = std::move(custom_matching_weight_func);
   }
 
   // Accessors.
@@ -150,16 +206,28 @@ class Matcher {
   // Returns true if the prediction can match the ground truth.
   bool CanMatch(int prediction_index, int ground_truth_index) const;
 
+  // Computes the localization affinity between a prediction and a ground truth.
+  // The result is cached.
+  // Return value is within [0.0, 1.0].
+  float LocalizationAffinity(int prediction_index,
+                             int ground_truth_index) const;
+
   // Computes IoU of a pair of prediction and ground truth.
   // The result is cached.
   // Return value is within [0.0, 1.0].
   virtual float IoU(int prediction_index, int ground_truth_index) const;
 
-  // Returns a quantized value of the IoU.
-  // Returned value is within [0, kMaxIoU].
-  int QuantizedIoU(int prediction_index, int ground_truth_index) const {
-    return std::round(IoU(prediction_index, ground_truth_index) * kMaxIoU);
+  // Returns a quantized value of the weight.
+  // Quantizes the matching weight between a prediction and a ground truth,
+  // e.g. IoU. Returned value is within [0, kMaxIoU].
+  int QuantizedWeight(const float& weight) const {
+    return std::round(weight * kMaxIoU);
   }
+
+  // Returns a matching weight given a pair of prediction and ground truth.
+  // The matching weight is assigned as the quantized IoU unless a custom
+  // matching weight function is set.
+  int MatchingWeight(int prediction_index, int ground_truth_index) const;
 
  private:
   const std::vector<float> iou_thresholds_;
@@ -175,6 +243,13 @@ class Matcher {
 
   // If set, will use to calculate the iou instead of the default one.
   ComputeIoUFunc custom_iou_func_ = nullptr;
+  // If set, will use to calculate the localization affinity.
+  ComputeLocalizationAffinityFunc custom_localization_affinity_func_ = nullptr;
+  // If set, will use to perform can match filtering instead of the default one.
+  CanMatchFunc custom_can_match_func_ = nullptr;
+  // If set, will use to calculate the matching weight instead of the default
+  // one.
+  ComputeMatchingWeightFunc custom_matching_weight_func_ = nullptr;
 
   // The [i][j] element caches the IoU score between the i-th prediction and the
   // j-th ground truth.
@@ -182,6 +257,11 @@ class Matcher {
   // Note that if the IoU score is smaller than the threshold specified in the
   // config, it is set to 0.
   mutable std::vector<std::vector<float>> iou_caches_;
+
+  // The [i][j] element caches the Localization Affinity between the i-th
+  // prediction and the j-th ground truth.
+  // The cache entry is not populated if its cell value is < 0.
+  mutable std::vector<std::vector<float>> localization_affinity_caches_;
 };
 
 // The Hungarian algorithm based matching.
@@ -189,8 +269,8 @@ class Matcher {
 // This class is not threadsafe.
 class HungarianMatcher : public Matcher {
  public:
-  explicit HungarianMatcher(const std::vector<float>& iou_thresholds,
-                            Label::Box::Type box_type)
+  HungarianMatcher(const std::vector<float>& iou_thresholds,
+                   Label::Box::Type box_type)
       : Matcher(iou_thresholds, box_type) {}
 
   ~HungarianMatcher() override = default;
@@ -211,8 +291,8 @@ class HungarianMatcher : public Matcher {
 // This is the same method employed by COCO api.
 class ScoreFirstMatcher : public Matcher {
  public:
-  explicit ScoreFirstMatcher(const std::vector<float>& iou_thresholds,
-                             Label::Box::Type box_type)
+  ScoreFirstMatcher(const std::vector<float>& iou_thresholds,
+                    Label::Box::Type box_type)
       : Matcher(iou_thresholds, box_type) {}
 
   ~ScoreFirstMatcher() override = default;
@@ -225,8 +305,8 @@ class ScoreFirstMatcher : public Matcher {
 // up any similarity matrix.
 class TEST_HungarianMatcher : public HungarianMatcher {
  public:
-  explicit TEST_HungarianMatcher(const std::vector<float>& iou_thresholds,
-                                 Label::Box::Type box_type)
+  TEST_HungarianMatcher(const std::vector<float>& iou_thresholds,
+                        Label::Box::Type box_type)
       : HungarianMatcher(iou_thresholds, box_type) {}
 
   ~TEST_HungarianMatcher() override = default;

@@ -115,7 +115,9 @@ void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
 template <typename T>
 class WorldToImageOp : public OpKernel {
  public:
-  explicit WorldToImageOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
+  explicit WorldToImageOp(OpKernelConstruction* ctx) : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("return_depth", &return_depth_));
+  }
 
   void Compute(OpKernelContext* ctx) override {
     Input input;
@@ -135,22 +137,28 @@ class WorldToImageOp : public OpKernel {
     model.PrepareProjection(image);
 
     const int num_points = input.input_coordinate->dim_size(0);
+    const int out_channel = 3 + return_depth_;
     CHECK_EQ(3, input.input_coordinate->dim_size(1));
-    Tensor image_coordinates(GetTensorflowType<T>(), {num_points, 3});
+    Tensor image_coordinates(GetTensorflowType<T>(), {num_points, out_channel});
     for (int i = 0; i < num_points; ++i) {
       double u_d = 0.0;
       double v_d = 0.0;
-      const bool valid =
-          model.WorldToImage(input.input_coordinate->matrix<T>()(i, 0),
-                             input.input_coordinate->matrix<T>()(i, 1),
-                             input.input_coordinate->matrix<T>()(i, 2),
-                             /*check_image_bounds=*/false, &u_d, &v_d);
+      double depth = 0.0;
+      const bool valid = model.WorldToImageWithDepth(
+          input.input_coordinate->matrix<T>()(i, 0),
+          input.input_coordinate->matrix<T>()(i, 1),
+          input.input_coordinate->matrix<T>()(i, 2),
+          /*check_image_bounds=*/false, &u_d, &v_d, &depth);
       image_coordinates.matrix<T>()(i, 0) = u_d;
       image_coordinates.matrix<T>()(i, 1) = v_d;
-      image_coordinates.matrix<T>()(i, 2) = static_cast<T>(valid);
+      if (return_depth_) image_coordinates.matrix<T>()(i, 2) = depth;
+      image_coordinates.matrix<T>()(i, out_channel - 1) = static_cast<T>(valid);
     }
     ctx->set_output(0, image_coordinates);
   }
+
+ private:
+  bool return_depth_ = false;
 };
 REGISTER_KERNEL_BUILDER(
     Name("WorldToImage").Device(DEVICE_CPU).TypeConstraint<float>("T"),
@@ -210,6 +218,7 @@ REGISTER_KERNEL_BUILDER(
 
 REGISTER_OP("WorldToImage")
     .Attr("T: {float, double}")
+    .Attr("return_depth: bool = false")
     .Input("extrinsic: T")
     .Input("intrinsic: T")
     .Input("metadata: int32")

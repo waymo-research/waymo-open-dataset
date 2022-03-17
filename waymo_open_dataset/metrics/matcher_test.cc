@@ -28,8 +28,9 @@ namespace waymo {
 namespace open_dataset {
 
 // Build an object centered at the origin, with fixed width, height and heading.
-Object BuildObject(float length, float score) {
-  Label::Box box = BuildBox3d(0.0, 0.0, 0.0, length * 100, 1.0, 1.0, 0.0);
+Object BuildObject(float length, float score, float offset = 0.0) {
+  Label::Box box =
+      BuildBox3d(0.0 + offset, 0.0, 0.0, length * 100, 1.0, 1.0, 0.0);
   Object object;
   *object.mutable_object()->mutable_box() = std::move(box);
   object.mutable_object()->set_type(Label::TYPE_VEHICLE);
@@ -52,10 +53,10 @@ TEST(Matcher, MatcherIoU) {
   matcher->SetPredictionSubset({0, 1, 2, 3});
   matcher->SetGroundTruthSubset({0});
 
-  EXPECT_EQ(0, matcher->QuantizedIoU(0, 0));
-  EXPECT_EQ(0.2 * kMaxIoU, matcher->QuantizedIoU(1, 0));
-  EXPECT_EQ(0.6 * kMaxIoU, matcher->QuantizedIoU(2, 0));
-  EXPECT_EQ(kMaxIoU, matcher->QuantizedIoU(3, 0));
+  EXPECT_EQ(0, matcher->MatchingWeight(0, 0));
+  EXPECT_EQ(0.2 * kMaxIoU, matcher->MatchingWeight(1, 0));
+  EXPECT_EQ(0.6 * kMaxIoU, matcher->MatchingWeight(2, 0));
+  EXPECT_EQ(kMaxIoU, matcher->MatchingWeight(3, 0));
 }
 
 // A sample IOU calculation by using the smaller area of the input boxes.
@@ -105,10 +106,37 @@ TEST(Matcher, MatcherCustomIoU) {
   matcher->SetPredictionSubset({0, 1, 2, 3});
   matcher->SetGroundTruthSubset({0});
 
-  EXPECT_EQ(0, matcher->QuantizedIoU(0, 0));
-  EXPECT_EQ(1.0 * kMaxIoU, matcher->QuantizedIoU(1, 0));
-  EXPECT_EQ(1.0 * kMaxIoU, matcher->QuantizedIoU(2, 0));
-  EXPECT_EQ(kMaxIoU, matcher->QuantizedIoU(3, 0));
+  EXPECT_EQ(0, matcher->MatchingWeight(0, 0));
+  EXPECT_EQ(1.0 * kMaxIoU, matcher->MatchingWeight(1, 0));
+  EXPECT_EQ(1.0 * kMaxIoU, matcher->MatchingWeight(2, 0));
+  EXPECT_EQ(kMaxIoU, matcher->MatchingWeight(3, 0));
+}
+
+// Tests matcher with activated Localization Error Tolerant (LET) config.
+TEST(Matcher, MatcherLetIoU) {
+  Config config = BuildDefaultConfig();
+  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  *config.mutable_let_metric_config() = std::move(let_config);
+  config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
+
+  auto matcher = Matcher::Create(config);
+  const std::vector<Object> pds{
+      BuildObject(0.0, 1, 1.0), BuildObject(0.2, 1, 1.0),
+      BuildObject(0.6, 1, 1.1), BuildObject(1.0, 1, 1.0)};
+  const std::vector<Object> gts{BuildObject(1.0, 1, 1.0)};
+
+  matcher->SetPredictions(pds);
+  matcher->SetGroundTruths(gts);
+  matcher->SetPredictionSubset({0, 1, 2, 3});
+  matcher->SetGroundTruthSubset({0});
+
+  EXPECT_EQ(0, matcher->MatchingWeight(0, 0));
+  EXPECT_EQ(0.2 * kMaxIoU, matcher->MatchingWeight(1, 0));
+  EXPECT_EQ((1.0 - 0.1 / 2.0) * 0.6 * kMaxIoU, matcher->MatchingWeight(2, 0));
+  EXPECT_EQ(kMaxIoU, matcher->MatchingWeight(3, 0));
+
+  EXPECT_DEATH(matcher->LocalizationAffinity(-1, 0), "");
+  EXPECT_DEATH(matcher->LocalizationAffinity(0, -1), "");
 }
 
 namespace {

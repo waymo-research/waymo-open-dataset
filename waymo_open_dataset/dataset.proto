@@ -115,6 +115,8 @@ message CameraCalibration {
     GLOBAL_SHUTTER = 5;
   }
   optional RollingShutterReadOutDirection rolling_shutter_direction = 6;
+
+
 }
 
 message LaserCalibration {
@@ -335,25 +337,36 @@ message Frame {
   // to avoid huge protos.
   optional Context context = 1;
 
-  // Frame start time, which is the timestamp of the first top lidar spin
+  // Frame start time, which is the timestamp of the first top LiDAR spin
   // within this frame.
   optional int64 timestamp_micros = 2;
+
   // The vehicle pose.
   optional Transform pose = 3;
+
+  // The camera images.
   repeated CameraImage images = 4;
+
+  // The LiDAR sensor data.
   repeated Laser lasers = 5;
+
+  // Native 3D labels that correspond to the LiDAR sensor data.
   repeated Label laser_labels = 6;
-  // Lidar labels (laser_labels) projected to camera images. A projected
-  // label is the smallest image axis aligned rectangle that can cover all
-  // projected points from the 3d lidar label. The projected label is ignored if
-  // the projection is fully outside a camera image. The projected label is
-  // clamped to the camera image if it is partially outside.
+
+  // The native 3D LiDAR labels (laser_labels) projected to camera images. A
+  // projected label is the smallest image axis aligned rectangle that can cover
+  // all projected points from the 3d LiDAR label. The projected label is
+  // ignored if the projection is fully outside a camera image. The projected
+  // label is clamped to the camera image if it is partially outside.
   repeated CameraLabels projected_lidar_labels = 9;
-  // NOTE: if a camera identified by CameraLabels.name has an entry in this
-  // field, then it has been labeled, even though it is possible that there are
-  // no labeled objects in the corresponding image, which is identified by a
-  // zero sized CameraLabels.labels.
+
+  // Native 2D camera labels. Note that if a camera identified by
+  // CameraLabels.name has an entry in this field, then it has been labeled,
+  // even though it is possible that there are no labeled objects in the
+  // corresponding image, which is identified by a zero sized
+  // CameraLabels.labels.
   repeated CameraLabels camera_labels = 8;
+
   // No label zones in the *global* frame.
   repeated Polygon2dProto no_label_zones = 7;
 }
