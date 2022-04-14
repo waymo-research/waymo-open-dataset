@@ -37,8 +37,19 @@ message SegmentationMetricsConfig {
   repeated Segmentation.Type segmentation_types = 1 [packed = true];
 }
 
+message SegmentationMeasurements {
+  // Stats for each class. The length of each field should be the num_class.
+  // The number of points with matching prediction and groundtruth for this
+  // class.
+  repeated int64 intersections = 1;
+  // The total number of points for this class in both prediction and
+  // groundtruth.
+  repeated int64 unions = 2;
+}
+
 message SegmentationMetrics {
   // Per class IOU (Intersection Over Union). Keyed by class index.
   map<int32, float> per_class_iou = 1;
   optional float miou = 2;
+  optional SegmentationMeasurements segmentation_measurements = 3;
 }

@@ -55,6 +55,7 @@ limitations under the License.
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <ostream>
 #include <set>
 #include <streambuf>
 #include <string>
@@ -82,10 +83,14 @@ std::string Uncompress(std::string const& s) {
   char* destination = new char[kMaxUncompressedLen];
   int result = uncompress((unsigned char*)destination, &max_len,
                           (const unsigned char*)source, source_size);
-  if (result != Z_OK)
+  if (result != Z_OK) {
+    delete[] destination;
     std::cerr << "Uncompress error occured! Error code: " << result << "\n";
+  }
   // Since we don't know the output size, we use the max len.
-  return std::string(destination, max_len);
+  std::string ret = std::string(destination, max_len);
+  delete[] destination;
+  return ret;
 }
 
 // Helper function to convert a frame into a vector.
@@ -152,7 +157,13 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     gt_map[key] = std::move(f);
     all_example_keys.insert(key);
   }
+  int counter = 0;
   for (auto& example_key : all_example_keys) {
+    if (counter % 100 == 0) {
+      std::cout << "Processing example " << counter << " out of "
+                << all_example_keys.size() << std::endl;
+    }
+    ++counter;
     auto gt_it = gt_map.find(example_key);
     if (gt_it == gt_map.end() || gt_it->second.segmentation_labels().empty()) {
       // We skip frames which do not have ground truth.

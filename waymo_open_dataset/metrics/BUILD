@@ -11,6 +11,7 @@ cc_library(
     srcs = ["breakdown_generator.cc"],
     hdrs = ["breakdown_generator.h"],
     deps = [
+        "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
@@ -250,6 +251,7 @@ cc_test(
     deps = [
         ":breakdown_generator",
         ":test_utils",
+        "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",

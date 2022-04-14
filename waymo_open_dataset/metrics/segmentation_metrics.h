@@ -25,6 +25,8 @@ limitations under the License.
 namespace waymo {
 namespace open_dataset {
 
+SegmentationMetrics ComputeIOU(SegmentationMeasurements measurements);
+
 class SegmentationMetricsIOU {
   // A class for calculating mean intersection over union for 3D semantic
   // segmentation.
@@ -49,6 +51,10 @@ class SegmentationMetricsIOU {
   // If there is no point for a given class in all frames, including both
   // prediction and ground truth, the IOU for that class will be 1.0.
   SegmentationMetrics ComputeIOU();
+
+  // Merge results
+  SegmentationMetrics MergeResults(
+      std::vector<SegmentationMeasurements> results);
 
  private:
   // Classes to be evaluated. Prediction and groundtruth that are not in this

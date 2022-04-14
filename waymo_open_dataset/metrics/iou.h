@@ -16,7 +16,7 @@ limitations under the License.
 #ifndef WAYMO_OPEN_DATASET_METRICS_IOU_H_
 #define WAYMO_OPEN_DATASET_METRICS_IOU_H_
 
-# include <functional>
+#include <functional>
 
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/math/polygon2d.h"
@@ -78,7 +78,7 @@ Label::Box AlignedPredictionBox(
     Config::LocalizationErrorTolerantConfig::AlignType align_type);
 
 // Computes the localization error tolerant IoU (LET-IoU).
-// The boxes will be first transformed into the sensor cooridinate system,
+// The boxes will be first transformed into the sensor coordinate system,
 // then the IoU will be computed between the aligned prediction box and the
 // ground truth box.
 //

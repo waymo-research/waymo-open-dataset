@@ -197,6 +197,8 @@ struct CameraModel::GlobalShutterState {
   Eigen::Isometry3d n_tfm_cam0;
   // Transformation from ENU to camera at pose timestamp.
   Eigen::Isometry3d cam_tfm_n;
+  // Transformation from camera to vehicle at pose timestamp.
+  Eigen::Isometry3d vehicle_tfm_cam;
 };
 
 CameraModel::CameraModel(const CameraCalibration& calibration)
@@ -216,6 +218,7 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
   if (global_shutter_state_ == nullptr) {
     global_shutter_state_ = absl::make_unique<GlobalShutterState>();
   }
+  global_shutter_state_->vehicle_tfm_cam = vehicle_tfm_cam;
   global_shutter_state_->n_tfm_cam0 = n_tfm_vehicle0 * vehicle_tfm_cam;
   global_shutter_state_->cam_tfm_n =
       global_shutter_state_->n_tfm_cam0.inverse();
@@ -318,7 +321,7 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
 // In this function, we are solving a scalar nonlinear optimization problem:
 //  Min || t_h - IndexToTimeFromNormalizedCoord(Cam_p_f(t)) + t_offset ||
 //  over t_h where t_h is explained below.
-// where Cam_p_f(t) = projection(n_p_f, n_tfm_cam(t))
+// where Cam_p_f(t) = projection(n_p_f + t * n_v_f, n_tfm_cam(t))
 // The timestamps involved in the optimization problem:
 // t_capture: The timestamp the rolling shutter camera can actually catch the
 // point landmark. (this defines which scanline the point landmark falls in the
@@ -339,9 +342,10 @@ void CameraModel::PrepareProjection(const CameraImage& camera_image) {
 // coordinate space instead of going to the distortion space. The testing
 // results show that we get sufficiently good results already in normalized
 // coordinate space.
-bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
+bool CameraModel::WorldToImageMovingPointWithDepth(double x, double y, double z,
+                                        double v_x, double v_y, double v_z,
                                         bool check_image_bounds, double* u_d,
-                                        double* v_d, double* depth) const {
+                                        double* v_d, double* depth) const{
   if (calibration_.rolling_shutter_direction() ==
       CameraCalibration::GLOBAL_SHUTTER) {
     return WorldToImageWithDepthGlobalShutter(x, y, z, check_image_bounds, u_d,
@@ -351,6 +355,7 @@ bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
   // The initial guess is the center of the image.
   double t_h = 0.;
   const Eigen::Vector3d n_pos_f{x, y, z};
+  const Eigen::Vector3d n_vel_f{v_x, v_y, v_z};
   size_t iter_num = 0;
 
   // This threshold roughly corresponds to sub-pixel error for our camera
@@ -365,9 +370,10 @@ bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
   double point_depth = -1;
 
   while (std::fabs(residual) > kThreshold && iter_num < kMaxIterNum) {
-    if (!ComputeDepthResidualAndJacobian(n_pos_f, t_h, &normalized_coord,
-                                         &point_depth, &residual, &jacobian)) {
-      // The point is behind camera or the radial distortion is too large.
+    if (!ComputeDepthResidualAndJacobian(n_pos_f, n_vel_f, t_h,
+                                         &normalized_coord, &point_depth,
+                                         &residual, &jacobian)) {
+      // Return false if the point is behind camera.
       *u_d = -1;
       *v_d = -1;
       if (depth)
@@ -382,10 +388,10 @@ bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
   }
 
   // Get normalized coordinate.
-  if (!ComputeDepthResidualAndJacobian(n_pos_f, t_h, &normalized_coord,
+  if (!ComputeDepthResidualAndJacobian(n_pos_f, n_vel_f, t_h, &normalized_coord,
                                        &point_depth, &residual,
                                        /*jacobian=*/nullptr)) {
-    // The point is behind camera or the radial distortion is too large.
+    // Return false if the point is behind camera.
     *u_d = -1;
     *v_d = -1;
     if (depth)
@@ -396,6 +402,7 @@ bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
   if (depth)
     *depth = point_depth;
 
+  // Return false if the radial distortion is too large.
   if (!DirectionToImage(normalized_coord(0), normalized_coord(1), u_d, v_d)) {
     return false;
   }
@@ -406,6 +413,13 @@ bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
   }
 
   return true;
+}
+
+bool CameraModel::WorldToImageWithDepth(double x, double y, double z,
+                                        bool check_image_bounds, double* u_d,
+                                        double* v_d, double* depth) const {
+  return WorldToImageMovingPointWithDepth(x, y, z, 0.0, 0.0, 0.0,
+                                          check_image_bounds, u_d, v_d, depth);
 }
 
 bool CameraModel::WorldToImage(double x, double y, double z,
@@ -457,6 +471,22 @@ void CameraModel::ImageToWorldGlobalShutter(double u_d, double v_d,
   double u_n = 0.0, v_n = 0.0;
   ImageToDirection(u_d, v_d, &u_n, &v_n);
   const Eigen::Vector3d wp = global_shutter_state_->n_tfm_cam0 *
+                             Eigen::Vector3d(depth, -u_n * depth, -v_n * depth);
+  *x = wp(0);
+  *y = wp(1);
+  *z = wp(2);
+}
+
+void CameraModel::ImageToVehicleGlobalShutter(double u_d, double v_d,
+                                              double depth, double* x,
+                                              double* y, double* z) const {
+  CHECK(x);
+  CHECK(y);
+  CHECK(z);
+  CHECK(global_shutter_state_) << "Please call PrepareProjection() first.";
+  double u_n = 0.0, v_n = 0.0;
+  ImageToDirection(u_d, v_d, &u_n, &v_n);
+  const Eigen::Vector3d wp = global_shutter_state_->vehicle_tfm_cam *
                              Eigen::Vector3d(depth, -u_n * depth, -v_n * depth);
   *x = wp(0);
   *y = wp(1);
@@ -581,7 +611,7 @@ bool CameraModel::DirectionToImage(double u_n, double v_n, double* u_d,
 }
 
 bool CameraModel::ComputeDepthResidualAndJacobian(
-    const Eigen::Vector3d& n_pos_f, double t_h,
+    const Eigen::Vector3d& n_pos_f, const Eigen::Vector3d& n_vel_f, double t_h,
     Eigen::Vector2d* normalized_coord, double* depth, double* residual,
     double* jacobian) const {
   // The jacobian is allowed to be a nullptr.
@@ -596,7 +626,8 @@ bool CameraModel::ComputeDepthResidualAndJacobian(
   const Eigen::Vector3d n_pos_cam =
       rolling_shutter_state.n_tfm_cam0.translation() +
       t_h * rolling_shutter_state.n_vel_cam0;
-  const Eigen::Vector3d cam_pos_f = cam_dcm_n * (n_pos_f - n_pos_cam);
+  const Eigen::Vector3d cam_pos_f =
+      cam_dcm_n * (n_pos_f + t_h * n_vel_f - n_pos_cam);
 
   if (cam_pos_f(0) <= 0) {
     // The point is behind camera.
@@ -620,7 +651,7 @@ bool CameraModel::ComputeDepthResidualAndJacobian(
     // The following is based on a reduced form of the derivative. The details
     // of the way to derive that derivative are skipped here.
     const Eigen::Vector3d jacobian_landmark_to_index =
-        -cam_dcm_n * rolling_shutter_state.n_vel_cam0 -
+        cam_dcm_n * (n_vel_f - rolling_shutter_state.n_vel_cam0) -
         rolling_shutter_state.skew_omega * cam_pos_f;
 
     const double jacobian_combined =
@@ -638,12 +669,13 @@ bool CameraModel::ComputeDepthResidualAndJacobian(
 }
 
 bool CameraModel::ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
+                                             const Eigen::Vector3d& n_vel_f,
                                              double t_h,
                                              Eigen::Vector2d* normalized_coord,
                                              double* residual,
                                              double* jacobian) const {
-  return ComputeDepthResidualAndJacobian(n_pos_f, t_h, normalized_coord,
-                                         nullptr, residual, jacobian);
+  return ComputeDepthResidualAndJacobian(
+      n_pos_f, n_vel_f, t_h, normalized_coord, nullptr, residual, jacobian);
 }
 
 }  // namespace open_dataset

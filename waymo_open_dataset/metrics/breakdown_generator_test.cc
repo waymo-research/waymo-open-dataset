@@ -16,6 +16,7 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/breakdown_generator.h"
 
 #include <gtest/gtest.h>
+#include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/test_utils.h"
 #include "waymo_open_dataset/protos/breakdown.pb.h"
@@ -83,6 +84,41 @@ TEST(BreakdownGenerator, BreakdownGeneratorVelocity) {
   EXPECT_EQ(4, generator->Shard(object));
 }
 
+TEST(BreakdownGenerator, BreakdownGeneratorCamera) {
+  const auto generator = BreakdownGenerator::Create(Breakdown::CAMERA);
+  EXPECT_EQ(4 * 5, generator->NumShards());
+  Object object;
+  object.mutable_object()->set_type(Label::TYPE_VEHICLE);
+  object.set_camera_name(CameraName::FRONT);
+  EXPECT_EQ(0, generator->Shard(object));
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_PEDESTRIAN);
+  object.set_camera_name(CameraName::FRONT_LEFT);
+  EXPECT_EQ(5 + 1, generator->Shard(object));
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_CYCLIST);
+  object.set_camera_name(CameraName::SIDE_RIGHT);
+  EXPECT_EQ(15 + 4, generator->Shard(object));
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_PEDESTRIAN);
+  object.mutable_object()->set_most_visible_camera_name("FRONT_RIGHT");
+  EXPECT_EQ(5 + 2, generator->Shard(object));
+
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_VEHICLE);
+  *object.mutable_object()->mutable_box() =
+      BuildBox3d(100, 0, 0, 10, 10, 10, 0);
+  EXPECT_EQ(std::vector<int>({0}), generator->ShardsForMatching(object));
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_CYCLIST);
+  *object.mutable_object()->mutable_box() =
+      BuildBox3d(10, 100, 0, 10, 10, 10, 0);
+  EXPECT_EQ(std::vector<int>({15 + 4}), generator->ShardsForMatching(object));
+  object.Clear();
+  object.mutable_object()->set_type(Label::TYPE_PEDESTRIAN);
+  object.set_camera_name(CameraName::SIDE_LEFT);
+  EXPECT_EQ(std::vector<int>({5 + 3}), generator->ShardsForMatching(object));
+}
 }  // namespace
 }  // namespace open_dataset
 }  // namespace waymo

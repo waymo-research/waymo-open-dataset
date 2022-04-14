@@ -96,6 +96,9 @@ SegmentationMetrics SegmentationMetricsIOU::ComputeIOU() {
     }
     results.mutable_per_class_iou()->insert(
         {segmentation_metrics_config_.segmentation_types()[i], ious[i]});
+    results.mutable_segmentation_measurements()->add_intersections(
+        num_intersection);
+    results.mutable_segmentation_measurements()->add_unions(num_union);
   }
   float mean_iou = 0;
   for (const auto iou : ious) {
@@ -105,5 +108,41 @@ SegmentationMetrics SegmentationMetricsIOU::ComputeIOU() {
   results.set_miou(mean_iou);
   return results;
 }
+
+SegmentationMetrics SegmentationMetricsIOU::MergeResults(
+    std::vector<SegmentationMeasurements> results) {
+  SegmentationMetrics merged;
+  std::vector<int64> num_intersections(num_classes_, 0);
+  std::vector<int64> num_unions(num_classes_, 0);
+  for (const auto& result : results) {
+    CHECK(result.unions_size() == num_classes_);
+    CHECK(result.intersections_size() == num_classes_);
+    for (int i = 0; i < num_classes_; ++i) {
+      num_intersections[i] += result.intersections()[i];
+      num_unions[i] += result.unions()[i];
+    }
+  }
+  std::vector<float> ious(num_classes_, 1.0);
+  for (int i = 0; i < num_classes_; ++i) {
+    int num_intersection = num_intersections[i];
+    int num_union = num_unions[i];
+    if (num_union > 0) {
+      ious[i] = 1.0f * num_intersection / num_union;
+    }
+    merged.mutable_per_class_iou()->insert(
+        {segmentation_metrics_config_.segmentation_types()[i], ious[i]});
+    merged.mutable_segmentation_measurements()->add_intersections(
+        num_intersection);
+    merged.mutable_segmentation_measurements()->add_unions(num_union);
+  }
+  float mean_iou = 0;
+  for (const auto iou : ious) {
+    mean_iou += iou;
+  }
+  mean_iou = mean_iou / ious.size();
+  merged.set_miou(mean_iou);
+  return merged;
+}
+
 }  // namespace open_dataset
 }  // namespace waymo

@@ -64,7 +64,7 @@ class Matcher {
   // set as LET customized version:
   //
   // iou_func: Computes the localization error tolerant IoU (LET-IoU).
-  // The boxes will be first transformed into the sensor cooridinate system,
+  // The boxes will be first transformed into the sensor coordinate system,
   // then the IoU will be computed between the aligned prediction box and the
   // ground truth box.
   //
@@ -78,7 +78,7 @@ class Matcher {
   //
   // matching_weight_func: the matching weight (LET-IoU) is discounted by the
   // localization affinity so that predictions with more localization noise
-  // are assigned with smaller matching weights.
+  // are assigned smaller matching weights.
   static std::unique_ptr<Matcher> Create(
       MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
       Label::Box::Type box_type,

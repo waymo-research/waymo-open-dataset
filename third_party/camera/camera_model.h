@@ -76,10 +76,21 @@ class CameraModel {
 
   // Projects a 3D point in global coordinates into the lens distorted image
   // coordinates (u_d, v_d, depth). These projections are in original image
-  // frame (x: image width, y: image height).
+  // frame (x: image width, y: image height). Outputs a depth of -1 if the given
+  // point is behind the camera. Note that `depth` may be a nullptr.
   bool WorldToImageWithDepth(double x, double y, double z,
                              bool check_image_bounds, double* u_d, double* v_d,
                              double* depth) const;
+
+  // Projects a moving point (x, y, z) with constant velocity (v_x, v_y, v_z) in
+  // the global coordinate system into the lens distorted image coordinate
+  // system (u_d, v_d, depth). It is assumed that the point is at position
+  // (x, y, z) at the timestamp that is associated with the camera image pose
+  // used to prepare the projection.
+  bool WorldToImageMovingPointWithDepth(double x, double y, double z,
+                                        double v_x, double v_y, double v_z,
+                                        bool check_image_bounds, double* u_d,
+                                        double* v_d, double* depth) const;
 
   // Converts a point in the image with a known depth into world coordinates.
   // Similar as `WorldToImage`. This method also compensates for rolling shutter
@@ -87,6 +98,11 @@ class CameraModel {
   // Requires: `PrepareProjection` is called.
   void ImageToWorld(double u_d, double v_d, double depth, double* x, double* y,
                     double* z) const;
+
+  // Similar as `ImageToWorldGlobalShutter` but converts to the vehicle frame.
+  // Requires: `PrepareProjection` is called.
+  void ImageToVehicleGlobalShutter(double u_d, double v_d, double depth,
+                                   double* x, double* y, double* z) const;
 
   // True if the given image coordinates are within the image.
   bool InImage(double u, double v) const;
@@ -144,15 +160,18 @@ class CameraModel {
 
   // This is a helper function for rolling shutter projection.
   // It takes the rolling shutter state variable, position of landmark in ENU
-  // frame, estimated time t_h, and computes projected feature in normalized
-  // coordinate frame, the corresponding depth, the residual and the jacobian.
-  // If the jacobian is given as nullptr we will skip its computation.
-  bool ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f, double t_h,
+  // frame, velocity of the landmark in ENU frame, estimated time t_h, and
+  // computes projected feature in normalized coordinate frame, the
+  // corresponding depth, the residual and the jacobian. If the jacobian is
+  // given as nullptr we will skip its computation.
+  bool ComputeResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
+                                  const Eigen::Vector3d& n_vel_f, double t_h,
                                   Eigen::Vector2d* normalized_coord,
                                   double* residual, double* jacobian) const;
 
   // Similar as `ComputeResidualAndJacobian` but returns depth.
   bool ComputeDepthResidualAndJacobian(const Eigen::Vector3d& n_pos_f,
+                                       const Eigen::Vector3d& n_vel_f,
                                        double t_h,
                                        Eigen::Vector2d* normalized_coord,
                                        double* depth, double* residual,
