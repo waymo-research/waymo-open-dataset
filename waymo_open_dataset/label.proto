@@ -124,7 +124,7 @@ message Label {
   // as follows:
   //   c_camra_synced = c + v * (t_capture - t_frame),
   // while keeping the box dimensions and heading direction.
-  // We use the camera_synced_box as the ground truth box for the Camera-Only 3D
+  // We use the camera_synced_box as the ground truth box for the 3D Camera-Only
   // Detection Challenge. This makes the assumption that the users provide the
   // detection at the same time as the most visible camera captures the object
   // center.
