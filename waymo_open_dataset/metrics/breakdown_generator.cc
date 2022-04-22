@@ -114,6 +114,9 @@ class BreakdownGeneratorRange : public BreakdownGenerator {
                           object.object().box().center_z());
     constexpr float kNearRange = 30.0;
     constexpr float kMidRange = 50.0;
+    if (object.object().type() == Label::TYPE_UNKNOWN){
+      return -1;
+    }
     const int shard_offset = 3 * (object.object().type() - 1);
     if (shard_offset < 0) {
       return -1;
@@ -165,6 +168,9 @@ class BreakdownGeneratorSize : public BreakdownGenerator {
         std::max(object.object().box().length(), object.object().box().width()),
         object.object().box().height());
     constexpr float kLarge = 7.0;
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
+      return -1;
+    }
     const int shard_offset = 2 * (object.object().type() - 1);
     if (shard_offset < 0) {
       return -1;
@@ -225,6 +231,9 @@ class BreakdownGeneratorVelocity : public BreakdownGenerator {
     constexpr float kSlow = 1.;
     constexpr float kMedium = 3.;
     constexpr float kFast = 10.;
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
+      return -1;
+    }
     const int shard_offset = 5 * (object.object().type() - 1);
 
     if (v_mag < kStationary) {
@@ -241,6 +250,9 @@ class BreakdownGeneratorVelocity : public BreakdownGenerator {
   }
 
   std::vector<int> ShardsForMatching(const Object& object) const override {
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
+      return std::vector<int>();
+    }
     std::vector<int> shards(5);
     for (int i = 0; i < 5; ++i) {
       shards[i] = 5 * (object.object().type() - 1) + i;
@@ -288,6 +300,9 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
   ~BreakdownGeneratorCamera() override {}
 
   int Shard(const Object& object) const override {
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
+      return -1;
+    }
     const int shard_offset = kNumCameras * (object.object().type() - 1);
     CameraName::Name camera_name;
     if (Is2DCamera(object)) {
@@ -322,6 +337,9 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
   }
 
   std::vector<int> ShardsForMatching(const Object& object) const override {
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
+      return std::vector<int>();
+    }
     if (Is2DCamera(object)) {
       return std::vector<int>({Shard(object)});
     }
@@ -386,7 +404,7 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
       case CameraName::SIDE_RIGHT:
         return 4;
       default:
-        return -1;
+        LOG(FATAL) << "Code should not reach here.";
     }
   }
 
@@ -394,12 +412,18 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
       const Object& object) const {
     std::vector<CameraName::Name> camera_names;
     constexpr double kRadToDegree = 180.0 / M_PI;
+    // The field-of-view of the camera images is approximately +-25.2 degrees.
     constexpr double kHalfFovDeg = 25.2;
+    // Considering the vehicle coordinate system, where the x-axis represents
+    // the front direction, the y-axis represents the left direction, we
+    // estimate the angle of an object to the x-axis by calcaulating
+    // arctan(y/x). Objects on the left side yield a positive angle, and objects
+    // on the right side yield a negative angle.
     constexpr double kFrontCameraDeg = 0.0;
-    constexpr double kFrontLeftCameraDeg = -45.0;
-    constexpr double kFrontRightCameraDeg = 45.0;
-    constexpr double kSideLeftCameraDeg = -90.0;
-    constexpr double kSideRightCameraDeg = 90.0;
+    constexpr double kFrontLeftCameraDeg = 45.0;
+    constexpr double kFrontRightCameraDeg = -45.0;
+    constexpr double kSideLeftCameraDeg = 90.0;
+    constexpr double kSideRightCameraDeg = -90.0;
 
     const double c_x = object.object().box().center_x();
     const double c_y = object.object().box().center_y();

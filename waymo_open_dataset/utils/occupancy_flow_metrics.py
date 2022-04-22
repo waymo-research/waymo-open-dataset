@@ -57,6 +57,13 @@ def compute_occupancy_flow_metrics(
       pred_waypoints=pred_waypoints,
   )
 
+  metrics = occupancy_flow_metrics_pb2.OccupancyFlowMetrics()
+
+  # Flow for waypoint 0 can be constructed if there are any occupancies at
+  # waypoint 0.  -1 maps to the current time.
+  has_true_observed_occupancy = {-1: True}
+  has_true_occluded_occupancy = {-1: True}
+
   # Iterate over waypoints.
   for k in range(config.num_waypoints):
     true_observed_occupancy = true_waypoints.vehicles.observed_occupancy[k]
@@ -66,47 +73,59 @@ def compute_occupancy_flow_metrics(
     true_flow = true_waypoints.vehicles.flow[k]
     pred_flow = pred_waypoints.vehicles.flow[k]
 
+    has_true_observed_occupancy[k] = tf.reduce_max(true_observed_occupancy) > 0
+    has_true_occluded_occupancy[k] = tf.reduce_max(true_occluded_occupancy) > 0
+    has_true_flow = (has_true_observed_occupancy[k] and
+                     has_true_observed_occupancy[k - 1]) or (
+                         has_true_occluded_occupancy[k] and
+                         has_true_occluded_occupancy[k - 1])
+
     # Compute occupancy metrics.
-    metrics_dict['vehicles_observed_auc'].append(
-        _compute_occupancy_auc(true_observed_occupancy,
-                               pred_observed_occupancy))
-    metrics_dict['vehicles_occluded_auc'].append(
-        _compute_occupancy_auc(true_occluded_occupancy,
-                               pred_occluded_occupancy))
-    metrics_dict['vehicles_observed_iou'].append(
-        _compute_occupancy_soft_iou(true_observed_occupancy,
-                                    pred_observed_occupancy))
-    metrics_dict['vehicles_occluded_iou'].append(
-        _compute_occupancy_soft_iou(true_occluded_occupancy,
-                                    pred_occluded_occupancy))
+    if has_true_observed_occupancy[k]:
+      metrics.num_waypoints_with_observed_occupancy += 1
+      metrics_dict['vehicles_observed_auc'].append(
+          _compute_occupancy_auc(true_observed_occupancy,
+                                 pred_observed_occupancy))
+      metrics_dict['vehicles_observed_iou'].append(
+          _compute_occupancy_soft_iou(true_observed_occupancy,
+                                      pred_observed_occupancy))
+    if has_true_occluded_occupancy[k]:
+      metrics.num_waypoints_with_occluded_occupancy += 1
+      metrics_dict['vehicles_occluded_auc'].append(
+          _compute_occupancy_auc(true_occluded_occupancy,
+                                 pred_occluded_occupancy))
+      metrics_dict['vehicles_occluded_iou'].append(
+          _compute_occupancy_soft_iou(true_occluded_occupancy,
+                                      pred_occluded_occupancy))
 
     # Compute flow metrics.
-    metrics_dict['vehicles_flow_epe'].append(
-        _compute_flow_epe(true_flow, pred_flow))
+    if has_true_flow:
+      metrics.num_waypoints_with_flow += 1
+      metrics_dict['vehicles_flow_epe'].append(
+          _compute_flow_epe(true_flow, pred_flow))
 
-    # Compute flow-warped occupancy metrics.
-    # First, construct ground-truth occupancy of all observed and occluded
-    # vehicles.
-    true_all_occupancy = tf.clip_by_value(
-        true_observed_occupancy + true_occluded_occupancy, 0, 1)
-    # Construct predicted version of same value.
-    pred_all_occupancy = tf.clip_by_value(
-        pred_observed_occupancy + pred_occluded_occupancy, 0, 1)
-    # We expect to see the same results by warping the flow-origin occupancies.
-    flow_warped_origin_occupancy = warped_flow_origins[k]
-    # Construct quantity that requires both prediction paths to be correct.
-    flow_grounded_pred_all_occupancy = (
-        pred_all_occupancy * flow_warped_origin_occupancy)
-    # Now compute occupancy metrics between this quantity and ground-truth.
-    metrics_dict['vehicles_flow_warped_occupancy_auc'].append(
-        _compute_occupancy_auc(flow_grounded_pred_all_occupancy,
-                               true_all_occupancy))
-    metrics_dict['vehicles_flow_warped_occupancy_iou'].append(
-        _compute_occupancy_soft_iou(flow_grounded_pred_all_occupancy,
-                                    true_all_occupancy))
+      # Compute flow-warped occupancy metrics.
+      # First, construct ground-truth occupancy of all observed and occluded
+      # vehicles.
+      true_all_occupancy = tf.clip_by_value(
+          true_observed_occupancy + true_occluded_occupancy, 0, 1)
+      # Construct predicted version of same value.
+      pred_all_occupancy = tf.clip_by_value(
+          pred_observed_occupancy + pred_occluded_occupancy, 0, 1)
+      # Expect to see the same results by warping the flow-origin occupancies.
+      flow_warped_origin_occupancy = warped_flow_origins[k]
+      # Construct quantity that requires both prediction paths to be correct.
+      flow_grounded_pred_all_occupancy = (
+          pred_all_occupancy * flow_warped_origin_occupancy)
+      # Now compute occupancy metrics between this quantity and ground-truth.
+      metrics_dict['vehicles_flow_warped_occupancy_auc'].append(
+          _compute_occupancy_auc(flow_grounded_pred_all_occupancy,
+                                 true_all_occupancy))
+      metrics_dict['vehicles_flow_warped_occupancy_iou'].append(
+          _compute_occupancy_soft_iou(flow_grounded_pred_all_occupancy,
+                                      true_all_occupancy))
 
   # Compute means and return as proto message.
-  metrics = occupancy_flow_metrics_pb2.OccupancyFlowMetrics()
   metrics.vehicles_observed_auc = _mean(metrics_dict['vehicles_observed_auc'])
   metrics.vehicles_occluded_auc = _mean(metrics_dict['vehicles_occluded_auc'])
   metrics.vehicles_observed_iou = _mean(metrics_dict['vehicles_observed_iou'])
@@ -122,6 +141,8 @@ def compute_occupancy_flow_metrics(
 def _mean(tensor_list: Sequence[tf.Tensor]) -> float:
   """Compute mean value from a list of scalar tensors."""
   num_tensors = len(tensor_list)
+  if num_tensors == 0:
+    return 0
   sum_tensors = tf.math.add_n(tensor_list).numpy()
   return sum_tensors / num_tensors
 
