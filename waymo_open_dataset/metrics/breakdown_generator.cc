@@ -114,7 +114,7 @@ class BreakdownGeneratorRange : public BreakdownGenerator {
                           object.object().box().center_z());
     constexpr float kNearRange = 30.0;
     constexpr float kMidRange = 50.0;
-    if (object.object().type() == Label::TYPE_UNKNOWN){
+    if (object.object().type() == Label::TYPE_UNKNOWN) {
       return -1;
     }
     const int shard_offset = 3 * (object.object().type() - 1);
@@ -416,9 +416,9 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
     constexpr double kHalfFovDeg = 25.2;
     // Considering the vehicle coordinate system, where the x-axis represents
     // the front direction, the y-axis represents the left direction, we
-    // estimate the angle of an object to the x-axis by calcaulating
-    // arctan(y/x). Objects on the left side yield a positive angle, and objects
-    // on the right side yield a negative angle.
+    // estimate the angle of an object to the x-axis by calculating arctan(y/x).
+    // Objects on the left side yield a positive angle, and objects on the right
+    // side yield a negative angle.
     constexpr double kFrontCameraDeg = 0.0;
     constexpr double kFrontLeftCameraDeg = 45.0;
     constexpr double kFrontRightCameraDeg = -45.0;
