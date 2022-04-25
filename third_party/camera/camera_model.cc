@@ -362,7 +362,11 @@ bool CameraModel::WorldToImageMovingPointWithDepth(double x, double y, double z,
   // because the readout time per scan line is in the order of 1e-5 seconds.
   // Of course this number varies with the image size as well.
   constexpr double kThreshold = 1e-5;  // seconds.
+  // The maximum number of iterations.
   constexpr size_t kMaxIterNum = 4;
+  // Theshold for the residual capture time as a sanity check for solver
+  // divergence.
+  const double kMaxFinalResidualError = 0.1;  // seconds.
 
   Eigen::Vector2d normalized_coord;
   double residual = 2 * kThreshold;
@@ -385,6 +389,11 @@ bool CameraModel::WorldToImageMovingPointWithDepth(double x, double y, double z,
     const double delta_t = -residual / jacobian;
     t_h += delta_t;
     ++iter_num;
+  }
+
+  // Check sanity of final residual in case solver diverged.
+  if (std::abs(residual) > kMaxFinalResidualError) {
+    return false;
   }
 
   // Get normalized coordinate.

@@ -88,6 +88,14 @@ message OccupancyFlowTaskConfig {
 // Please refer to occupancy_flow_metrics.py for an implementation of these
 // metrics.
 message OccupancyFlowMetrics {
+  // The metrics stored in this proto are averages over all waypoints.  However
+  // blank waypoints are excluded when computing the metrics.  The following
+  // fields record the number of waypoints which are used for computing each
+  // of the 3 categories of metrics.
+  optional int32 num_waypoints_with_observed_occupancy = 8 [default = 0];
+  optional int32 num_waypoints_with_occluded_occupancy = 9 [default = 0];
+  optional int32 num_waypoints_with_flow = 10 [default = 0];
+
   // Treating occupancy in each grid cell as an independent binary prediction,
   // this metric measures the area under the precision-recall curve of all
   // grid cells in the future occupancy of currently-observed vehicles.

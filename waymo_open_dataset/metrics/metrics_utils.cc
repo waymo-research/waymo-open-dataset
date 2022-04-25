@@ -129,6 +129,8 @@ std::vector<BreakdownShardSubset> BuildSubsets(
         const std::vector<int> shards =
             breakdown_generator->ShardsForMatching(objects[i]);
         for (int s : shards) {
+          CHECK_GE(s, 0);
+          CHECK_LT(s, num_shards);
           breakdown_subsets[s].push_back(i);
         }
       } else {

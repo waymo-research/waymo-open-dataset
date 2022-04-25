@@ -9,6 +9,7 @@ We released v1.3.1 of the Perception dataset to support the 2022 Challenges and 
  - Added metrics (LET-3D-APL and LET-3D-AP) for the 3D Camera-Only Detection Challenge.
  - Added 80 segments of 20-second camera imagery, as a test set for the 3D Camera-Only Detection Challenge.
  - Added z-axis speed and acceleration in [lidar label metadata](waymo_open_dataset/label.proto#L53-L60).
+ - Fixed some inconsistencies in `projected_lidar_labels` in [dataset.proto](waymo_open_dataset/dataset.proto).
  - Updated the default configuration for the Occupancy and Flow Challenge, switching from aggregate waypoints to [subsampled waypoints](waymo_open_dataset/protos/occupancy_flow_metrics.proto#L38-L55).
  - Updated the [tutorial](waymo-open-dataset/tutorial/tutorial_3d_semseg.ipynb) for 3D Semantic Segmentation Challenge with more detailed instructions.
 
