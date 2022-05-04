@@ -80,21 +80,27 @@ Label::Box AlignedPredictionBox(
 // Computes the localization error tolerant IoU (LET-IoU).
 // The boxes will be first transformed into the sensor coordinate system,
 // then the IoU will be computed between the aligned prediction box and the
-// ground truth box.
+// ground truth box. Box type will be used to determine if we compute the 2D IoU
+// or 3D IoU. It has the same effect as the one in `ComputeIoU`.
 //
-// NOTE: this function will correct any degree of the localization error.
-// It is meant to be applied at box pairs which pass a certain localization
-// affinity threshold.
+// NOTE:
+// 1. This function will correct any degree of the localization error.
+//    It is meant to be applied at box pairs which pass a certain localization
+//    affinity threshold.
+// 2. This function currently only supports TYPE_3D bounding boxes and TYPE_2D
+//    bounding boxes representing the top-down view objects.
 double ComputeLetIoU(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
     const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type);
+    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    Label::Box::Type box_type);
 
 // Returns a function to calculate LET-IoU based on the given LET metrics
 // config.
 ComputeIoUFunc GetComputeLetIoUFunc(
     const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type);
+    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    Label::Box::Type box_type);
 
 // Converts a box proto to a polygon.
 Polygon2d ToPolygon2d(const open_dataset::Label::Box& box);

@@ -72,6 +72,6 @@ rm -rf "$DST_DIR" || true
 ./pip_pkg_scripts/build_pip_pkg.sh "$DST_DIR" ${PYTHON_VERSION}
 # Comment the following line if you run this outside of the container.
 if [[ "${PIP_MANYLINUX2010}" == "1" ]]; then
-  find "$DST_DIR" -name *.whl | xargs ./third_party/auditwheel.sh repair --plat manylinux2010_x86_64 -w "$DST_DIR"
+  find "$DST_DIR" -name *.whl | xargs $PYTHON ./third_party/auditwheel_wrapper.py repair --plat manylinux2010_x86_64 -w "$DST_DIR"
 fi
 

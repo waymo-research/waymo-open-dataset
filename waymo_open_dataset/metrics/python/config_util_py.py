@@ -22,6 +22,16 @@ __all__ = [
     "get_breakdown_names_from_config", "get_breakdown_names_from_motion_config"
 ]
 
+_OBJECT_TYPES = (label_pb2.Label.TYPE_VEHICLE, label_pb2.Label.TYPE_PEDESTRIAN,
+                 label_pb2.Label.TYPE_SIGN, label_pb2.Label.TYPE_CYCLIST)
+
+_ALL_BUT_SIGN_SHARD_NAMES = ("ALL_BUT_SIGN", "SIGN")
+_VELOCITY_SHARD_NAMES = ("STATIONARY", "SLOW", "MEDIUM", "FAST", "VERY_FAST")
+_RANGE_SHARD_NAMES = ("[0, 30)", "[30, 50)", "[50, +inf)")
+_SIZE_SHARD_NAMES = ("small", "large")
+_CAMERA_SHARD_NAMES = ("FRONT", "FRONT-LEFT", "FRONT-RIGHT", "SIDE-LEFT",
+                       "SIDE-RIGHT")
+
 
 def _get_num_breakdown_shards(breakdown_generator_id):
   """Gets the number of breakdown shards for a given breakdown generator ID.
@@ -37,19 +47,22 @@ def _get_num_breakdown_shards(breakdown_generator_id):
     return 1
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("ALL_BUT_SIGN")):
-    return 2
+    return len(_ALL_BUT_SIGN_SHARD_NAMES)
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("SIZE")):
-    return 2
+    return len(_SIZE_SHARD_NAMES) * len(_OBJECT_TYPES)
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("OBJECT_TYPE")):
-    return 4
+    return len(_OBJECT_TYPES)
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "RANGE"):
-    return 3 * 4
+    return len(_RANGE_SHARD_NAMES) * len(_OBJECT_TYPES)
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "VELOCITY"):
-    return 5 * 4
+    return len(_VELOCITY_SHARD_NAMES) * len(_OBJECT_TYPES)
+  elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
+      "CAMERA"):
+    return len(_CAMERA_SHARD_NAMES) * len(_OBJECT_TYPES)
   else:
     raise ValueError("Unsupported breakdown {}.".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)))
@@ -71,55 +84,44 @@ def _get_breakdown_shard_name(breakdown_generator_id, shard):
     return breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("ALL_BUT_SIGN")):
-    if shard == 0:
-      return "ALL_NS"
-    else:
-      return "SIGN"
+    return _ALL_BUT_SIGN_SHARD_NAMES[shard]
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("OBJECT_TYPE")):
     return "{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
-        label_pb2.Label.Type.Name(shard + 1))
+        label_pb2.Label.Type.Name(_OBJECT_TYPES[shard]))
   elif breakdown_generator_id == (
       breakdown_pb2.Breakdown.GeneratorId.Value("VELOCITY")):
-    object_type = shard // 5 + 1
-    velocity_shard = shard % 5
-    velocity_shard_name = ""
-    if velocity_shard == 0:
-      velocity_shard_name = "STATIONARY"
-    elif velocity_shard == 1:
-      velocity_shard_name = "SLOW"
-    elif velocity_shard == 2:
-      velocity_shard_name = "MEDIUM"
-    elif velocity_shard == 3:
-      velocity_shard_name = "FAST"
-    else:
-      velocity_shard_name = "VERY_FAST"
+    object_type = _OBJECT_TYPES[shard // len(_VELOCITY_SHARD_NAMES)]
+    velocity_shard = shard % len(_VELOCITY_SHARD_NAMES)
+    velocity_shard_name = _VELOCITY_SHARD_NAMES[velocity_shard]
     return "{}_{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
         label_pb2.Label.Type.Name(object_type), velocity_shard_name)
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "RANGE"):
-    object_type = shard // 3 + 1
-    range_shard = shard % 3
-    range_shard_name = ""
-    if range_shard == 0:
-      range_shard_name = "[0, 30)"
-    elif range_shard == 1:
-      range_shard_name = "[30, 50)"
-    else:
-      range_shard_name = "[50, +inf)"
+    object_type = _OBJECT_TYPES[shard // len(_RANGE_SHARD_NAMES)]
+    range_shard = shard % len(_RANGE_SHARD_NAMES)
+    range_shard_name = _RANGE_SHARD_NAMES[range_shard]
     return "{}_{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
         label_pb2.Label.Type.Name(object_type), range_shard_name)
   elif breakdown_generator_id == breakdown_pb2.Breakdown.GeneratorId.Value(
       "SIZE"):
-    object_type = shard // 2 + 1
-    size_shard = shard % 2
-    size_shard_name = "small" if size_shard == 0 else "large"
+    object_type = _OBJECT_TYPES[shard // len(_SIZE_SHARD_NAMES)]
+    size_shard = shard % len(_SIZE_SHARD_NAMES)
+    size_shard_name = _SIZE_SHARD_NAMES[size_shard]
     return "{}_{}_{}".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
         label_pb2.Label.Type.Name(object_type), size_shard_name)
+  elif breakdown_generator_id == (
+      breakdown_pb2.Breakdown.GeneratorId.Value("CAMERA")):
+    object_type = _OBJECT_TYPES[shard // len(_CAMERA_SHARD_NAMES)]
+    camera_shard = shard % len(_CAMERA_SHARD_NAMES)
+    camera_shard_name = _CAMERA_SHARD_NAMES[camera_shard]
+    return "{}_{}_{}".format(
+        breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id),
+        label_pb2.Label.Type.Name(object_type), camera_shard_name)
   else:
     raise ValueError("Unsupported breakdown {}.".format(
         breakdown_pb2.Breakdown.GeneratorId.Name(breakdown_generator_id)))

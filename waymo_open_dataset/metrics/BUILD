@@ -140,6 +140,7 @@ cc_library(
     srcs = ["segmentation_metrics.cc"],
     hdrs = ["segmentation_metrics.h"],
     deps = [
+        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/common:status",
         "//waymo_open_dataset/protos:segmentation_cc_proto",
         "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",

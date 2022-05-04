@@ -117,13 +117,13 @@ message Config {
   // tolerant to the localization noise, rather than just use IoU.
   // The tolerance is larger in the long range, but only along the line of sight
   // from the sensor origin.
-  message LocalizationErrorTolerantConfig{
+  message LocalizationErrorTolerantConfig {
     // When enabled, calculate the localization error tolerant 3D AP
     // (LET-3D-AP).
     optional bool enabled = 1;
 
     // Location in 3D space described in a Cartersian coordinate system.
-    message Location3D{
+    message Location3D {
       optional double x = 1;
       optional double y = 2;
       optional double z = 3;
@@ -150,7 +150,7 @@ message Config {
 
     // Describes how a prediction box aligns with a ground truth box to minimize
     // the localization error.
-    enum AlignType{
+    enum AlignType {
       TYPE_UNKNOWN = 0;
       // No alignment is performed.
       TYPE_NOT_ALIGNED = 1;

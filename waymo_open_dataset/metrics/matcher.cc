@@ -59,8 +59,9 @@ std::unique_ptr<Matcher> Matcher::Create(
   std::unique_ptr<Matcher> matcher =
       Create(matcher_type, iou_thresholds, box_type);
 
-  matcher->SetCustomIoUComputeFunc(GetComputeLetIoUFunc(
-      let_metric_config.sensor_location(), let_metric_config.align_type()));
+  matcher->SetCustomIoUComputeFunc(
+      GetComputeLetIoUFunc(let_metric_config.sensor_location(),
+                           let_metric_config.align_type(), box_type));
 
   matcher->SetCustomLocalizationAffinityFunc(
       GetComputeLocalizationAffinityFunc(let_metric_config));
@@ -122,7 +123,7 @@ float Matcher::LocalizationAffinity(int prediction_index,
     }
     // Store the result in the cache.
     localization_affinity_caches_[prediction_index][ground_truth_index] =
-      localization_affinity;
+        localization_affinity;
   }
   return localization_affinity;
 }

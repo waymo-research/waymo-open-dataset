@@ -85,6 +85,8 @@ message Label {
 
   // The total number of lidar points in this box.
   optional int32 num_lidar_points_in_box = 7;
+  // The total number of top lidar points in this box.
+  optional int32 num_top_lidar_points_in_box = 13;
 
   oneof keypoints_oneof {
     // Used if the Label is a part of `Frame.laser_labels`.
@@ -95,8 +97,8 @@ message Label {
 
   // Information to cross reference between labels for different modalities.
   message Association {
-    // Currently only CameraLabels store information about associated lidar
-    // objects.
+    // Currently only CameraLabels with class `TYPE_PEDESTRIAN` store
+    // information about associated lidar objects.
     optional string laser_object_id = 1;
   }
   optional Association association = 10;

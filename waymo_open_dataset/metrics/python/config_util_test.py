@@ -32,10 +32,17 @@ class ConfigUtilTest(unittest.TestCase):
     config = metrics_pb2.Config()
     config_text = """
     num_desired_score_cutoffs: 11
+    breakdown_generator_ids: ALL_BUT_SIGN
     breakdown_generator_ids: OBJECT_TYPE
     breakdown_generator_ids: ONE_SHARD
     breakdown_generator_ids: RANGE
     breakdown_generator_ids: RANGE
+    breakdown_generator_ids: CAMERA
+    breakdown_generator_ids: VELOCITY
+    breakdown_generator_ids: SIZE
+    difficulties {
+      levels: LEVEL_2
+    }
     difficulties {
     }
     difficulties {
@@ -47,6 +54,15 @@ class ConfigUtilTest(unittest.TestCase):
     }
     difficulties {
       levels: LEVEL_1
+    }
+    difficulties {
+      levels: LEVEL_2
+    }
+    difficulties {
+      levels: LEVEL_1
+    }
+    difficulties {
+      levels: LEVEL_2
     }
     matcher_type: TYPE_HUNGARIAN
     iou_thresholds: 0.5

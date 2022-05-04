@@ -110,7 +110,6 @@ TEST(ComputeLocalizationAffinity, Box3d) {
   // Range-aligned pd3 to gt1.
   const Label::Box pd1_4 = BuildBox3d(4.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
 
-
   Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
 
   EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd1_1, gt1, let_config), kError);
@@ -164,28 +163,43 @@ TEST(ComputeLetIoU, Box3d) {
   sensor_location.set_z(0.0);
 
   EXPECT_NEAR(1.0,
-              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_not_aligned),
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(1.0, ComputeLetIoU(pd1, gt1, sensor_location, iou_type_center),
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(1.0, ComputeLetIoU(pd1, gt1, sensor_location, iou_type_range),
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_3D),
               kError);
 
   EXPECT_NEAR(1.0 / 3.0,
-              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_not_aligned),
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(1.0, ComputeLetIoU(pd2, gt1, sensor_location, iou_type_center),
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(1.0, ComputeLetIoU(pd2, gt1, sensor_location, iou_type_range),
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_3D),
               kError);
 
   EXPECT_NEAR(1.0 / 7.0,
-              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_not_aligned),
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(1.0, ComputeLetIoU(pd3, gt1, sensor_location, iou_type_center),
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_3D),
               kError);
   EXPECT_NEAR(ComputeIoU(aligned_pd3, gt1, Label::Box::TYPE_3D),
-              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_range), kError);
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_3D),
+              kError);
 
   // Constructs an ground truth at near range.
   const Label::Box shifted_gt1 =
@@ -203,28 +217,164 @@ TEST(ComputeLetIoU, Box3d) {
 
   EXPECT_NEAR(1.0,
               ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
-                            iou_type_not_aligned),
+                            iou_type_not_aligned, Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(
-      1.0,
-      ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location, iou_type_center),
-      kError);
-  EXPECT_NEAR(
-      1.0,
-      ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location, iou_type_range),
-      kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
+                            iou_type_center, Label::Box::TYPE_3D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
+                            iou_type_range, Label::Box::TYPE_3D),
+              kError);
   EXPECT_NEAR(1.0 / 7.0,
               ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
-                            iou_type_not_aligned),
+                            iou_type_not_aligned, Label::Box::TYPE_3D),
               kError);
-  EXPECT_NEAR(
-      1.0,
-      ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location, iou_type_center),
-      kError);
-  EXPECT_NEAR(
-      ComputeIoU(aligned_pd3, gt1, Label::Box::TYPE_3D),
-      ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location, iou_type_range),
-      kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
+                            iou_type_center, Label::Box::TYPE_3D),
+              kError);
+  EXPECT_NEAR(ComputeIoU(aligned_pd3, gt1, Label::Box::TYPE_3D),
+              ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
+                            iou_type_range, Label::Box::TYPE_3D),
+              kError);
+}
+
+TEST(ComputeLocalizationAffnity, Box2d) {
+  // Constructs a ground truth at near range.
+  const Label::Box gt1 = BuildBox2d(1.0, 0.0, 1.0, 2.0, 0.0);
+  // Same as gt1.
+  const Label::Box pd1_1 = BuildBox2d(1.0, 0.0, 1.0, 2.0, 0.0);
+  // Moves center along line of sight.
+  const Label::Box pd1_2 = BuildBox2d(1.5, 0.0, 1.0, 2.0, 0.0);
+  // Moves center along line of sight and add some lateral error.
+  const Label::Box pd1_3 = BuildBox2d(1.5, 1.0, 1.0, 2.0, 0.0);
+  // Range-aligned pd3 to gt1.
+  const Label::Box pd1_4 = BuildBox2d(4.0, 0.0, 1.0, 2.0, 0.0);
+
+  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+
+  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd1_1, gt1, let_config), kError);
+  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_2, gt1, let_config),
+              kError);
+  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_3, gt1, let_config),
+              kError);
+  EXPECT_NEAR(0.0, ComputeLocalizationAffinity(pd1_4, gt1, let_config), kError);
+
+  // Constructs a ground truth at long range.
+  const Label::Box gt2 = BuildBox2d(30.0, 40.0, 1.0, 2.0, 0.0);
+  const Label::Box pd2_1 = BuildBox2d(30.0, 40.0, 1.0, 2.0, 0.0);
+  const Label::Box pd2_2 = BuildBox2d(33.0, 44.0, 1.0, 2.0, 0.0);
+  const Label::Box pd2_3 = BuildBox2d(33.0 + 0.4, 44.0 - 0.3, 1.0, 2.0, 0.0);
+  const Label::Box pd2_4 = BuildBox2d(33.0 + 1.2, 44.0 - 0.9, 1.0, 2.0, 0.0);
+
+  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd2_1, gt2, let_config), kError);
+  EXPECT_NEAR(1.0 - 5.0 / 7.5,
+              ComputeLocalizationAffinity(pd2_2, gt2, let_config), kError);
+  EXPECT_NEAR(1.0 - 5.0 / 7.5,
+              ComputeLocalizationAffinity(pd2_3, gt2, let_config), kError);
+  EXPECT_NEAR(1.0 - 5.0 / 7.5,
+              ComputeLocalizationAffinity(pd2_4, gt2, let_config), kError);
+}
+
+TEST(ComputeLetIoU, Box2d) {
+  // Constructs a ground truth at near range.
+  const Label::Box gt1 = BuildBox2d(1.0, 0.0, 1.0, 2.0, 0.0);
+  // Same as gt1.
+  const Label::Box pd1 = BuildBox2d(1.0, 0.0, 1.0, 2.0, 0.0);
+  // Moves center along the line of sight but keep the shape.
+  const Label::Box pd2 = BuildBox2d(1.5, 0.0, 1.0, 2.0, 0.0);
+  // Move center along the line of sight and add some lateral error.
+  const Label::Box pd3 = BuildBox2d(1.5, 1.0, 1.0, 2.0, 0.0);
+  // Range-aligned pd3 to gt1.
+  const Label::Box aligned_pd3 =
+      BuildBox2d(9.0 / 13.0, 18.0 / 39.0, 1.0, 2.0, 0.0);
+
+  Config::LocalizationErrorTolerantConfig::AlignType iou_type_not_aligned =
+      Config::LocalizationErrorTolerantConfig::TYPE_NOT_ALIGNED;
+  Config::LocalizationErrorTolerantConfig::AlignType iou_type_center =
+      Config::LocalizationErrorTolerantConfig::TYPE_CENTER_ALIGNED;
+  Config::LocalizationErrorTolerantConfig::AlignType iou_type_range =
+      Config::LocalizationErrorTolerantConfig::TYPE_RANGE_ALIGNED;
+
+  Config::LocalizationErrorTolerantConfig::Location3D sensor_location;
+  sensor_location.set_x(0.0);
+  sensor_location.set_y(0.0);
+
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd1, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_2D),
+              kError);
+
+  EXPECT_NEAR(1.0 / 3.0,
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd2, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_2D),
+              kError);
+
+  EXPECT_NEAR(1.0 / 7.0,
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_not_aligned,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_center,
+                            Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(ComputeIoU(aligned_pd3, gt1, Label::Box::TYPE_2D),
+              ComputeLetIoU(pd3, gt1, sensor_location, iou_type_range,
+                            Label::Box::TYPE_2D),
+              kError);
+
+  // Constructs an ground truth at near range.
+  const Label::Box shifted_gt1 = BuildBox2d(1.0 + 1.0, 0.0, 1.0, 2.0, 0.0);
+  // Same as gt1.
+  const Label::Box shifted_pd1 = BuildBox2d(1.0 + 1.0, 0.0, 1.0, 2.0, 0.0);
+  // Move center along line of sight and add some bearing error.
+  const Label::Box shifted_pd3 = BuildBox2d(1.5 + 1.0, 1.0, 1.0, 2.0, 0.0);
+
+  sensor_location.set_x(1.0);
+  sensor_location.set_y(0.0);
+
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
+                            iou_type_not_aligned, Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
+                            iou_type_center, Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd1, shifted_gt1, sensor_location,
+                            iou_type_range, Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0 / 7.0,
+              ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
+                            iou_type_not_aligned, Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(1.0,
+              ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
+                            iou_type_center, Label::Box::TYPE_2D),
+              kError);
+  EXPECT_NEAR(ComputeIoU(aligned_pd3, gt1, Label::Box::TYPE_2D),
+              ComputeLetIoU(shifted_pd3, shifted_gt1, sensor_location,
+                            iou_type_range, Label::Box::TYPE_2D),
+              kError);
 }
 
 }  // namespace

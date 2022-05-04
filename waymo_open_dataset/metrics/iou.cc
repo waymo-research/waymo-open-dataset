@@ -37,6 +37,12 @@ constexpr double kEpsilon = 1e-6;
 constexpr double kMinBoxDim = 1e-2;
 constexpr double kMaxBoxDim = 1e6;
 
+// Implements std::clamp from C++17.
+template <typename T>
+T Clamp(const T& v, const T& lo, const T& hi) {
+  return std::max(lo, std::min(v, hi));
+}
+
 // Returns true if the closed interval [min1, max1] overlaps at all with the
 // closed interval [min2, max2]. If overlap_min and overlap_max are not
 // null, set them to the closed overlap interval. If the overlap is empty,
@@ -251,7 +257,7 @@ double ComputeLocalizationAffinity(
   // Compute the cos(theta), where theta is the angle between the center vectors
   // of prediction and ground truth.
   const double cos_of_gt_pd_angle =
-      std::clamp(gt_dot_pd / gt_range / pd_range, 0.0, 1.0);
+      Clamp(gt_dot_pd / gt_range / pd_range, 0.0, 1.0);
 
   // Compute the error terms as a percentage of the max tolerance.
   const float max_range_tolerance_meter =
@@ -261,7 +267,7 @@ double ComputeLocalizationAffinity(
   const double range_error = std::abs(
       (pd_range * cos_of_gt_pd_angle - gt_range) / max_range_tolerance_meter);
   // Convert to affinity with value range [0.0, 1.0].
-  return std::clamp(1.0 - range_error, 0.0, 1.0);
+  return Clamp(1.0 - range_error, 0.0, 1.0);
 }
 
 ComputeLocalizationAffinityFunc GetComputeLocalizationAffinityFunc(
@@ -317,7 +323,12 @@ Label::Box AlignedPredictionBox(
 double ComputeLetIoU(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
     const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type) {
+    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    Label::Box::Type box_type) {
+  CHECK(box_type == Label::Box::TYPE_3D || box_type == Label::Box::TYPE_2D)
+      << "Only TYPE_3D and TYPE_2D boxes are supported in LET IoU, current "
+         "type: "
+      << Label::Box::Type_Name(box_type);
   // Transform the boxes into the sensor coordinate system.
   const Label::Box calibrated_prediction_box =
       TranslateBox(prediction_box, -sensor_location.x(), -sensor_location.y(),
@@ -329,17 +340,19 @@ double ComputeLetIoU(
       calibrated_prediction_box, calibrated_ground_truth_box, align_type);
 
   return ComputeIoU(aligned_prediction_box, calibrated_ground_truth_box,
-                    Label::Box::TYPE_3D);
+                    box_type);
 }
 
 ComputeIoUFunc GetComputeLetIoUFunc(
     const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type) {
+    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    Label::Box::Type box_type) {
   ComputeIoUFunc compute_let_iou_func =
-      [&sensor_location, align_type](const Label::Box& prediction_box,
-                                     const Label::Box& ground_truth_box) {
+      [&sensor_location, align_type, box_type](
+          const Label::Box& prediction_box,
+          const Label::Box& ground_truth_box) {
         return ComputeLetIoU(prediction_box, ground_truth_box, sensor_location,
-                             align_type);
+                             align_type, box_type);
       };
   return compute_let_iou_func;
 }

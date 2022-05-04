@@ -226,7 +226,14 @@ REGISTER_OP("WorldToImage")
     .Input("global_coordinate: T")
     .Output("image_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
-
+      bool return_depth;
+      auto attr_status = c->GetAttr("return_depth", &return_depth);
+      if (return_depth) {
+        auto num_points = c->Dim(c->input(4), 0);
+        c->set_output(0, c->MakeShape({num_points, 4}));
+      } else {
+        c->set_output(0, c->input(4));
+      }
       return Status::OK();
     })
     .Doc(R"doc(
@@ -256,7 +263,7 @@ REGISTER_OP("ImageToWorld")
     .Input("image_coordinate: T")
     .Output("global_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
-
+      c->set_output(0, c->input(4));
       return Status::OK();
     })
     .Doc(R"doc(

@@ -38,6 +38,11 @@ message KeypointVisibility {
 
 // Keypoint relative to a specific camera image.
 message Keypoint2d {
+  // The following field numbers are reserved for third-party extensions. Users
+  // may declare new fields in that range in their own .proto files without
+  // having to edit the original file.
+  extensions 1000 to max;
+
   // Camera image coordinates (in pixels, x=0, y=0 is top-left pixel).
   optional Vec2d location_px = 1;
   // Visibility attributes determined based on camera image only.
@@ -45,6 +50,11 @@ message Keypoint2d {
 }
 
 message Keypoint3d {
+  // The following field numbers are reserved for third-party extensions. Users
+  // may declare new fields in that range in their own .proto files without
+  // having to edit the original file.
+  extensions 1000 to max;
+
   // A 3D coordinate in vehicle or camera frame (depending which message it is
   // part of - LaserKeypoint or CameraKeypoint).
   optional Vec3d location_m = 1;

@@ -337,11 +337,16 @@ message Frame {
   // to avoid huge protos.
   optional Context context = 1;
 
-  // Frame start time, which is the timestamp of the first top LiDAR spin
-  // within this frame.
+  // Frame start time, which is the timestamp of the first top LiDAR scan
+  // within this frame. Note that this timestamp does not correspond to the
+  // provided vehicle pose (pose).
   optional int64 timestamp_micros = 2;
 
-  // The vehicle pose.
+  // Frame vehicle pose. Note that unlike in CameraImage, the Frame pose does
+  // not correspond to the provided timestamp (timestamp_micros). Instead, it
+  // roughly (but not exactly) corresponds to the vehicle pose in the middle of
+  // the given frame. The frame vehicle pose defines the coordinate system which
+  // the 3D laser labels are defined in.
   optional Transform pose = 3;
 
   // The camera images.
@@ -350,7 +355,8 @@ message Frame {
   // The LiDAR sensor data.
   repeated Laser lasers = 5;
 
-  // Native 3D labels that correspond to the LiDAR sensor data.
+  // Native 3D labels that correspond to the LiDAR sensor data. The 3D labels
+  // are defined w.r.t. the frame vehicle pose coordinate system (pose).
   repeated Label laser_labels = 6;
 
   // The native 3D LiDAR labels (laser_labels) projected to camera images. A

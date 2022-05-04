@@ -22,6 +22,7 @@ limitations under the License.
 #include <vector>
 
 #include <glog/logging.h>
+#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/common/status.h"
 
 namespace waymo {
