@@ -232,9 +232,9 @@ double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
   return 0.0;
 }
 
-double ComputeLocalizationAffinity(
+double ComputeLongitudinalAffinity(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    const Config::LocalizationErrorTolerantConfig& let_metric_config) {
+    const Config::LongitudinalErrorTolerantConfig& let_metric_config) {
   // Transform the boxes into the sensor coordinate system.
   const Label::Box calibrated_prediction_box =
       TranslateBox(prediction_box, -let_metric_config.sensor_location().x(),
@@ -270,31 +270,31 @@ double ComputeLocalizationAffinity(
   return Clamp(1.0 - range_error, 0.0, 1.0);
 }
 
-ComputeLocalizationAffinityFunc GetComputeLocalizationAffinityFunc(
-    const Config::LocalizationErrorTolerantConfig& let_metric_config) {
-  ComputeLocalizationAffinityFunc let_compute_localization_affinity_func =
+ComputeLongitudinalAffinityFunc GetComputeLongitudinalAffinityFunc(
+    const Config::LongitudinalErrorTolerantConfig& let_metric_config) {
+  ComputeLongitudinalAffinityFunc let_compute_longitudinal_affinity_func =
       [&let_metric_config](const Label::Box& prediction_box,
                            const Label::Box& ground_truth_box) {
-        return ComputeLocalizationAffinity(prediction_box, ground_truth_box,
+        return ComputeLongitudinalAffinity(prediction_box, ground_truth_box,
                                            let_metric_config);
       };
-  return let_compute_localization_affinity_func;
+  return let_compute_longitudinal_affinity_func;
 }
 
 Label::Box AlignedPredictionBox(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type) {
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type) {
   Label::Box aligned_prediction_box = Label::Box(prediction_box);
   switch (align_type) {
-    case Config::LocalizationErrorTolerantConfig::TYPE_NOT_ALIGNED:
+    case Config::LongitudinalErrorTolerantConfig::TYPE_NOT_ALIGNED:
       // No alignment is performed.
       break;
-    case Config::LocalizationErrorTolerantConfig::TYPE_CENTER_ALIGNED:
+    case Config::LongitudinalErrorTolerantConfig::TYPE_CENTER_ALIGNED:
       // Moves the prediction box's center to be same as ground truth.
       aligned_prediction_box.set_center_x(ground_truth_box.center_x());
       aligned_prediction_box.set_center_y(ground_truth_box.center_y());
       break;
-    case Config::LocalizationErrorTolerantConfig::TYPE_RANGE_ALIGNED: {
+    case Config::LongitudinalErrorTolerantConfig::TYPE_RANGE_ALIGNED: {
       // To move the prediction box's center along the line of sight so that
       // it has the closest distance to the ground truth box's center, the
       // projected vector can be described as:
@@ -314,7 +314,7 @@ Label::Box AlignedPredictionBox(
                                           range_multiplier);
       break;
     }
-    case Config::LocalizationErrorTolerantConfig::TYPE_UNKNOWN:
+    case Config::LongitudinalErrorTolerantConfig::TYPE_UNKNOWN:
       LOG(FATAL) << "Unknown IoU type.";
   }
   return aligned_prediction_box;
@@ -322,8 +322,8 @@ Label::Box AlignedPredictionBox(
 
 double ComputeLetIoU(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    const Config::LongitudinalErrorTolerantConfig::Location3D& sensor_location,
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type,
     Label::Box::Type box_type) {
   CHECK(box_type == Label::Box::TYPE_3D || box_type == Label::Box::TYPE_2D)
       << "Only TYPE_3D and TYPE_2D boxes are supported in LET IoU, current "
@@ -344,8 +344,8 @@ double ComputeLetIoU(
 }
 
 ComputeIoUFunc GetComputeLetIoUFunc(
-    const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    const Config::LongitudinalErrorTolerantConfig::Location3D& sensor_location,
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type,
     Label::Box::Type box_type) {
   ComputeIoUFunc compute_let_iou_func =
       [&sensor_location, align_type, box_type](

@@ -40,7 +40,7 @@ limitations under the License.
 // NOLINTBEGIN(whitespace/line_length)
 // OBJECT_TYPE_TYPE_VEHICLE_LEVEL_2: [LET-mAPL 0.211287] [LET-mAP 0.23023] [LET-mAPH 0.181574]
 // OBJECT_TYPE_TYPE_PEDESTRIAN_LEVEL_2: [LET-mAPL 0.213379] [LET-mAP 0.224676] [LET-mAPH 0.170878]
-// OBJECT_TYPE_TYPE_SIGN_LEVEL_2: [LET-mAPL 0.110639] [LET-mAP 0.111973] [LET-mAPH 0.0876046]
+// OBJECT_TYPE_TYPE_SIGN_LEVEL_2: [LET-mAPL 0.0989853] [LET-mAP 0.100288] [LET-mAPH 0.0797784]
 // OBJECT_TYPE_TYPE_CYCLIST_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
 // RANGE_TYPE_VEHICLE_[0, 30)_LEVEL_2: [LET-mAPL 0.158502] [LET-mAP 0.200029] [LET-mAPH 0.163429]
 // RANGE_TYPE_VEHICLE_[30, 50)_LEVEL_2: [LET-mAPL 0.231184] [LET-mAP 0.244745] [LET-mAPH 0.205553]
@@ -48,9 +48,9 @@ limitations under the License.
 // RANGE_TYPE_PEDESTRIAN_[0, 30)_LEVEL_2: [LET-mAPL 0.214398] [LET-mAP 0.228197] [LET-mAPH 0.17427]
 // RANGE_TYPE_PEDESTRIAN_[30, 50)_LEVEL_2: [LET-mAPL 0.202346] [LET-mAP 0.21114] [LET-mAPH 0.158337]
 // RANGE_TYPE_PEDESTRIAN_[50, +inf)_LEVEL_2: [LET-mAPL 0.193137] [LET-mAP 0.201656] [LET-mAPH 0.158395]
-// RANGE_TYPE_SIGN_[0, 30)_LEVEL_2: [LET-mAPL 0.0470182] [LET-mAP 0.0470403] [LET-mAPH 0.0388766]
+// RANGE_TYPE_SIGN_[0, 30)_LEVEL_2: [LET-mAPL 0.0196413] [LET-mAP 0.0196586] [LET-mAPH 0.018337]
 // RANGE_TYPE_SIGN_[30, 50)_LEVEL_2: [LET-mAPL 0.191365] [LET-mAP 0.191489] [LET-mAPH 0.150585]
-// RANGE_TYPE_SIGN_[50, +inf)_LEVEL_2: [LET-mAPL 0.146712] [LET-mAP 0.149439] [LET-mAPH 0.12027]
+// RANGE_TYPE_SIGN_[50, +inf)_LEVEL_2: [LET-mAPL 0.149141] [LET-mAP 0.151854] [LET-mAPH 0.125403]
 // RANGE_TYPE_CYCLIST_[0, 30)_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
 // RANGE_TYPE_CYCLIST_[30, 50)_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
 // RANGE_TYPE_CYCLIST_[50, +inf)_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
@@ -66,7 +66,7 @@ limitations under the License.
 // CAMERA_TYPE_PEDESTRIAN_SIDE-RIGHT_LEVEL_2: [LET-mAPL 0.258021] [LET-mAP 0.261462] [LET-mAPH 0.185914]
 // CAMERA_TYPE_SIGN_FRONT_LEVEL_2: [LET-mAPL 0.240335] [LET-mAP 0.245807] [LET-mAPH 0.195759]
 // CAMERA_TYPE_SIGN_FRONT-LEFT_LEVEL_2: [LET-mAPL 0.123899] [LET-mAP 0.125459] [LET-mAPH 0.119571]
-// CAMERA_TYPE_SIGN_FRONT-RIGHT_LEVEL_2: [LET-mAPL 0.0932284] [LET-mAP 0.0932534] [LET-mAPH 0.0684046]
+// CAMERA_TYPE_SIGN_FRONT-RIGHT_LEVEL_2: [LET-mAPL 0.0708887] [LET-mAP 0.070911] [LET-mAPH 0.0535817]
 // CAMERA_TYPE_SIGN_SIDE-LEFT_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
 // CAMERA_TYPE_SIGN_SIDE-RIGHT_LEVEL_2: [LET-mAPL 0.0312435] [LET-mAP 0.03125] [LET-mAPH 0.0142438]
 // CAMERA_TYPE_CYCLIST_FRONT_LEVEL_2: [LET-mAPL 0] [LET-mAP 0] [LET-mAPH 0]
@@ -145,7 +145,7 @@ Config GetConfig() {
   auto* let_metrics_config = config.mutable_let_metric_config();
   let_metrics_config->set_enabled(true);
   let_metrics_config->set_align_type(
-      Config::LocalizationErrorTolerantConfig::TYPE_RANGE_ALIGNED);
+      Config::LongitudinalErrorTolerantConfig::TYPE_RANGE_ALIGNED);
   let_metrics_config->set_longitudinal_tolerance_percentage(
       kLongitudinalTolerancePercentage);
   let_metrics_config->set_min_longitudinal_tolerance_meter(
@@ -175,13 +175,16 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   Objects gt_objects;
   constexpr int kDetectionLevel2NumPointsThreshold = 5;
   for (auto& o : *gt_objects_ori.mutable_objects()) {
-    if (o.object().num_lidar_points_in_box() <= 0) continue;
+    // Note that we use `num_top_lidar_points_in_box` instead of
+    // `num_lidar_points_in_box` because cameras have roughly the same FOV as
+    // the top lidar.
+    if (o.object().num_top_lidar_points_in_box() <= 0) continue;
     // Decide detection difficulty by the number of points inside the box if the
     // boxes don't come with human annotated difficulty.
     if (!o.object().has_detection_difficulty_level() ||
         o.object().detection_difficulty_level() == Label::UNKNOWN) {
       o.mutable_object()->set_detection_difficulty_level(
-          o.object().num_lidar_points_in_box() <=
+          o.object().num_top_lidar_points_in_box() <=
                   kDetectionLevel2NumPointsThreshold
               ? Label::LEVEL_2
               : Label::LEVEL_1);
@@ -257,7 +260,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   for (int i = 0; i < detection_metrics.size(); ++i) {
     const DetectionMetrics& metric = detection_metrics[i];
     std::cout << breakdown_names[i] << ": [LET-mAPL "
-              << metric.mean_average_precision_localization_affinity_weighted()
+              << metric.mean_average_precision_longitudinal_affinity_weighted()
               << "]"
               << " [LET-mAP " << metric.mean_average_precision() << "]"
               << " [LET-mAPH " << metric.mean_average_precision_ha_weighted()

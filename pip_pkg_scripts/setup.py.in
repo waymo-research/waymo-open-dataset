@@ -18,7 +18,7 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.4.6'
+__version__ = '1.4.7'
 REQUIRED_PACKAGES = [
     'tensorflow==' + '.'.join('TF_VERSION'.split('-')),
     'plotly>=5.5.0',

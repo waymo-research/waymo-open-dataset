@@ -39,8 +39,10 @@ REGISTER_OP("DetectionMetrics")
     .Input("ground_truth_speed: float")
     .Output("average_precision: float")
     .Output("average_precision_ha_weighted: float")
+    .Output("average_precision_longitudinal_affinity_weighted: float")
     .Output("precision_recall: float")
     .Output("precision_recall_ha_weighted: float")
+    .Output("precision_recall_longitudinal_affinity_weighted: float")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
@@ -72,10 +74,14 @@ ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
 average_precision: [B]. average precision for each breakdown.
 average_precision_ha_weighted: [B]. average precision with heading accuracy
   weighted for each breakdown.
+average_precision_longitudinal_affinity_weighted: [B]. average precision with
+  longitudinal affinity weighted for each breakdown.
 precision_recall: [B, S, 5]. precision, recall, TP, FP, FN for each breakdown.
   S is the number of score cutoffs.
 precision_recall_ha_weighted: [B, S, 2]. precision and recall with heading
   accuracy weighted pairs for each breakdown.
+precision_recall_longitudinal_affinity_weighted: [B, S, 2]. precision and recall
+  with longitudinal affinity weighted pairs for each breakdown.
 breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
   breakdown.
 config: a string serialized proto of metrics configuration protobuf.

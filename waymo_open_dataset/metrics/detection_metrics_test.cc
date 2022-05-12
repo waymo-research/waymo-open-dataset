@@ -192,7 +192,7 @@ TEST(DetectionMetricsTest, OneShardWithDetails) {
 
 TEST(DetectionMetricsTest, OneShardWithLetDetails) {
   Config config = BuildConfig(/*add_details=*/true);
-  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  Config::LongitudinalErrorTolerantConfig let_config = BuildDefaultLetConfig();
   *config.mutable_let_metric_config() = std::move(let_config);
   std::vector<Object> pds{BuildObject("pd0", 0.9, Label::TYPE_VEHICLE),
                           BuildObject("pd1", 0.6, Label::TYPE_VEHICLE)};
@@ -223,8 +223,8 @@ TEST(DetectionMetricsTest, OneShardWithLetDetails) {
     EXPECT_NEAR(details.tp_ious()[0], 0.9, 1e-6);
     ASSERT_EQ(details.tp_heading_accuracies().size(), 1);
     EXPECT_NEAR(details.tp_heading_accuracies()[0], 1.0, 1e-6);
-    ASSERT_EQ(details.tp_localization_affinities().size(), 1);
-    EXPECT_NEAR(details.tp_localization_affinities()[0], 1.0, 1e-6);
+    ASSERT_EQ(details.tp_longitudinal_affinities().size(), 1);
+    EXPECT_NEAR(details.tp_longitudinal_affinities()[0], 1.0, 1e-6);
     ASSERT_EQ(details.fp_ids().size(), 1);
     EXPECT_EQ(details.fp_ids()[0], "pd1");
     EXPECT_TRUE(details.fn_ids().empty());
@@ -246,8 +246,8 @@ TEST(DetectionMetricsTest, OneShardWithLetDetails) {
     EXPECT_NEAR(details.tp_ious()[0], 0.6, 1e-6);
     ASSERT_EQ(details.tp_heading_accuracies().size(), 1);
     EXPECT_NEAR(details.tp_heading_accuracies()[0], 1.0, 1e-6);
-    ASSERT_EQ(details.tp_localization_affinities().size(), 1);
-    EXPECT_NEAR(details.tp_localization_affinities()[0], 1.0, 1e-6);
+    ASSERT_EQ(details.tp_longitudinal_affinities().size(), 1);
+    EXPECT_NEAR(details.tp_longitudinal_affinities()[0], 1.0, 1e-6);
     EXPECT_TRUE(details.fp_ids().empty());
     EXPECT_TRUE(details.fn_ids().empty());
   }
@@ -264,7 +264,7 @@ TEST(DetectionMetricsTest, OneShardWithLetDetails) {
     EXPECT_TRUE(details.tp_gt_ids().empty());
     EXPECT_TRUE(details.tp_ious().empty());
     EXPECT_TRUE(details.tp_heading_accuracies().empty());
-    EXPECT_TRUE(details.tp_localization_affinities().empty());
+    EXPECT_TRUE(details.tp_longitudinal_affinities().empty());
     EXPECT_TRUE(details.fp_ids().empty());
     ASSERT_EQ(details.fn_ids().size(), 1);
     EXPECT_EQ(details.fn_ids()[0], "gt0");
@@ -282,24 +282,24 @@ TEST(DetectionMetricsTest, OneShardWithLetDetails) {
   EXPECT_NEAR(metrics[0].precisions()[1], 1.0, 1e-6);
   EXPECT_NEAR(metrics[0].recalls()[2], 0.0, 1e-6);
   EXPECT_NEAR(metrics[0].precisions()[2], 1.0, 1e-6);
-  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[0], 1.0,
+  EXPECT_NEAR(metrics[0].recalls_longitudinal_affinity_weighted()[0], 1.0,
               1e-6);
-  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[0], 0.5,
+  EXPECT_NEAR(metrics[0].precisions_longitudinal_affinity_weighted()[0], 0.5,
               1e-6);
-  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[1], 1.0,
+  EXPECT_NEAR(metrics[0].recalls_longitudinal_affinity_weighted()[1], 1.0,
               1e-6);
-  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[1], 1.0,
+  EXPECT_NEAR(metrics[0].precisions_longitudinal_affinity_weighted()[1], 1.0,
               1e-6);
-  EXPECT_NEAR(metrics[0].recalls_localization_affinity_weighted()[2], 0.0,
+  EXPECT_NEAR(metrics[0].recalls_longitudinal_affinity_weighted()[2], 0.0,
               1e-6);
-  EXPECT_NEAR(metrics[0].precisions_localization_affinity_weighted()[2], 1.0,
+  EXPECT_NEAR(metrics[0].precisions_longitudinal_affinity_weighted()[2], 1.0,
               1e-6);
   EXPECT_NEAR(metrics[0].mean_average_precision(), 1.0, 1e-6);
   // Angles are perfectly matched.
   EXPECT_NEAR(metrics[0].mean_average_precision_ha_weighted(), 1.0, 1e-6);
   // Center locations are perfectly matched.
   EXPECT_NEAR(
-      metrics[0].mean_average_precision_localization_affinity_weighted(), 1.0,
+      metrics[0].mean_average_precision_longitudinal_affinity_weighted(), 1.0,
       1e-6);
 }
 

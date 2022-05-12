@@ -4,6 +4,11 @@ We have released the Waymo Open Dataset publicly to aid the research community i
 
 The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 1,950 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
 
+## May 2022 Update (part 2)
+ - Released a [tutorial](waymo-open-dataset/tutorial/tutorial_camera_only.ipynb) for the 3D Camera-Only Detection Challenge.
+ - Added support for computing 3D-LET-APL in Python metrics ops. See `Compute Metrics` in the [tutorial](waymo-open-dataset/tutorial/tutorial_camera_only.ipynb).
+ - Fixed a bug in the metrics implementation for the Occupancy and Flow Challenge.
+
 ## May 2022 Update
 We released v1.3.2 of the Perception dataset to improve the quality and accuracy of the labels.
  - Updated 3D semantic segmentation labels, for better temporal consistency and to fix mislabeled points.

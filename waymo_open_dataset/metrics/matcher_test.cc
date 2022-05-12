@@ -112,10 +112,10 @@ TEST(Matcher, MatcherCustomIoU) {
   EXPECT_EQ(kMaxIoU, matcher->MatchingWeight(3, 0));
 }
 
-// Tests matcher with activated Localization Error Tolerant (LET) config.
+// Tests matcher with activated Longitudinal Error Tolerant (LET) config.
 TEST(Matcher, MatcherLetIoU) {
   Config config = BuildDefaultConfig();
-  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  Config::LongitudinalErrorTolerantConfig let_config = BuildDefaultLetConfig();
   *config.mutable_let_metric_config() = std::move(let_config);
   config.set_matcher_type(MatcherProto::TYPE_HUNGARIAN);
 
@@ -135,8 +135,8 @@ TEST(Matcher, MatcherLetIoU) {
   EXPECT_EQ((1.0 - 0.1 / 2.0) * 0.6 * kMaxIoU, matcher->MatchingWeight(2, 0));
   EXPECT_EQ(kMaxIoU, matcher->MatchingWeight(3, 0));
 
-  EXPECT_DEATH(matcher->LocalizationAffinity(-1, 0), "");
-  EXPECT_DEATH(matcher->LocalizationAffinity(0, -1), "");
+  EXPECT_DEATH(matcher->LongitudinalAffinity(-1, 0), "");
+  EXPECT_DEATH(matcher->LongitudinalAffinity(0, -1), "");
 }
 
 namespace {

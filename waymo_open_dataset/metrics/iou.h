@@ -41,7 +41,7 @@ using ComputeIoUFunc =
 double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
                   Label::Box::Type box_type);
 
-// Computes the localization affinity between a precition bounding box and a
+// Computes the longitudinal affinity between a precition bounding box and a
 // ground truth bounding box.
 //
 // The localization error (e_loc) is decomposed into longitudinal error (e_lon)
@@ -50,56 +50,56 @@ double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
 //
 // Given the longitudinal error tolerance (tol_lon_percentage), where
 //     tol_lon = max(r_gt * tol_lon_percentage, min_tol_lon_meters)
-// is derived from the ground truth range, the localization affinity can be
+// is derived from the ground truth range, the longitudinal affinity can be
 // computed as min(1-(e_lon/tol_r), 0.0).
-double ComputeLocalizationAffinity(
+double ComputeLongitudinalAffinity(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    const Config::LocalizationErrorTolerantConfig& let_metric_config);
+    const Config::LongitudinalErrorTolerantConfig& let_metric_config);
 
-// The function type for customized Localization Affinity computation function.
-using ComputeLocalizationAffinityFunc =
+// The function type for customized Longitudinal Affinity computation function.
+using ComputeLongitudinalAffinityFunc =
     std::function<double(const Label::Box&, const Label::Box&)>;
 
-// Returns a function to calculate localization affinity based on the given LET
+// Returns a function to calculate longitudinal affinity based on the given LET
 // metrics config.
-ComputeLocalizationAffinityFunc GetComputeLocalizationAffinityFunc(
-    const Config::LocalizationErrorTolerantConfig& let_metric_config);
+ComputeLongitudinalAffinityFunc GetComputeLongitudinalAffinityFunc(
+    const Config::LongitudinalErrorTolerantConfig& let_metric_config);
 
 // Aligns the prediction box with respect to a ground truth box so that the
-// localization error is minimized.
+// longitudinal error is minimized.
 // This function assumes that the boxes are calibrated with the sensor
 // origin, i.e., the sensor is located at (0, 0, 0).
 //
-// NOTE: this function will correct any degree of the localization error.
-// It is meant to be applied to box pairs that pass a certain localization
+// NOTE: this function will correct any degree of the longitudinal error.
+// It is meant to be applied to box pairs that pass a certain longitudinal
 // affinity threshold.
 Label::Box AlignedPredictionBox(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type);
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type);
 
-// Computes the localization error tolerant IoU (LET-IoU).
+// Computes the longitudinal error tolerant IoU (LET-IoU).
 // The boxes will be first transformed into the sensor coordinate system,
 // then the IoU will be computed between the aligned prediction box and the
 // ground truth box. Box type will be used to determine if we compute the 2D IoU
 // or 3D IoU. It has the same effect as the one in `ComputeIoU`.
 //
 // NOTE:
-// 1. This function will correct any degree of the localization error.
-//    It is meant to be applied at box pairs which pass a certain localization
+// 1. This function will correct any degree of the longitudinal error.
+//    It is meant to be applied at box pairs which pass a certain longitudinal
 //    affinity threshold.
 // 2. This function currently only supports TYPE_3D bounding boxes and TYPE_2D
 //    bounding boxes representing the top-down view objects.
 double ComputeLetIoU(
     const Label::Box& prediction_box, const Label::Box& ground_truth_box,
-    const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    const Config::LongitudinalErrorTolerantConfig::Location3D& sensor_location,
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type,
     Label::Box::Type box_type);
 
 // Returns a function to calculate LET-IoU based on the given LET metrics
 // config.
 ComputeIoUFunc GetComputeLetIoUFunc(
-    const Config::LocalizationErrorTolerantConfig::Location3D& sensor_location,
-    Config::LocalizationErrorTolerantConfig::AlignType align_type,
+    const Config::LongitudinalErrorTolerantConfig::Location3D& sensor_location,
+    Config::LongitudinalErrorTolerantConfig::AlignType align_type,
     Label::Box::Type box_type);
 
 // Converts a box proto to a polygon.

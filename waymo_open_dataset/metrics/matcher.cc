@@ -55,7 +55,7 @@ std::unique_ptr<Matcher> Matcher::Create(
 std::unique_ptr<Matcher> Matcher::Create(
     MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
     Label::Box::Type box_type,
-    const Config::LocalizationErrorTolerantConfig& let_metric_config) {
+    const Config::LongitudinalErrorTolerantConfig& let_metric_config) {
   std::unique_ptr<Matcher> matcher =
       Create(matcher_type, iou_thresholds, box_type);
 
@@ -63,16 +63,16 @@ std::unique_ptr<Matcher> Matcher::Create(
       GetComputeLetIoUFunc(let_metric_config.sensor_location(),
                            let_metric_config.align_type(), box_type));
 
-  matcher->SetCustomLocalizationAffinityFunc(
-      GetComputeLocalizationAffinityFunc(let_metric_config));
+  matcher->SetCustomLongitudinalAffinityFunc(
+      GetComputeLongitudinalAffinityFunc(let_metric_config));
 
   matcher->SetCustomCanMatchFunc(
       [](const Matcher& matcher, int prediction_index, int ground_truth_index) {
         const Label::Type object_type =
             matcher.predictions()[prediction_index].object().type();
-        const float localization_affinity =
-            matcher.LocalizationAffinity(prediction_index, ground_truth_index);
-        if (localization_affinity == 0.0) return false;
+        const float longitudinal_affinity =
+            matcher.LongitudinalAffinity(prediction_index, ground_truth_index);
+        if (longitudinal_affinity == 0.0) return false;
         const float iou = matcher.IoU(prediction_index, ground_truth_index);
         if (iou < matcher.iou_thresholds_[object_type]) return false;
         return true;
@@ -82,50 +82,50 @@ std::unique_ptr<Matcher> Matcher::Create(
       [](const Matcher& matcher, int prediction_index, int ground_truth_index) {
         float weight = matcher.IoU(prediction_index, ground_truth_index);
         weight *=
-            matcher.LocalizationAffinity(prediction_index, ground_truth_index);
+            matcher.LongitudinalAffinity(prediction_index, ground_truth_index);
         return matcher.QuantizedWeight(weight);
       });
   return matcher;
 }
 
-float Matcher::LocalizationAffinity(int prediction_index,
+float Matcher::LongitudinalAffinity(int prediction_index,
                                     int ground_truth_index) const {
   ValidPredictionIndex(prediction_index);
   ValidGroundTruthIndex(ground_truth_index);
 
   // If the compute function is not set, always return 1.0;
-  if (custom_localization_affinity_func_ == nullptr) return 1.0;
+  if (custom_longitudinal_affinity_func_ == nullptr) return 1.0;
 
-  if (localization_affinity_caches_.empty()) {
-    localization_affinity_caches_.resize(
+  if (longitudinal_affinity_caches_.empty()) {
+    longitudinal_affinity_caches_.resize(
         predictions().size(), std::vector<float>(ground_truths().size(), -1.0));
   }
 
-  float localization_affinity =
-      localization_affinity_caches_[prediction_index][ground_truth_index];
+  float longitudinal_affinity =
+      longitudinal_affinity_caches_[prediction_index][ground_truth_index];
 
-  // Only compute the localization affinity if it is not computed and stored in
+  // Only compute the longitudinal affinity if it is not computed and stored in
   // the cache yet.
-  if (localization_affinity < 0.0) {
-    // If the object types are different, localization affinity is assigned with
+  if (longitudinal_affinity < 0.0) {
+    // If the object types are different, longitudinal affinity is assigned with
     // 0.0, and therefore the prediction and ground truth can't be matched.
     if (predictions()[prediction_index].object().type() !=
         ground_truths()[ground_truth_index].object().type()) {
-      localization_affinity = 0.0;
+      longitudinal_affinity = 0.0;
     } else {
-      localization_affinity = custom_localization_affinity_func_(
+      longitudinal_affinity = custom_longitudinal_affinity_func_(
           predictions()[prediction_index].object().box(),
           ground_truths()[ground_truth_index].object().box());
-      CHECK_GE(localization_affinity, 0.0)
+      CHECK_GE(longitudinal_affinity, 0.0)
           << "prediction_index: " << prediction_index
           << ", ground_truth_index: " << ground_truth_index;
-      CHECK_LE(localization_affinity, 1.0);
+      CHECK_LE(longitudinal_affinity, 1.0);
     }
     // Store the result in the cache.
-    localization_affinity_caches_[prediction_index][ground_truth_index] =
-        localization_affinity;
+    longitudinal_affinity_caches_[prediction_index][ground_truth_index] =
+        longitudinal_affinity;
   }
-  return localization_affinity;
+  return longitudinal_affinity;
 }
 
 float Matcher::IoU(int prediction_index, int ground_truth_index) const {

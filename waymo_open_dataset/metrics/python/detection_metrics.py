@@ -160,7 +160,7 @@ def get_detection_metric_ops(
   }
 
   config_str = config.SerializeToString()
-  ap, aph, pr, _, _ = py_metrics_ops.detection_metrics(
+  ap, aph, apl, pr, _, _, _ = py_metrics_ops.detection_metrics(
       config=config_str, **variable_map)
   breakdown_names = config_util.get_breakdown_names_from_config(config)
   metric_ops = {}
@@ -176,6 +176,7 @@ def get_detection_metric_ops(
       # multiple session.run()s.
       metric_ops['{}/AP'.format(name)] = (ap[i], tf.constant([]))
     metric_ops['{}/APH'.format(name)] = (aph[i], tf.constant([]))
+    metric_ops['{}/APL'.format(name)] = (apl[i], tf.constant([]))
     if recall_at_precision is not None:
       precision_i_mask = pr[i, :, 0] > recall_at_precision
       recall_i = tf.reduce_max(

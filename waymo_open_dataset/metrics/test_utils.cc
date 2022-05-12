@@ -75,8 +75,8 @@ Config BuildDefaultConfig() {
   return config;
 }
 
-Config::LocalizationErrorTolerantConfig BuildDefaultLetConfig() {
-  Config::LocalizationErrorTolerantConfig let_config;
+Config::LongitudinalErrorTolerantConfig BuildDefaultLetConfig() {
+  Config::LongitudinalErrorTolerantConfig let_config;
   let_config.set_enabled(true);
   let_config.set_min_longitudinal_tolerance_meter(2.0);
   let_config.set_longitudinal_tolerance_percentage(0.15);

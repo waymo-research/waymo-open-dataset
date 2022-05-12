@@ -73,14 +73,16 @@ class DetectionMetricsOp final : public OpKernel {
         ctx, ctx->input("ground_truth_frame_id", &input.ground_truth_frame_id));
     OP_REQUIRES_OK(ctx, ctx->input("ground_truth_difficulty",
                                    &input.ground_truth_difficulty));
-    OP_REQUIRES_OK(ctx, ctx->input("ground_truth_speed",
-                                   &input.ground_truth_speed));
+    OP_REQUIRES_OK(ctx,
+                   ctx->input("ground_truth_speed", &input.ground_truth_speed));
     OutputTensors output = ComputeImpl(input, ctx);
     ctx->set_output(0, output.average_precision);
     ctx->set_output(1, output.average_precision_ha_weighted);
-    ctx->set_output(2, output.precision_recall);
-    ctx->set_output(3, output.precision_recall_ha_weighted);
-    ctx->set_output(4, output.breakdown);
+    ctx->set_output(2, output.average_precision_longitudinal_affinity_weighted);
+    ctx->set_output(3, output.precision_recall);
+    ctx->set_output(4, output.precision_recall_ha_weighted);
+    ctx->set_output(5, output.precision_recall_longitudinal_affinity_weighted);
+    ctx->set_output(6, output.breakdown);
   }
 
  private:
@@ -104,14 +106,20 @@ class DetectionMetricsOp final : public OpKernel {
     OutputTensors(int num_breakdowns, int num_score_cutoffs)
         : average_precision(DT_FLOAT, {num_breakdowns}),
           average_precision_ha_weighted(DT_FLOAT, {num_breakdowns}),
+          average_precision_longitudinal_affinity_weighted(DT_FLOAT,
+                                                           {num_breakdowns}),
           precision_recall(DT_FLOAT, {num_breakdowns, num_score_cutoffs, 5}),
           precision_recall_ha_weighted(DT_FLOAT,
                                        {num_breakdowns, num_score_cutoffs, 2}),
+          precision_recall_longitudinal_affinity_weighted(
+              DT_FLOAT, {num_breakdowns, num_score_cutoffs, 2}),
           breakdown(DT_UINT8, {num_breakdowns, 3}) {}
     Tensor average_precision;
     Tensor average_precision_ha_weighted;
+    Tensor average_precision_longitudinal_affinity_weighted;
     Tensor precision_recall;
     Tensor precision_recall_ha_weighted;
+    Tensor precision_recall_longitudinal_affinity_weighted;
     Tensor breakdown;
 
     // Creates an output struct from a vector of detection metrics.
@@ -127,6 +135,9 @@ class DetectionMetricsOp final : public OpKernel {
             metrics[i].mean_average_precision();
         output.average_precision_ha_weighted.vec<float>()(i) =
             metrics[i].mean_average_precision_ha_weighted();
+        output.average_precision_longitudinal_affinity_weighted.vec<float>()(
+            i) =
+            metrics[i].mean_average_precision_longitudinal_affinity_weighted();
         output.breakdown.matrix<uint8>()(i, 0) =
             metrics[i].breakdown().generator_id();
         output.breakdown.matrix<uint8>()(i, 1) = metrics[i].breakdown().shard();
@@ -137,6 +148,10 @@ class DetectionMetricsOp final : public OpKernel {
         CHECK_EQ(metrics[i].recalls_size(), num_score_cutoffs);
         CHECK_EQ(metrics[i].precisions_ha_weighted_size(), num_score_cutoffs);
         CHECK_EQ(metrics[i].recalls_ha_weighted_size(), num_score_cutoffs);
+        CHECK_EQ(metrics[i].precisions_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs);
+        CHECK_EQ(metrics[i].recalls_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs);
         for (int j = 0; j < num_score_cutoffs; ++j) {
           output.precision_recall.tensor<float, 3>()(i, j, 0) =
               metrics[i].precisions(j);
@@ -152,6 +167,12 @@ class DetectionMetricsOp final : public OpKernel {
               metrics[i].precisions_ha_weighted(j);
           output.precision_recall_ha_weighted.tensor<float, 3>()(i, j, 1) =
               metrics[i].recalls_ha_weighted(j);
+          output.precision_recall_longitudinal_affinity_weighted
+              .tensor<float, 3>()(i, j, 0) =
+              metrics[i].precisions_longitudinal_affinity_weighted(j);
+          output.precision_recall_longitudinal_affinity_weighted
+              .tensor<float, 3>()(i, j, 1) =
+              metrics[i].recalls_longitudinal_affinity_weighted(j);
         }
       }
       return output;

@@ -56,7 +56,7 @@ class OccupancyFlowMetricsTest(tf.test.TestCase):
     self.assertNear(metrics.vehicles_observed_iou, 0.14, err=0.01)
     self.assertNear(metrics.vehicles_occluded_iou, 0.02, err=0.01)
     self.assertNear(metrics.vehicles_flow_epe, 4.24, err=0.01)
-    self.assertNear(metrics.vehicles_flow_warped_occupancy_auc, 0.12, err=0.01)
+    self.assertNear(metrics.vehicles_flow_warped_occupancy_auc, 0.13, err=0.01)
     self.assertNear(metrics.vehicles_flow_warped_occupancy_iou, 0.10, err=0.01)
 
   def test_compute_occupancy_soft_iou(self):

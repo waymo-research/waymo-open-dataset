@@ -88,7 +88,6 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
   def _EvalUpdateOps(
       self,
       sess,
-      graph,
       metrics,
       prediction_frame_id,
       prediction_bbox,
@@ -110,7 +109,7 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
             self._gt_frame_id: ground_truth_frame_id,
         })
 
-  def _EvalValueOps(self, sess, graph, metrics):
+  def _EvalValueOps(self, sess, metrics):
     return {item[0]: sess.run([item[1][0]]) for item in metrics.items()}
 
   def testAPBasic(self):
@@ -122,30 +121,30 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
     metrics = self._BuildGraph(graph)
     with self.test_session(graph=graph) as sess:
       sess.run(tf.compat.v1.initializers.local_variables())
-      self._EvalUpdateOps(sess, graph, metrics, pd_frameid, pd_bbox, pd_type,
-                          pd_score, gt_frameid, gt_bbox, gt_type)
-      self._EvalUpdateOps(sess, graph, metrics, pd_frameid, pd_bbox, pd_type,
-                          pd_score, gt_frameid, gt_bbox, gt_type)
+      self._EvalUpdateOps(sess, metrics, pd_frameid, pd_bbox, pd_type, pd_score,
+                          gt_frameid, gt_bbox, gt_type)
+      self._EvalUpdateOps(sess, metrics, pd_frameid, pd_bbox, pd_type, pd_score,
+                          gt_frameid, gt_bbox, gt_type)
       with tf.compat.v1.variable_scope('detection_metrics', reuse=True):
         # Looking up an exisitng var to check that data is accumulated properly
         # in the variable.
         pd_frame_id_accumulated_var = tf.compat.v1.get_variable(
             'prediction_frame_id', dtype=tf.int64)
       pd_frame_id_accumulated = sess.run([pd_frame_id_accumulated_var])
-      self.assertEqual(len(pd_frame_id_accumulated[0]), m * 2)
+      self.assertLen(pd_frame_id_accumulated[0], m * 2)
 
-      aps = self._EvalValueOps(sess, graph, metrics)
-      self.assertEqual(len(aps), 12)
-      for i in range(0, 12):
+      aps = self._EvalValueOps(sess, metrics)
+      self.assertLen(aps, 16)
+      for i in range(0, 16):
         self.assertTrue(-ERROR <= list(aps.values())[i][0] and
                         list(aps.values())[i][0] <= 1.0 + ERROR)
 
     with self.test_session(graph=graph) as sess:
       sess.run(tf.compat.v1.initializers.local_variables())
-      self._EvalUpdateOps(sess, graph, metrics, pd_frameid, pd_bbox, pd_type,
+      self._EvalUpdateOps(sess, metrics, pd_frameid, pd_bbox, pd_type,
                           np.ones_like(pd_frameid), pd_frameid, pd_bbox,
                           pd_type)
-      self._EvalUpdateOps(sess, graph, metrics, pd_frameid, pd_bbox, pd_type,
+      self._EvalUpdateOps(sess, metrics, pd_frameid, pd_bbox, pd_type,
                           np.ones_like(pd_frameid), pd_frameid, pd_bbox,
                           pd_type)
       with tf.compat.v1.variable_scope('detection_metrics', reuse=True):
@@ -154,11 +153,11 @@ class DetectionMetricsEstimatorTest(tf.test.TestCase):
         pd_frame_id_accumulated_var = tf.compat.v1.get_variable(
             'prediction_frame_id', dtype=tf.int64)
       pd_frame_id_accumulated = sess.run([pd_frame_id_accumulated_var])
-      self.assertEqual(len(pd_frame_id_accumulated[0]), m * 2)
+      self.assertLen(pd_frame_id_accumulated[0], m * 2)
 
-      aps = self._EvalValueOps(sess, graph, metrics)
-      self.assertEqual(len(aps), 12)
-      for i in range(0, 12):
+      aps = self._EvalValueOps(sess, metrics)
+      self.assertLen(aps, 16)
+      for i in range(0, 16):
         # Note: 'm' (num_boxes) needs to be large enough such that we have boxes
         # generated for every object type.
         self.assertAlmostEqual(list(aps.values())[i][0], 1.0, places=5)

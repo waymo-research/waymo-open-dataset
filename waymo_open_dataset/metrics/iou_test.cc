@@ -98,7 +98,7 @@ TEST(ComputeIoU, Box3d) {
   EXPECT_NEAR(1.0, ComputeIoU(b11, b11, Label::Box::TYPE_3D), kError);
 }
 
-TEST(ComputeLocalizationAffinity, Box3d) {
+TEST(ComputeLongitudinalAffinity, Box3d) {
   // Constructs a ground truth at near range.
   const Label::Box gt1 = BuildBox3d(1.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
   // Same as gt1.
@@ -110,14 +110,14 @@ TEST(ComputeLocalizationAffinity, Box3d) {
   // Range-aligned pd3 to gt1.
   const Label::Box pd1_4 = BuildBox3d(4.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
 
-  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  Config::LongitudinalErrorTolerantConfig let_config = BuildDefaultLetConfig();
 
-  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd1_1, gt1, let_config), kError);
-  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_2, gt1, let_config),
+  EXPECT_NEAR(1.0, ComputeLongitudinalAffinity(pd1_1, gt1, let_config), kError);
+  EXPECT_NEAR(0.75, ComputeLongitudinalAffinity(pd1_2, gt1, let_config),
               kError);
-  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_3, gt1, let_config),
+  EXPECT_NEAR(0.75, ComputeLongitudinalAffinity(pd1_3, gt1, let_config),
               kError);
-  EXPECT_NEAR(0.0, ComputeLocalizationAffinity(pd1_4, gt1, let_config), kError);
+  EXPECT_NEAR(0.0, ComputeLongitudinalAffinity(pd1_4, gt1, let_config), kError);
 
   // Constructs a ground truth at long range.
   const Label::Box gt2 = BuildBox3d(30.0, 40.0, 0.0, 1.0, 2.0, 2.0, 0.0);
@@ -128,13 +128,13 @@ TEST(ComputeLocalizationAffinity, Box3d) {
   const Label::Box pd2_4 =
       BuildBox3d(33.0 + 1.2, 44.0 - 0.9, 0.0, 1.0, 2.0, 2.0, 0.0);
 
-  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd2_1, gt2, let_config), kError);
+  EXPECT_NEAR(1.0, ComputeLongitudinalAffinity(pd2_1, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_2, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_2, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_3, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_3, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_4, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_4, gt2, let_config), kError);
 }
 
 TEST(ComputeLetIoU, Box3d) {
@@ -150,14 +150,14 @@ TEST(ComputeLetIoU, Box3d) {
   const Label::Box aligned_pd3 =
       BuildBox3d(9.0 / 13.0, 18.0 / 39.0, 0.0, 1.0, 2.0, 2.0, 0.0);
 
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_not_aligned =
-      Config::LocalizationErrorTolerantConfig::TYPE_NOT_ALIGNED;
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_center =
-      Config::LocalizationErrorTolerantConfig::TYPE_CENTER_ALIGNED;
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_range =
-      Config::LocalizationErrorTolerantConfig::TYPE_RANGE_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_not_aligned =
+      Config::LongitudinalErrorTolerantConfig::TYPE_NOT_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_center =
+      Config::LongitudinalErrorTolerantConfig::TYPE_CENTER_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_range =
+      Config::LongitudinalErrorTolerantConfig::TYPE_RANGE_ALIGNED;
 
-  Config::LocalizationErrorTolerantConfig::Location3D sensor_location;
+  Config::LongitudinalErrorTolerantConfig::Location3D sensor_location;
   sensor_location.set_x(0.0);
   sensor_location.set_y(0.0);
   sensor_location.set_z(0.0);
@@ -241,7 +241,7 @@ TEST(ComputeLetIoU, Box3d) {
               kError);
 }
 
-TEST(ComputeLocalizationAffnity, Box2d) {
+TEST(ComputeLongitudinalAffnity, Box2d) {
   // Constructs a ground truth at near range.
   const Label::Box gt1 = BuildBox2d(1.0, 0.0, 1.0, 2.0, 0.0);
   // Same as gt1.
@@ -253,14 +253,14 @@ TEST(ComputeLocalizationAffnity, Box2d) {
   // Range-aligned pd3 to gt1.
   const Label::Box pd1_4 = BuildBox2d(4.0, 0.0, 1.0, 2.0, 0.0);
 
-  Config::LocalizationErrorTolerantConfig let_config = BuildDefaultLetConfig();
+  Config::LongitudinalErrorTolerantConfig let_config = BuildDefaultLetConfig();
 
-  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd1_1, gt1, let_config), kError);
-  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_2, gt1, let_config),
+  EXPECT_NEAR(1.0, ComputeLongitudinalAffinity(pd1_1, gt1, let_config), kError);
+  EXPECT_NEAR(0.75, ComputeLongitudinalAffinity(pd1_2, gt1, let_config),
               kError);
-  EXPECT_NEAR(0.75, ComputeLocalizationAffinity(pd1_3, gt1, let_config),
+  EXPECT_NEAR(0.75, ComputeLongitudinalAffinity(pd1_3, gt1, let_config),
               kError);
-  EXPECT_NEAR(0.0, ComputeLocalizationAffinity(pd1_4, gt1, let_config), kError);
+  EXPECT_NEAR(0.0, ComputeLongitudinalAffinity(pd1_4, gt1, let_config), kError);
 
   // Constructs a ground truth at long range.
   const Label::Box gt2 = BuildBox2d(30.0, 40.0, 1.0, 2.0, 0.0);
@@ -269,13 +269,13 @@ TEST(ComputeLocalizationAffnity, Box2d) {
   const Label::Box pd2_3 = BuildBox2d(33.0 + 0.4, 44.0 - 0.3, 1.0, 2.0, 0.0);
   const Label::Box pd2_4 = BuildBox2d(33.0 + 1.2, 44.0 - 0.9, 1.0, 2.0, 0.0);
 
-  EXPECT_NEAR(1.0, ComputeLocalizationAffinity(pd2_1, gt2, let_config), kError);
+  EXPECT_NEAR(1.0, ComputeLongitudinalAffinity(pd2_1, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_2, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_2, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_3, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_3, gt2, let_config), kError);
   EXPECT_NEAR(1.0 - 5.0 / 7.5,
-              ComputeLocalizationAffinity(pd2_4, gt2, let_config), kError);
+              ComputeLongitudinalAffinity(pd2_4, gt2, let_config), kError);
 }
 
 TEST(ComputeLetIoU, Box2d) {
@@ -291,14 +291,14 @@ TEST(ComputeLetIoU, Box2d) {
   const Label::Box aligned_pd3 =
       BuildBox2d(9.0 / 13.0, 18.0 / 39.0, 1.0, 2.0, 0.0);
 
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_not_aligned =
-      Config::LocalizationErrorTolerantConfig::TYPE_NOT_ALIGNED;
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_center =
-      Config::LocalizationErrorTolerantConfig::TYPE_CENTER_ALIGNED;
-  Config::LocalizationErrorTolerantConfig::AlignType iou_type_range =
-      Config::LocalizationErrorTolerantConfig::TYPE_RANGE_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_not_aligned =
+      Config::LongitudinalErrorTolerantConfig::TYPE_NOT_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_center =
+      Config::LongitudinalErrorTolerantConfig::TYPE_CENTER_ALIGNED;
+  Config::LongitudinalErrorTolerantConfig::AlignType iou_type_range =
+      Config::LongitudinalErrorTolerantConfig::TYPE_RANGE_ALIGNED;
 
-  Config::LocalizationErrorTolerantConfig::Location3D sensor_location;
+  Config::LongitudinalErrorTolerantConfig::Location3D sensor_location;
   sensor_location.set_x(0.0);
   sensor_location.set_y(0.0);
 

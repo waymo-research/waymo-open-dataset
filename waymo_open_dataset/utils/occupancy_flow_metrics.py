@@ -119,11 +119,11 @@ def compute_occupancy_flow_metrics(
           pred_all_occupancy * flow_warped_origin_occupancy)
       # Now compute occupancy metrics between this quantity and ground-truth.
       metrics_dict['vehicles_flow_warped_occupancy_auc'].append(
-          _compute_occupancy_auc(flow_grounded_pred_all_occupancy,
-                                 true_all_occupancy))
+          _compute_occupancy_auc(true_all_occupancy,
+                                 flow_grounded_pred_all_occupancy))
       metrics_dict['vehicles_flow_warped_occupancy_iou'].append(
-          _compute_occupancy_soft_iou(flow_grounded_pred_all_occupancy,
-                                      true_all_occupancy))
+          _compute_occupancy_soft_iou(true_all_occupancy,
+                                      flow_grounded_pred_all_occupancy))
 
   # Compute means and return as proto message.
   metrics.vehicles_observed_auc = _mean(metrics_dict['vehicles_observed_auc'])

@@ -58,31 +58,31 @@ class Matcher {
       MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
       Label::Box::Type box_type);
 
-  // Creates a matcher instance with Localization Error Tolerant (LET) metrics
+  // Creates a matcher instance with Longitudinal Error Tolerant (LET) metrics
   // config.
   // If LET config is enabled, the following components of the matcher will be
   // set as LET customized version:
   //
-  // iou_func: Computes the localization error tolerant IoU (LET-IoU).
+  // iou_func: Computes the longitudinal error tolerant IoU (LET-IoU).
   // The boxes will be first transformed into the sensor coordinate system,
   // then the IoU will be computed between the aligned prediction box and the
   // ground truth box.
   //
-  // localization_affinity_func: Computes the localization affinity between
+  // longitudinal_affinity_func: Computes the longitudinal affinity between
   // a precition bounding box and a ground truth bounding box based on
   // the longitudinal error. See more details at mertics/iou.h.
   //
   // can_match_func: Returns true if the prediction can match the ground truth
-  // under the localization error tolerance and the LET-IoU is greater than the
+  // under the longitudinal error tolerance and the LET-IoU is greater than the
   // threshold.
   //
   // matching_weight_func: the matching weight (LET-IoU) is discounted by the
-  // localization affinity so that predictions with more localization noise
+  // longitudinal affinity so that predictions with more longitudinal noise
   // are assigned smaller matching weights.
   static std::unique_ptr<Matcher> Create(
       MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
       Label::Box::Type box_type,
-      const Config::LocalizationErrorTolerantConfig& let_metric_config);
+      const Config::LongitudinalErrorTolerantConfig& let_metric_config);
 
   static std::unique_ptr<Matcher> Create(const Config& config) {
     const std::vector<float> iou_thresholds(config.iou_thresholds().begin(),
@@ -101,7 +101,7 @@ class Matcher {
   void SetPredictions(const std::vector<Object>& predictions) {
     predictions_ = &predictions;
     iou_caches_.clear();
-    localization_affinity_caches_.clear();
+    longitudinal_affinity_caches_.clear();
   }
 
   // Sets all the ground truths. The index of each element in the provided
@@ -112,7 +112,7 @@ class Matcher {
   void SetGroundTruths(const std::vector<Object>& ground_truths) {
     ground_truths_ = &ground_truths;
     iou_caches_.clear();
-    localization_affinity_caches_.clear();
+    longitudinal_affinity_caches_.clear();
   }
 
   // Sets the subset of predictions to be considered for the future Match
@@ -134,12 +134,12 @@ class Matcher {
     custom_iou_func_ = std::move(custom_iou_func);
   }
 
-  // Sets a custom Localization Affinity calculation function to replace the
+  // Sets a custom Longitudinal Affinity calculation function to replace the
   // default function.
-  void SetCustomLocalizationAffinityFunc(
-      ComputeLocalizationAffinityFunc custom_localization_affinity_func) {
-    custom_localization_affinity_func_ =
-        std::move(custom_localization_affinity_func);
+  void SetCustomLongitudinalAffinityFunc(
+      ComputeLongitudinalAffinityFunc custom_longitudinal_affinity_func) {
+    custom_longitudinal_affinity_func_ =
+        std::move(custom_longitudinal_affinity_func);
   }
 
   // Sets a custom CanMatch function to replace the default function.
@@ -206,10 +206,10 @@ class Matcher {
   // Returns true if the prediction can match the ground truth.
   bool CanMatch(int prediction_index, int ground_truth_index) const;
 
-  // Computes the localization affinity between a prediction and a ground truth.
+  // Computes the longitudinal affinity between a prediction and a ground truth.
   // The result is cached.
   // Return value is within [0.0, 1.0].
-  float LocalizationAffinity(int prediction_index,
+  float LongitudinalAffinity(int prediction_index,
                              int ground_truth_index) const;
 
   // Computes IoU of a pair of prediction and ground truth.
@@ -243,8 +243,8 @@ class Matcher {
 
   // If set, will use to calculate the iou instead of the default one.
   ComputeIoUFunc custom_iou_func_ = nullptr;
-  // If set, will use to calculate the localization affinity.
-  ComputeLocalizationAffinityFunc custom_localization_affinity_func_ = nullptr;
+  // If set, will use to calculate the longitudinal affinity.
+  ComputeLongitudinalAffinityFunc custom_longitudinal_affinity_func_ = nullptr;
   // If set, will use to perform can match filtering instead of the default one.
   CanMatchFunc custom_can_match_func_ = nullptr;
   // If set, will use to calculate the matching weight instead of the default
@@ -258,10 +258,10 @@ class Matcher {
   // config, it is set to 0.
   mutable std::vector<std::vector<float>> iou_caches_;
 
-  // The [i][j] element caches the Localization Affinity between the i-th
+  // The [i][j] element caches the Longitudinal Affinity between the i-th
   // prediction and the j-th ground truth.
   // The cache entry is not populated if its cell value is < 0.
-  mutable std::vector<std::vector<float>> localization_affinity_caches_;
+  mutable std::vector<std::vector<float>> longitudinal_affinity_caches_;
 };
 
 // The Hungarian algorithm based matching.
