@@ -76,7 +76,7 @@ The Waymo Open Dataset itself is licensed under separate terms. Please visit [ht
 @InProceedings{Ettinger_2021_ICCV,
   author={Ettinger, Scott and Cheng, Shuyang and Caine, Benjamin and Liu, Chenxi and Zhao, Hang and Pradhan, Sabeek and Chai, Yuning and Sapp, Ben and Qi, Charles R. and Zhou, Yin and Yang, Zoey and Chouard, Aur\'elien and Sun, Pei and Ngiam, Jiquan and Vasudevan, Vijay and McCauley, Alexander and Shlens, Jonathon and Anguelov, Dragomir},
   title={Large Scale Interactive Motion Forecasting for Autonomous Driving: The Waymo Open Motion Dataset},
-  booktitle= Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  booktitle= {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
   month={October},
   year={2021},
   pages={9710-9719}
