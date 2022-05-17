@@ -1,0 +1,89 @@
+/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+// Semantic classes for the camera segmentation labels.
+message CameraSegmentation {
+  enum Type {
+    // Anything that does not fit the other classes or is too ambiguous to
+    // label.
+    TYPE_UNDEFINED = 0;
+    // The Waymo vehicle.
+    TYPE_EGO_VEHICLE = 1;
+    // Small vehicle such as a sedan, SUV, pickup truck, minivan or golf cart.
+    TYPE_CAR = 2;
+    // Large vehicle that carries cargo.
+    TYPE_TRUCK = 3;
+    // Large vehicle that carries more than 8 passengers.
+    TYPE_BUS = 4;
+    // Large vehicle that is not a truck or a bus.
+    TYPE_OTHER_LARGE_VEHICLE = 5;
+    // Bicycle with no rider.
+    TYPE_BICYCLE = 6;
+    // Motorcycle with no rider.
+    TYPE_MOTORCYCLE = 7;
+    // Trailer attached to another vehicle or horse.
+    TYPE_TRAILER = 8;
+    // Pedestrian. Does not include objects associated with the pedestrian, such
+    // as suitcases, strollers or cars.
+    TYPE_PEDESTRIAN = 9;
+    // Bicycle with rider.
+    TYPE_CYCLIST = 10;
+    // Motorcycle with rider.
+    TYPE_MOTORCYCLIST = 11;
+    // Birds, including ones on the ground.
+    TYPE_BIRD = 12;
+    // Animal on the ground such as a dog, cat, cow, etc.
+    TYPE_GROUND_ANIMAL = 13;
+    // Cone or short pole related to construction.
+    TYPE_CONSTRUCTION_CONE_POLE = 14;
+    // Permanent horizontal and vertical lamp pole, traffic sign pole, etc.
+    TYPE_POLE = 15;
+    // Large object carried/pushed/dragged by a pedestrian.
+    TYPE_PEDESTRIAN_OBJECT = 16;
+    // Sign related to traffic, including front and back facing signs.
+    TYPE_SIGN = 17;
+    // The box that contains traffic lights regardless of front or back facing.
+    TYPE_TRAFFIC_LIGHT = 18;
+    // Permanent building and walls, including solid fences.
+    TYPE_BUILDING = 19;
+    // Drivable road with proper markings, including parking lots and gas
+    // stations.
+    TYPE_ROAD = 20;
+    // Marking on the road that is parallel to the ego vehicle and defines
+    // lanes.
+    TYPE_LANE_MARKER = 21;
+    // All markings on the road other than lane markers.
+    TYPE_ROAD_MARKER = 22;
+    // Paved walkable surface for pedestrians, including curbs.
+    TYPE_SIDEWALK = 23;
+    // Vegetation including tree trunks, tree branches, bushes, tall grasses,
+    // flowers and so on.
+    TYPE_VEGETATION = 24;
+    // The sky, including clouds.
+    TYPE_SKY = 25;
+    // Other horizontal surfaces that are drivable or walkable.
+    TYPE_GROUND = 26;
+    // Object that is not permanent in its current position and does not belong
+    // to any of the above classes.
+    TYPE_DYNAMIC = 27;
+    // Object that is permanent in its current position and does not belong to
+    // any of the above classes.
+    TYPE_STATIC = 28;
+  }
+}

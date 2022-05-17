@@ -177,6 +177,19 @@ pytype_strict_library(
     ],
 )
 
+pytype_strict_library(
+    name = "camera_segmentation_utils",
+    srcs = ["camera_segmentation_utils.py"],
+    deps = [
+        # Implicit immutabledict dependency.
+        # Implicit numpy dependency.
+        # Implicit skimage dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
+    ],
+)
+
 # Tests
 py_strict_test(
     name = "box_utils_test",
@@ -311,5 +324,17 @@ py_strict_test(
         # Implicit tensorflow dependency.
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+    ],
+)
+
+py_strict_test(
+    name = "camera_segmentation_utils_test",
+    srcs = ["camera_segmentation_utils_test.py"],
+    deps = [
+        ":camera_segmentation_utils",
+        # Implicit numpy dependency.
+        # Implicit tensorflow dependency.
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
     ],
 )

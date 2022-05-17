@@ -62,7 +62,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
+#include <glog/logging.h>
 #include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/metrics/segmentation_metrics.h"
@@ -197,7 +197,8 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     } else {
       pd_vector = CreateEmptyPrediction(num_points);
     }
-    miou.Update(pd_vector, Flatten(gt_matrix));
+    CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
+        << "Prediction and Groundtruth lengths do not match";
     // Measure the second return range image.
     gt_matrix.ParseFromString(Uncompress(gt_it->second.segmentation_labels()[0]
                                              .ri_return2()
@@ -212,7 +213,8 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     } else {
       pd_vector = CreateEmptyPrediction(num_points);
     }
-    miou.Update(pd_vector, Flatten(gt_matrix));
+    CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
+        << "Prediction and Groundtruth length do not match";
   }
   const SegmentationMetrics segmentation_metrics = miou.ComputeIOU();
   for (auto it = segmentation_metrics.per_class_iou().begin();

@@ -39,7 +39,7 @@ cc_binary(
         "//waymo_open_dataset/metrics:segmentation_metrics",
         "//waymo_open_dataset/protos:segmentation_cc_proto",
         "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",
-        "@com_google_absl//absl/strings",
+        "@com_google_glog//:glog",
         "@zlib",
     ],
 )

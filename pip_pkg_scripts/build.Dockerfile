@@ -3,7 +3,7 @@ FROM tensorflow/tensorflow:custom-op-ubuntu16
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
-ENV TF_VERSION="2.5.0"
+ENV TF_VERSION="2.6.0"
 RUN wget https://github.com/bazelbuild/bazel/releases/download/4.0.0/bazel-4.0.0-installer-linux-x86_64.sh > /dev/null
 RUN bash bazel-4.0.0-installer-linux-x86_64.sh
 # There are some problems with the python3 installation from custom-op-ubuntu16.
@@ -35,8 +35,9 @@ RUN for python in python3.6 python3.7 python3.8 python3.9; do \
       $python get-pip.py && \
       $python -m pip install --upgrade pip setuptools auditwheel && \
       $python -m pip install --upgrade grpcio>=1.24.3; \
-      $python -m pip install --upgrade matplotlib plotly immutabledict; \
+      $python -m pip install --upgrade matplotlib plotly scikit-image immutabledict; \
       $python -m pip install --upgrade OpenEXR tensorflow_graphics; \
+      $python -m pip install --upgrade tensorflow==${TF_VERSION}; \
     done
 
 VOLUME /tmp/artifacts

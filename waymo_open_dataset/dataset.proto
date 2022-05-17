@@ -263,6 +263,43 @@ message RangeImage {
   optional MatrixFloat range_image = 1 [deprecated = true];
 }
 
+// Panoptic (instance + semantic) segmentation labels for a given camera image.
+// Associations can also be provided between each instance ID and a globally
+// unique ID across all frames.
+message CameraSegmentationLabel {
+  // The value used to separate instance_ids from different semantic classes.
+  // See the panoptic_label field for how this is used. Must be set to be
+  // greater than the maximum instance_id.
+  optional int32 panoptic_label_divisor = 1;
+  // A uint16 png encoded image, with the same resolution as the corresponding
+  // camera image. Each pixel contains a panoptic segmentation label, which is
+  // computed as:
+  // semantic_class_id * panoptic_label_divisor + instance_id.
+  // We set instance_id = 0 for pixels for which there is no instance_id.
+  // NOTE: Instance IDs in this label are only consistent within this camera
+  // image. Use instance_id_to_global_id_mapping to get cross-camera consistent
+  // instance IDs.
+  optional bytes panoptic_label = 2;
+  // A mapping between each panoptic label with an instance_id and a globally
+  // unique ID across all frames within the same sequence. This can be used to
+  // match instances across cameras and over time. i.e. instances belonging to
+  // the same object will map to the same global ID across all frames in the
+  // same sequence.
+  // NOTE: These unique IDs are not consistent with other IDs in the dataset,
+  // e.g. the bounding box IDs.
+  message InstanceIDToGlobalIDMapping {
+    optional int32 local_instance_id = 1;
+    optional int32 global_instance_id = 2;
+    // If false, the corresponding instance will not have consistent global ids
+    // between frames.
+    optional bool is_tracked = 3;
+  }
+  repeated InstanceIDToGlobalIDMapping instance_id_to_global_id_mapping = 3;
+  // The sequence id for this label. The above instance_id_to_global_id_mapping
+  // is only valid with other labels with the same sequence id.
+  optional string sequence_id = 4;
+}
+
 // All timestamps in this proto are represented as seconds since Unix epoch.
 message CameraImage {
   optional CameraName.Name name = 1;
@@ -307,6 +344,11 @@ message CameraImage {
   // the exposure time and the actual sensor readout time.
   optional double camera_trigger_time = 7;
   optional double camera_readout_done_time = 8;
+
+  // Panoptic segmentation labels for this camera image.
+  // NOTE: Not every image has panoptic segmentation labels.
+  optional CameraSegmentationLabel camera_segmentation_label = 10;
+
 
 }
 

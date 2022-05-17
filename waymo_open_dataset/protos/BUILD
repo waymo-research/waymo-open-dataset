@@ -93,4 +93,8 @@ all_proto_library(
     src = "segmentation.proto",
 )
 
+all_proto_library(
+    src = "camera_segmentation.proto",
+)
+
 
