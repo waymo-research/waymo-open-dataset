@@ -1,5 +1,3 @@
-# Implicitly load Jupyter build rules.
-
 package(
     default_visibility = [
         "//visibility:public",
@@ -26,12 +24,9 @@ py_binary(
         "//waymo_open_dataset/metrics/tools:compute_detection_metrics_main",
         "//waymo_open_dataset/metrics/tools:fakedata",
     ],
+    main = "jupyter_kernel.py",
     python_version = "PY3",
     deps = [
-        # Implicit IPython dependency.
-        # Implicit matplotlib dependency.
-        # Implicit numpy dependency.
-        # Implicit tensorflow dependency.
         # Implicit tensorflow_graphics/image:transformer dependency.
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",

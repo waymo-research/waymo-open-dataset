@@ -109,8 +109,8 @@ double GetPixelTimestamp(
 // In normalized camera, undistorts point coordinates via iteration.
 void IterateUndistortion(const CameraCalibration& calibration, double u_nd,
                          double v_nd, double* u_n, double* v_n) {
-  CHECK(u_n);
-  CHECK(v_n);
+ /* CHECK(u_n); */
+ /* CHECK(v_n); */
   const double f_u = calibration.intrinsic(0);
   const double f_v = calibration.intrinsic(1);
   const double k1 = calibration.intrinsic(4);
@@ -126,8 +126,8 @@ void IterateUndistortion(const CameraCalibration& calibration, double u_nd,
   u = u_nd;
   v = v_nd;
 
-  CHECK_GT(f_u, 0.0);
-  CHECK_GT(f_v, 0.0);
+ /* CHECK_GT(f_u, 0.0); */
+ /* CHECK_GT(f_v, 0.0); */
 
   // Minimum required squared delta before terminating. Note that it is set in
   // normalized camera coordinates at a fraction of a pixel^2. The threshold
@@ -474,9 +474,9 @@ void CameraModel::ImageToWorld(double u_d, double v_d, double depth, double* x,
 void CameraModel::ImageToWorldGlobalShutter(double u_d, double v_d,
                                             double depth, double* x, double* y,
                                             double* z) const {
-  CHECK(x);
-  CHECK(y);
-  CHECK(z);
+ /* CHECK(x); */
+ /* CHECK(y); */
+ /* CHECK(z); */
   double u_n = 0.0, v_n = 0.0;
   ImageToDirection(u_d, v_d, &u_n, &v_n);
   const Eigen::Vector3d wp = global_shutter_state_->n_tfm_cam0 *
@@ -489,10 +489,10 @@ void CameraModel::ImageToWorldGlobalShutter(double u_d, double v_d,
 void CameraModel::ImageToVehicleGlobalShutter(double u_d, double v_d,
                                               double depth, double* x,
                                               double* y, double* z) const {
-  CHECK(x);
-  CHECK(y);
-  CHECK(z);
-  CHECK(global_shutter_state_) << "Please call PrepareProjection() first.";
+ /* CHECK(x); */
+ /* CHECK(y); */
+ /* CHECK(z); */
+ /* CHECK(global_shutter_state_) << "Please call PrepareProjection() first."; */
   double u_n = 0.0, v_n = 0.0;
   ImageToDirection(u_d, v_d, &u_n, &v_n);
   const Eigen::Vector3d wp = global_shutter_state_->vehicle_tfm_cam *
@@ -543,8 +543,8 @@ bool CameraModel::WorldToImageWithDepthGlobalShutter(double x, double y,
                                                      bool check_image_bounds,
                                                      double* u_d, double* v_d,
                                                      double* depth) const {
-  CHECK(u_d);
-  CHECK(v_d);
+ /* CHECK(u_d); */
+ /* CHECK(v_d); */
   const Eigen::Vector3d cp =
       global_shutter_state_->cam_tfm_n * Eigen::Vector3d(x, y, z);
   return CameraToImageWithDepth(cp(0), cp(1), cp(2), check_image_bounds, u_d,
@@ -625,9 +625,9 @@ bool CameraModel::ComputeDepthResidualAndJacobian(
     double* jacobian) const {
   // The jacobian is allowed to be a nullptr.
   // The depth is allowed to be a nullptr.
-  CHECK(normalized_coord);
-  CHECK(residual);
-  CHECK(rolling_shutter_state_);
+ /* CHECK(normalized_coord); */
+ /* CHECK(residual); */
+ /* CHECK(rolling_shutter_state_); */
   const RollingShutterState& rolling_shutter_state = *rolling_shutter_state_;
 
   const Eigen::Matrix3d cam_dcm_n = rolling_shutter_state.cam0_dcm_n +

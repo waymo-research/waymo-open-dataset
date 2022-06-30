@@ -36,8 +36,8 @@ namespace {
 void BuildTrackingIdToDetectionBoxIndexMaps(
     const Matcher& matcher, absl::flat_hash_map<std::string, int>* pd_map,
     absl::flat_hash_map<std::string, int>* gt_map) {
-  CHECK(pd_map != nullptr);
-  CHECK(gt_map != nullptr);
+ /* CHECK(pd_map != nullptr); */
+ /* CHECK(gt_map != nullptr); */
   for (int i = 0, sz = matcher.prediction_subset().size(); i < sz; ++i) {
     const std::string& id =
         matcher.predictions()[matcher.prediction_subset()[i]].object().id();
@@ -65,7 +65,7 @@ void BuildTrackingIdToDetectionBoxIndexMaps(
 }  // namespace
 
 void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level) {
-  CHECK(matcher_ptr != nullptr);
+ /* CHECK(matcher_ptr != nullptr); */
   Matcher& matcher = *matcher_ptr;
   // The implementation follows the 'Mapping procedure' in the paper.
   // Some comments below are copied from the paper.
@@ -95,8 +95,8 @@ void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level) {
   {
     absl::flat_hash_set<std::string> pd_ids;
     for (const auto& kv : gt_pd_new_matchings) {
-      CHECK(pd_ids.insert(kv.second).second)
-          << "Duplicate prediction found for " << kv.second << ".";
+     /* CHECK(pd_ids.insert(kv.second).second)
+          << "Duplicate prediction found for " << kv.second << "."; */
     }
   }
 
@@ -129,16 +129,16 @@ void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level) {
   }
   pd_gt_matchings_.clear();
   for (const auto& kv : gt_pd_matchings_) {
-    CHECK(pd_gt_matchings_.emplace(kv.second, kv.first).second)
-        << kv.first << " " << kv.second;
+   /* CHECK(pd_gt_matchings_.emplace(kv.second, kv.first).second)
+        << kv.first << " " << kv.second; */
   }
 }
 
 absl::flat_hash_map<std::string, std::string> MOT::InitializeNewMapping(
     const Matcher& matcher, absl::flat_hash_map<std::string, int>* pd_map,
     absl::flat_hash_map<std::string, int>* gt_map) {
-  CHECK(pd_map != nullptr);
-  CHECK(gt_map != nullptr);
+ /* CHECK(pd_map != nullptr); */
+ /* CHECK(gt_map != nullptr); */
   // New ground truth -> prediction mapping.
   absl::flat_hash_map<std::string, std::string> gt_pd_new_matchings;
 
@@ -171,7 +171,7 @@ MOT::MatchResult MOT::Match(const absl::flat_hash_map<std::string, int>& pd_map,
                             const absl::flat_hash_map<std::string, int>& gt_map,
                             Label::DifficultyLevel difficulty_level,
                             Matcher* matcher) {
-  CHECK(matcher != nullptr);
+ /* CHECK(matcher != nullptr); */
   // For all objects for which no correspondence was made yet, try to find a
   // matching hypothesis. Allow only one-to-one matches, and pairs for which the
   // distance does not exceed T. The matching should be made in a way that
@@ -233,8 +233,8 @@ MOT::MatchResult MOT::Match(const absl::flat_hash_map<std::string, int>& pd_map,
   {
     absl::flat_hash_set<std::string> pd_ids;
     for (const auto& kv : result.gt_pd_matchings) {
-      CHECK(pd_ids.insert(kv.second).second)
-          << "Duplicate prediction found for " << kv.second << ".";
+     /* CHECK(pd_ids.insert(kv.second).second)
+          << "Duplicate prediction found for " << kv.second << "."; */
     }
   }
   return result;

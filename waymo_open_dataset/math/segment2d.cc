@@ -160,11 +160,11 @@ bool Segment2d::IntersectOrCoincide(const Segment2d &other) const {
 }
 
 bool Segment2d::Sample(double dist, Vec2d *point) const {
-  CHECK(point);
-  CHECK_LE(0, dist);
+ /* CHECK(point); */
+ /* CHECK_LE(0, dist); */
   const Vec2d dp = end_ - start_;
   const double len = length();
-  CHECK_LE(0, len);
+ /* CHECK_LE(0, len); */
   if (len == 0) {
     *point = start_;
     return false;
@@ -176,7 +176,7 @@ bool Segment2d::Sample(double dist, Vec2d *point) const {
 
 std::vector<Vec2d> Segment2d::SamplePoints(const Vec2d &start, const Vec2d &end,
                                            double dist) {
-  CHECK_LT(0, dist);
+ /* CHECK_LT(0, dist); */
   const Vec2d dp = end - start;
   const double len = dp.Length();
   if (len == 0) {

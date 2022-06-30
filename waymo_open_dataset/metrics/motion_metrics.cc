@@ -972,7 +972,7 @@ void MeanAveragePrecisionStats::Accumulate(
   if (pr_buckets.empty()) {
     pr_buckets.resize(mean_ap_stats.pr_buckets.size());
   }
-  CHECK_EQ(pr_buckets.size(), mean_ap_stats.pr_buckets.size());
+ /* CHECK_EQ(pr_buckets.size(), mean_ap_stats.pr_buckets.size()); */
   for (int i = 0; i < pr_buckets.size(); ++i) {
     pr_buckets[i].Accumulate(mean_ap_stats.pr_buckets[i]);
   }
@@ -1001,7 +1001,7 @@ std::map<int, MetricsStats> BucketedMetricsStats::AccumulateAcrossTypes() {
 // that for samples with identical confidences the false positives are listed
 // first.
 void SortSamples(std::vector<PredictionSample>* samples_ptr) {
-  CHECK(samples_ptr != nullptr);
+ /* CHECK(samples_ptr != nullptr); */
   std::vector<PredictionSample>& samples = *samples_ptr;
   std::sort(
       samples.begin(), samples.end(),
@@ -1191,7 +1191,7 @@ MotionMetricsConfig GetChallengeConfig() {
   )";
 
   MotionMetricsConfig result;
-  CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &result));
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &result)); */
   return result;
 }
 

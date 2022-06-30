@@ -50,8 +50,8 @@ T Clamp(const T& v, const T& lo, const T& hi) {
 template <typename T>
 bool ClosedRangesOverlap(T min1, T max1, T min2, T max2,
                          T* overlap_min = nullptr, T* overlap_max = nullptr) {
-  CHECK_LE(min1, max1);
-  CHECK_LE(min2, max2);
+ /* CHECK_LE(min1, max1); */
+ /* CHECK_LE(min2, max2); */
   T min = std::max(min1, min2);
   T max = std::min(max1, max2);
   if (overlap_min != nullptr) {
@@ -126,12 +126,12 @@ double ComputeIoU2d(const Label::Box& b1, const Label::Box& b2) {
   const double union_area = p1_area + p2_area - intersection_area;
   if (union_area <= kEpsilon) return 0.0;
   const double iou = intersection_area / union_area;
-  CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
-                          << "\nb2: " << b2.DebugString();
-  CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
-                           << "\nb2: " << b2.DebugString();
-  CHECK_LE(iou, 1.0 + kEpsilon)
-      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
+ /* CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
+                          << "\nb2: " << b2.DebugString(); */
+ /* CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
+                           << "\nb2: " << b2.DebugString(); */
+ /* CHECK_LE(iou, 1.0 + kEpsilon)
+      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString(); */
 
   return std::max(std::min(iou, 1.0), 0.0);
 }
@@ -154,12 +154,12 @@ double ComputeIoUAA2d(const Label::Box& b1, const Label::Box& b2) {
   const double union_area = b1_area + b2_area - intersection_area;
   if (union_area <= kEpsilon) return 0.0;
   const double iou = intersection_area / union_area;
-  CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
-                          << "\nb2: " << b2.DebugString();
-  CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
-                           << "\nb2: " << b2.DebugString();
-  CHECK_LE(iou, 1.0 + kEpsilon)
-      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
+ /* CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
+                          << "\nb2: " << b2.DebugString(); */
+ /* CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
+                           << "\nb2: " << b2.DebugString(); */
+ /* CHECK_LE(iou, 1.0 + kEpsilon)
+      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString(); */
 
   return std::max(std::min(iou, 1.0), 0.0);
 }
@@ -194,12 +194,12 @@ double ComputeIoU3d(const Label::Box& b1, const Label::Box& b2) {
   const double union_volume = b1_volume + b2_volume - intersection_volume;
   if (union_volume <= kEpsilon) return 0.0;
   const double iou = intersection_volume / union_volume;
-  CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
-                          << "\nb2: " << b2.DebugString();
-  CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
-                           << "\nb2: " << b2.DebugString();
-  CHECK_LE(iou, 1.0 + kEpsilon)
-      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
+ /* CHECK(!std::isnan(iou)) << "b1: " << b1.DebugString()
+                          << "\nb2: " << b2.DebugString(); */
+ /* CHECK_GE(iou, -kEpsilon) << "b1: " << b1.DebugString()
+                           << "\nb2: " << b2.DebugString(); */
+ /* CHECK_LE(iou, 1.0 + kEpsilon)
+      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString(); */
 
   return std::max(std::min(iou, 1.0), 0.0);
 }
@@ -325,10 +325,10 @@ double ComputeLetIoU(
     const Config::LongitudinalErrorTolerantConfig::Location3D& sensor_location,
     Config::LongitudinalErrorTolerantConfig::AlignType align_type,
     Label::Box::Type box_type) {
-  CHECK(box_type == Label::Box::TYPE_3D || box_type == Label::Box::TYPE_2D)
+ /* CHECK(box_type == Label::Box::TYPE_3D || box_type == Label::Box::TYPE_2D)
       << "Only TYPE_3D and TYPE_2D boxes are supported in LET IoU, current "
          "type: "
-      << Label::Box::Type_Name(box_type);
+      << Label::Box::Type_Name(box_type); */
   // Transform the boxes into the sensor coordinate system.
   const Label::Box calibrated_prediction_box =
       TranslateBox(prediction_box, -sensor_location.x(), -sensor_location.y(),

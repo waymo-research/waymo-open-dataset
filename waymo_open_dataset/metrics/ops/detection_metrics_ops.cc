@@ -144,14 +144,14 @@ class DetectionMetricsOp final : public OpKernel {
         output.breakdown.matrix<uint8>()(i, 2) =
             metrics[i].breakdown().difficulty_level();
 
-        CHECK_EQ(metrics[i].precisions_size(), num_score_cutoffs);
-        CHECK_EQ(metrics[i].recalls_size(), num_score_cutoffs);
-        CHECK_EQ(metrics[i].precisions_ha_weighted_size(), num_score_cutoffs);
-        CHECK_EQ(metrics[i].recalls_ha_weighted_size(), num_score_cutoffs);
-        CHECK_EQ(metrics[i].precisions_longitudinal_affinity_weighted_size(),
-                 num_score_cutoffs);
-        CHECK_EQ(metrics[i].recalls_longitudinal_affinity_weighted_size(),
-                 num_score_cutoffs);
+       /* CHECK_EQ(metrics[i].precisions_size(), num_score_cutoffs); */
+       /* CHECK_EQ(metrics[i].recalls_size(), num_score_cutoffs); */
+       /* CHECK_EQ(metrics[i].precisions_ha_weighted_size(), num_score_cutoffs); */
+       /* CHECK_EQ(metrics[i].recalls_ha_weighted_size(), num_score_cutoffs); */
+       /* CHECK_EQ(metrics[i].precisions_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs); */
+       /* CHECK_EQ(metrics[i].recalls_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs); */
         for (int j = 0; j < num_score_cutoffs; ++j) {
           output.precision_recall.tensor<float, 3>()(i, j, 0) =
               metrics[i].precisions(j);

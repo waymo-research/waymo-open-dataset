@@ -83,9 +83,6 @@ def encode_semantic_and_instance_labels_to_panoptic_label(
   Encoding uses the equation:
   panoptic_label = semantic_label * panoptic_label_divisor + instance_label
 
-  Note that the output of this function will be cast to uint32 to prevent
-  overflow issues.
-
   Args:
     semantic_label: A 2D numpy array containing the semantic class for each
       pixel.
@@ -93,12 +90,10 @@ def encode_semantic_and_instance_labels_to_panoptic_label(
     panoptic_label_divisor: An int specifying the separation between semantic
       classes. Must be greater than the maximum instance ID.
   Returns:
-    A 2D uint32 numpy array containing the panoptic label for each pixel.
+    A 2D numpy array containing the panoptic label for each pixel.
   """
   return np.add(
-      np.multiply(np.array(semantic_label).astype(np.uint32),
-                  panoptic_label_divisor),
-      np.array(instance_label).astype(np.uint32))
+      np.multiply(semantic_label, panoptic_label_divisor), instance_label)
 
 
 def _remap_global_ids(

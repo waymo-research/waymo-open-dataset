@@ -42,7 +42,7 @@ class Polygon2d {
   // Create a polygon from the given box.
   explicit Polygon2d(const Box2d &box) {
     box.GetCornersInVectorCounterClockwise(&points_);
-    CHECK_EQ(points_.size(), 4);
+   /* CHECK_EQ(points_.size(), 4); */
     BuildFromPoints();
   }
 

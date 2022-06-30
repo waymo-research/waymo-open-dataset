@@ -117,22 +117,22 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
     const absl::optional<const tensorflow::Tensor>& detection_difficulty,
     const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
     const absl::optional<const tensorflow::Tensor>& object_speed) {
-  CHECK_EQ(bbox.dim_size(0), type.dim_size(0));
-  CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0));
+ /* CHECK_EQ(bbox.dim_size(0), type.dim_size(0)); */
+ /* CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0)); */
   if (score.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), score.value().dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), score.value().dim_size(0)); */
   }
   if (overlap_nlz.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), overlap_nlz->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), overlap_nlz->dim_size(0)); */
   }
   if (detection_difficulty.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), detection_difficulty->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), detection_difficulty->dim_size(0)); */
   }
   if (tracking_difficulty.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0)); */
   }
   if (object_speed.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0)); */
   }
 
   absl::flat_hash_map<int64, std::vector<Object>> objects;
@@ -180,24 +180,24 @@ ParseObjectGroupedBySequenceFromTensors(
     const absl::optional<const tensorflow::Tensor>& detection_difficulty,
     const absl::optional<const tensorflow::Tensor>& tracking_difficulty,
     const absl::optional<const tensorflow::Tensor>& object_speed) {
-  CHECK_EQ(bbox.dim_size(0), type.dim_size(0));
-  CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0));
-  CHECK_EQ(bbox.dim_size(0), sequence_id.dim_size(0));
-  CHECK_EQ(bbox.dim_size(0), object_id.dim_size(0));
+ /* CHECK_EQ(bbox.dim_size(0), type.dim_size(0)); */
+ /* CHECK_EQ(bbox.dim_size(0), frame_id.dim_size(0)); */
+ /* CHECK_EQ(bbox.dim_size(0), sequence_id.dim_size(0)); */
+ /* CHECK_EQ(bbox.dim_size(0), object_id.dim_size(0)); */
   if (score.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), score.value().dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), score.value().dim_size(0)); */
   }
   if (overlap_nlz.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), overlap_nlz->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), overlap_nlz->dim_size(0)); */
   }
   if (detection_difficulty.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), detection_difficulty->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), detection_difficulty->dim_size(0)); */
   }
   if (tracking_difficulty.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), tracking_difficulty->dim_size(0)); */
   }
   if (object_speed.has_value()) {
-    CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0));
+   /* CHECK_EQ(bbox.dim_size(0), object_speed->dim_size(0)); */
   }
 
   // Map of sequence ids to (map of frame ids to list of objects in that frame).
@@ -270,15 +270,15 @@ ParseScenarioAndPredictonsFromTensors(
     const tensorflow::Tensor& pred_gt_indices_mask,
     const tensorflow::Tensor& object_type, const tensorflow::Tensor& object_id,
     const tensorflow::Tensor& scenario_id) {
-  CHECK_EQ(pred_trajectory.dims(), 6);
-  CHECK_EQ(pred_score.dims(), 3);
-  CHECK_EQ(gt_trajectory.dims(), 4);
-  CHECK_EQ(gt_is_valid.dims(), 3);
-  CHECK_EQ(pred_gt_indices.dims(), 3);
-  CHECK_EQ(pred_gt_indices_mask.dims(), 3);
-  CHECK_EQ(object_type.dims(), 2);
-  CHECK_EQ(object_id.dims(), 2);
-  CHECK_EQ(scenario_id.dims(), 1);
+ /* CHECK_EQ(pred_trajectory.dims(), 6); */
+ /* CHECK_EQ(pred_score.dims(), 3); */
+ /* CHECK_EQ(gt_trajectory.dims(), 4); */
+ /* CHECK_EQ(gt_is_valid.dims(), 3); */
+ /* CHECK_EQ(pred_gt_indices.dims(), 3); */
+ /* CHECK_EQ(pred_gt_indices_mask.dims(), 3); */
+ /* CHECK_EQ(object_type.dims(), 2); */
+ /* CHECK_EQ(object_id.dims(), 2); */
+ /* CHECK_EQ(scenario_id.dims(), 1); */
 
   const int batch_size = pred_trajectory.dim_size(0);
   const int num_pred_groups = pred_trajectory.dim_size(1);
@@ -288,25 +288,25 @@ ParseScenarioAndPredictonsFromTensors(
   const int num_total_agents = gt_trajectory.dim_size(1);
   const int num_gt_steps = gt_trajectory.dim_size(2);
 
-  CHECK_EQ(pred_score.dim_size(0), batch_size);
-  CHECK_EQ(pred_score.dim_size(1), num_pred_groups);
-  CHECK_EQ(pred_score.dim_size(2), top_k);
-  CHECK_EQ(gt_trajectory.dim_size(0), batch_size);
-  CHECK_EQ(gt_trajectory.dim_size(3), 7);
-  CHECK_EQ(gt_is_valid.dim_size(0), batch_size);
-  CHECK_EQ(gt_is_valid.dim_size(1), num_total_agents);
-  CHECK_EQ(gt_is_valid.dim_size(2), num_gt_steps);
-  CHECK_EQ(pred_gt_indices.dim_size(0), batch_size);
-  CHECK_EQ(pred_gt_indices.dim_size(1), num_pred_groups);
-  CHECK_EQ(pred_gt_indices.dim_size(2), num_agents_per_group);
-  CHECK_EQ(pred_gt_indices_mask.dim_size(0), batch_size);
-  CHECK_EQ(pred_gt_indices_mask.dim_size(1), num_pred_groups);
-  CHECK_EQ(pred_gt_indices_mask.dim_size(2), num_agents_per_group);
-  CHECK_EQ(object_type.dim_size(0), batch_size);
-  CHECK_EQ(object_type.dim_size(1), num_total_agents);
-  CHECK_EQ(scenario_id.dim_size(0), batch_size);
-  CHECK_EQ(object_id.dim_size(0), batch_size);
-  CHECK_EQ(object_id.dim_size(1), num_total_agents);
+ /* CHECK_EQ(pred_score.dim_size(0), batch_size); */
+ /* CHECK_EQ(pred_score.dim_size(1), num_pred_groups); */
+ /* CHECK_EQ(pred_score.dim_size(2), top_k); */
+ /* CHECK_EQ(gt_trajectory.dim_size(0), batch_size); */
+ /* CHECK_EQ(gt_trajectory.dim_size(3), 7); */
+ /* CHECK_EQ(gt_is_valid.dim_size(0), batch_size); */
+ /* CHECK_EQ(gt_is_valid.dim_size(1), num_total_agents); */
+ /* CHECK_EQ(gt_is_valid.dim_size(2), num_gt_steps); */
+ /* CHECK_EQ(pred_gt_indices.dim_size(0), batch_size); */
+ /* CHECK_EQ(pred_gt_indices.dim_size(1), num_pred_groups); */
+ /* CHECK_EQ(pred_gt_indices.dim_size(2), num_agents_per_group); */
+ /* CHECK_EQ(pred_gt_indices_mask.dim_size(0), batch_size); */
+ /* CHECK_EQ(pred_gt_indices_mask.dim_size(1), num_pred_groups); */
+ /* CHECK_EQ(pred_gt_indices_mask.dim_size(2), num_agents_per_group); */
+ /* CHECK_EQ(object_type.dim_size(0), batch_size); */
+ /* CHECK_EQ(object_type.dim_size(1), num_total_agents); */
+ /* CHECK_EQ(scenario_id.dim_size(0), batch_size); */
+ /* CHECK_EQ(object_id.dim_size(0), batch_size); */
+ /* CHECK_EQ(object_id.dim_size(1), num_total_agents); */
 
   absl::flat_hash_map<std::string, std::pair<Scenario, ScenarioPredictions>>
       results;
@@ -360,12 +360,12 @@ ParseScenarioAndPredictonsFromTensors(
           pred_group_valid[m] = true;
 
           int64 gt_index = pred_gt_indices.tensor<int64, 3>()(i, m, n);
-          CHECK_GE(gt_index, 0);
-          CHECK_LT(gt_index, num_total_agents);
+         /* CHECK_GE(gt_index, 0); */
+         /* CHECK_LT(gt_index, num_total_agents); */
           // Get the track index for that ground truth agent.
           int64 track_index = gt_idx_to_track_idx[gt_index];
-          CHECK_GE(track_index, 0);
-          CHECK_LT(track_index, scenario->tracks_size());
+         /* CHECK_GE(track_index, 0); */
+         /* CHECK_LT(track_index, scenario->tracks_size()); */
           RequiredPrediction& required_track =
               *scenario->add_tracks_to_predict();
           required_track.set_track_index(track_index);
@@ -395,12 +395,12 @@ ParseScenarioAndPredictonsFromTensors(
           if (pred_gt_indices_mask.tensor<bool, 3>()(i, m, j)) {
             auto new_trajectory = joint_prediction->add_trajectories();
             int64 gt_index = pred_gt_indices.tensor<int64, 3>()(i, m, j);
-            CHECK_GE(gt_index, 0);
-            CHECK_LT(gt_index, num_total_agents);
+           /* CHECK_GE(gt_index, 0); */
+           /* CHECK_LT(gt_index, num_total_agents); */
             // Get the track index for that ground truth agent.
             int64 track_index = gt_idx_to_track_idx[gt_index];
-            CHECK_GE(track_index, 0);
-            CHECK_LT(track_index, scenario->tracks_size());
+           /* CHECK_GE(track_index, 0); */
+           /* CHECK_LT(track_index, scenario->tracks_size()); */
 
             new_trajectory->set_object_id(scenario->tracks(track_index).id());
             for (int t = 0; t < num_pred_steps; ++t) {

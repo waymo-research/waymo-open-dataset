@@ -45,7 +45,7 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
     const std::vector<std::vector<internal::BreakdownShardSubset>>& gt_subsets,
     int breakdown_shard_index,
     std::vector<std::unique_ptr<Matcher>>* matcher_ptrs) {
-  CHECK(matcher_ptrs != nullptr);
+ /* CHECK(matcher_ptrs != nullptr); */
   std::vector<std::unique_ptr<Matcher>>& matchers = *matcher_ptrs;
   const int num_frames = pd_subsets.size();
   if (num_frames <= 0) return {};
@@ -92,7 +92,7 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
 // Merges two tracking measurements.
 TrackingMeasurement MergeTrackingMeasurement(const TrackingMeasurement& m1,
                                              const TrackingMeasurement& m2) {
-  CHECK_EQ(m1.score_cutoff(), m2.score_cutoff());
+ /* CHECK_EQ(m1.score_cutoff(), m2.score_cutoff()); */
   TrackingMeasurement m;
 #define ADD_FIELD(FIELD_NAME) \
   m.set_##FIELD_NAME(m1.FIELD_NAME() + m2.FIELD_NAME())
@@ -110,18 +110,18 @@ TrackingMeasurement MergeTrackingMeasurement(const TrackingMeasurement& m1,
 // Merges new_m to m element by element.
 void MergeTrackingMeasurements(const TrackingMeasurements& new_m,
                                TrackingMeasurements* m) {
-  CHECK(m != nullptr);
+ /* CHECK(m != nullptr); */
   if (m->measurements_size() == 0) {
     *m = new_m;
     return;
   }
-  CHECK_EQ(m->measurements_size(), new_m.measurements_size());
-  CHECK_EQ(m->breakdown().generator_id(), new_m.breakdown().generator_id());
-  CHECK_EQ(m->breakdown().shard(), new_m.breakdown().shard());
-  CHECK_EQ(m->breakdown().difficulty_level(),
-           new_m.breakdown().difficulty_level());
+ /* CHECK_EQ(m->measurements_size(), new_m.measurements_size()); */
+ /* CHECK_EQ(m->breakdown().generator_id(), new_m.breakdown().generator_id()); */
+ /* CHECK_EQ(m->breakdown().shard(), new_m.breakdown().shard()); */
+ /* CHECK_EQ(m->breakdown().difficulty_level(),
+           new_m.breakdown().difficulty_level()); */
 
-  CHECK_EQ(m->measurements_size(), new_m.measurements_size());
+ /* CHECK_EQ(m->measurements_size(), new_m.measurements_size()); */
   for (int i = 0, sz = m->measurements_size(); i < sz; ++i) {
     *m->mutable_measurements(i) =
         MergeTrackingMeasurement(m->measurements(i), new_m.measurements(i));
@@ -132,7 +132,7 @@ void MergeTrackingMeasurements(const TrackingMeasurements& new_m,
 void MergeTrackingMeasurementsVector(
     const std::vector<TrackingMeasurements>& new_m,
     std::vector<TrackingMeasurements>* m) {
-  CHECK(m != nullptr);
+ /* CHECK(m != nullptr); */
   if (m->empty()) {
     *m = new_m;
     return;
@@ -140,7 +140,7 @@ void MergeTrackingMeasurementsVector(
   if (new_m.empty()) {
     return;
   }
-  CHECK_EQ(new_m.size(), m->size());
+ /* CHECK_EQ(new_m.size(), m->size()); */
   for (int i = 0, sz = m->size(); i < sz; ++i) {
     MergeTrackingMeasurements(new_m[i], &(*m)[i]);
   }
@@ -194,7 +194,7 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurements(
   // Create one matcher per frame.
   std::vector<std::unique_ptr<Matcher>> matchers;
   const int num_frames = pds.size();
-  CHECK_EQ(num_frames, gts.size());
+ /* CHECK_EQ(num_frames, gts.size()); */
 
   matchers.reserve(num_frames);
   for (int i = 0; i < num_frames; ++i) {
@@ -230,8 +230,8 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurements(
     }
 
     // Subsets in every frame must have the same size.
-    CHECK_EQ(num_breakdown_shards, pd_subsets[i].size());
-    CHECK_EQ(num_breakdown_shards, gt_subsets[i].size());
+   /* CHECK_EQ(num_breakdown_shards, pd_subsets[i].size()); */
+   /* CHECK_EQ(num_breakdown_shards, gt_subsets[i].size()); */
   }
 
   std::vector<TrackingMeasurements> measurements;
@@ -291,12 +291,12 @@ Config EstimateScoreCutoffs(
     const Config& config,
     const std::vector<std::vector<std::vector<Object>>>& pds,
     const std::vector<std::vector<std::vector<Object>>>& gts) {
-  CHECK_EQ(pds.size(), gts.size());
+ /* CHECK_EQ(pds.size(), gts.size()); */
   const int num_scenes = pds.size();
   if (num_scenes == 0) return {};
   Config config_copy(config);
   if (config.score_cutoffs_size() == 0) {
-    CHECK_GT(config.num_desired_score_cutoffs(), 0);
+   /* CHECK_GT(config.num_desired_score_cutoffs(), 0); */
     std::vector<float> pd_scores;
     for (int scene_idx = 0; scene_idx < num_scenes; ++scene_idx) {
       const int num_frames = pds[scene_idx].size();

@@ -4,10 +4,6 @@ We have released the Waymo Open Dataset publicly to aid the research community i
 
 The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 2,030 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
 
-## December 2022 Update
-We released v1.4.1 of the Perception dataset.
-- Improved the quality of the 2D video panoptic segmentation labels.
-
 ## June 2022 Update
 We released v1.4.0 of the Perception dataset.
  - Added 2D video panoptic segmentation labels and supporting code.

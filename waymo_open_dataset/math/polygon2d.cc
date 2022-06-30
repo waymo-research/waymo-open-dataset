@@ -130,7 +130,7 @@ void RemoveConsecutiveDuplicatePoints(std::vector<Vec2d>* points) {
 }  // namespace
 
 Polygon2d::Polygon2d(std::vector<Vec2d> points) : points_(std::move(points)) {
-  CHECK_GT(points_.size(), 2);
+ /* CHECK_GT(points_.size(), 2); */
   bool counter_clockwise = true;
   DCHECK(IsConvexHull(points_, &counter_clockwise))
       << "Is counter clockwise? " << counter_clockwise
@@ -143,7 +143,7 @@ Polygon2d::Polygon2d(std::vector<Vec2d> points) : points_(std::move(points)) {
 
 void Polygon2d::BuildFromPoints() {
   // Note: This function assumes that the input points_ vector is non empty.
-  CHECK_GT(points_.size(), 0);
+ /* CHECK_GT(points_.size(), 0); */
   // In case of the polygon has zero area, create some fake points to make sure
   // num_points >= 3, but most member functions are not guaranteed to be working
   // as expected.
@@ -438,7 +438,7 @@ bool Polygon2d::MaybeHasIntersectionWith(const Polygon2d& other) const {
 
 void Polygon2d::AxisAlignedBoundingBox(Vec2d* bottom_left,
                                        Vec2d* top_right) const {
-  CHECK_GT(num_points_, 2);
+ /* CHECK_GT(num_points_, 2); */
   Vec2d min_point = points_[0];
   Vec2d max_point = points_[0];
   for (int i = 1, n = points_.size(); i < n; ++i) {

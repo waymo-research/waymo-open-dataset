@@ -406,7 +406,7 @@ class PercentageOfCorrectKeypoints(KeypointsMetric):
     update_ops = []
     for threshold in self._thresholds:
       is_correct = tf.cast(
-          position_error <= self._keypoint_threshold(box, threshold),
+          position_error <= self._keypoint_threshold(box, threshold),  # pytype: disable=wrong-arg-types  # dynamic-method-lookup
           tf.float32)
       weights = _masked_weights(gt.mask, sample_weight)
       pck = self._pck_wrapper.by_key[threshold]
@@ -469,7 +469,7 @@ class MetricForSubsets(KeypointsMetric):
       metric = self._metric_by_subset[subset]
       # TODO(gorban): support per_type_weights
       update_ops.extend(
-          metric.update_state([gt_subset, pr_subset, box],
+          metric.update_state([gt_subset, pr_subset, box],  # pytype: disable=wrong-arg-types  # dynamic-method-lookup
                               sample_weight=sample_weight))
     return update_ops
 
@@ -503,7 +503,7 @@ class CombinedMetric(KeypointsMetric):
     update_ops = []
     for m in self._child_metrics:
       update_ops.extend(
-          m.update_state([gt, pr, box], sample_weight=sample_weight))
+          m.update_state([gt, pr, box], sample_weight=sample_weight))  # pytype: disable=wrong-arg-types  # dynamic-method-lookup
     return update_ops
 
   def _result(self):
