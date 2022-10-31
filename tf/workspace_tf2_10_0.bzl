@@ -6,12 +6,9 @@ def load_tf_version_specific_dependencies():
     """Load TF version specific dependencies."""
     http_archive(
         name = "com_google_absl",
-        sha256 = "a6be76f59c474a215f2df5116b312257462e97f2e38b2bfa6df8b6a55710b058",
-        strip_prefix = "abseil-cpp-8c0b94e793a66495e0b1f34a5eb26bd7dc672db0",
-        urls = [
-            "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/8c0b94e793a66495e0b1f34a5eb26bd7dc672db0.tar.gz",
-            "https://github.com/abseil/abseil-cpp/archive/8c0b94e793a66495e0b1f34a5eb26bd7dc672db0.tar.gz",
-        ],
+        sha256 = "aabf6c57e3834f8dc3873a927f37eaf69975d4b28117fc7427dfb1c661542a87"
+        strip_prefix = "abseil-cpp-98eb410c93ad059f9bba1bf43f5bb916fc92a5ea",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/98eb410c93ad059f9bba1bf43f5bb916fc92a5ea.zip"],
     )
 
     http_archive(
