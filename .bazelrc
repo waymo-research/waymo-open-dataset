@@ -1,5 +1,5 @@
 build -c opt
-build --cxxopt="-std=c++17"
+build --cxxopt="-std=c++14"
 build --auto_output_filter=subpackages
 build --copt="-Wall" --copt="-Wno-sign-compare"
 build --linkopt="-lrt -lm"
