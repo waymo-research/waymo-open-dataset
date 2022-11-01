@@ -42,7 +42,7 @@ function write_action_env_to_bazelrc() {
 [ -e .bazelrc ] && rm .bazelrc
 
 write_to_bazelrc "build -c opt"
-write_to_bazelrc 'build --cxxopt="-std=c++14"'
+write_to_bazelrc 'build --cxxopt="-std=c++17"'
 write_to_bazelrc 'build --auto_output_filter=subpackages'
 write_to_bazelrc 'build --copt="-Wall" --copt="-Wno-sign-compare"'
 write_to_bazelrc 'build --linkopt="-lrt -lm"'
