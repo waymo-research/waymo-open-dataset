@@ -36,11 +36,11 @@ http_archive(
 
 http_archive(
     name = "boringssl",
-    sha256 = "8cb8a81a4fb9d4d50c030042e7cd2fb2030d266df67c2be8ed82fc2393ca22e6",
-    strip_prefix = "boringssl-054a5d36bb4df09f4ecf62f6ddeb2439aa76d4ba",
+    sha256 = "1c5c5bca468c2bc98d02a035f9e10171cdcbd47b8e517a5e06ec9e0fae8bf983",
+    strip_prefix = "boringssl-3ccef042c8390706182b81141c5fdd7dfebcfab8",
     urls = [
-        "http://mirror.tensorflow.org/github.com/google/boringssl/archive/054a5d36bb4df09f4ecf62f6ddeb2439aa76d4ba.tar.gz",
-        "https://github.com/google/boringssl/archive/054a5d36bb4df09f4ecf62f6ddeb2439aa76d4ba.tar.gz",
+        "http://mirror.tensorflow.org/github.com/google/boringssl/archive/3ccef042c8390706182b81141c5fdd7dfebcfab8.tar.gz",
+        "https://github.com/google/boringssl/archive/3ccef042c8390706182b81141c5fdd7dfebcfab8.tar.gz",
     ],
 )
 
