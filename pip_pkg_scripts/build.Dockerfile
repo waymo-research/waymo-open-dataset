@@ -15,7 +15,7 @@ RUN apt-get update
 RUN apt-get install -y apt-utils
 RUN apt-get install -y build-essential checkinstall libreadline-gplv2-dev libncursesw5-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libssl-dev zlib1g-dev openssl libffi-dev
 
-RUN for v in 3.7.12 3.8.12 3.9.10 3.10.7; do \
+RUN for v in 3.7.12 3.8.12 3.9.10; do \
     wget "https://www.python.org/ftp/python/$v/Python-${v}.tar.xz" && \
     tar xvf "Python-${v}.tar.xz" -C /tmp/python && \
     cd "/tmp/python/Python-${v}" && \
