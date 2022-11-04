@@ -3,7 +3,7 @@ FROM tensorflow/tensorflow:custom-op-ubuntu16
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
-ENV TF_VERSION="2.6.0"
+ENV TF_VERSION="2.10.0"
 RUN wget https://github.com/bazelbuild/bazel/releases/download/4.0.0/bazel-4.0.0-installer-linux-x86_64.sh > /dev/null
 RUN bash bazel-4.0.0-installer-linux-x86_64.sh
 # There are some problems with the python3 installation from custom-op-ubuntu16.
@@ -20,7 +20,7 @@ RUN apt-get update
 RUN apt-get install -y apt-utils
 RUN apt-get install -y build-essential checkinstall libreadline-gplv2-dev libncursesw5-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libssl-dev zlib1g-dev openssl libffi-dev
 
-RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10; do \
+RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10 3.10.7; do \
     wget "https://www.python.org/ftp/python/$v/Python-${v}.tar.xz" && \
     tar xvf "Python-${v}.tar.xz" -C /tmp/python && \
     cd "/tmp/python/Python-${v}" && \
@@ -31,7 +31,7 @@ RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10; do \
 
 RUN apt-get install -y libopenexr-dev
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-RUN for python in python3.6 python3.7 python3.8 python3.9; do \
+RUN for python in python3.6 python3.7 python3.8 python3.9 python3.10; do \
       $python get-pip.py && \
       $python -m pip install --upgrade pip setuptools auditwheel && \
       $python -m pip install --upgrade grpcio>=1.24.3; \
