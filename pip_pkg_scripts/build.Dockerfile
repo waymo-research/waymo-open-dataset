@@ -1,16 +1,11 @@
-FROM tensorflow/tensorflow:custom-op-ubuntu16
+FROM tensorflow/tensorflow:2.3.0-custom-op-gpu-ubuntu16
 
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
-ENV TF_VERSION="2.6.0"
-RUN wget https://github.com/bazelbuild/bazel/releases/download/4.0.0/bazel-4.0.0-installer-linux-x86_64.sh > /dev/null
-RUN bash bazel-4.0.0-installer-linux-x86_64.sh
-# There are some problems with the python3 installation from custom-op-ubuntu16.
-# Remove it and install new ones.
-RUN apt-get remove --purge -y python3.5 python3.6
-RUN rm -f /etc/apt/sources.list.d/jonathonf-ubuntu-python-3_6-xenial.list
-RUN apt-key del F06FC659
+ENV TF_VERSION="2.11.0"
+RUN wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-installer-linux-x86_64.sh > /dev/null
+RUN bash bazel-5.3.2-installer-linux-x86_64.sh
 
 # Deadsnakes PPA no longer supports 16.04
 # https://github.com/deadsnakes/issues/issues/195
@@ -20,7 +15,11 @@ RUN apt-get update
 RUN apt-get install -y apt-utils
 RUN apt-get install -y build-essential checkinstall libreadline-gplv2-dev libncursesw5-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libssl-dev zlib1g-dev openssl libffi-dev
 
-RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10; do \
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN apt-get update
+RUN apt-get install
+
+RUN for v in 3.7.12 3.8.12 3.9.10; do \
     wget "https://www.python.org/ftp/python/$v/Python-${v}.tar.xz" && \
     tar xvf "Python-${v}.tar.xz" -C /tmp/python && \
     cd "/tmp/python/Python-${v}" && \
@@ -31,7 +30,7 @@ RUN for v in 3.6.15 3.7.12 3.8.12 3.9.10; do \
 
 RUN apt-get install -y libopenexr-dev
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-RUN for python in python3.6 python3.7 python3.8 python3.9; do \
+RUN for python in python3.7 python3.8 python3.9; do \
       $python get-pip.py && \
       $python -m pip install --upgrade pip setuptools auditwheel && \
       $python -m pip install --upgrade grpcio>=1.24.3; \

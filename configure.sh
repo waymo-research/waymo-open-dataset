@@ -42,7 +42,7 @@ function write_action_env_to_bazelrc() {
 [ -e .bazelrc ] && rm .bazelrc
 
 write_to_bazelrc "build -c opt"
-write_to_bazelrc 'build --cxxopt="-std=c++11"'
+write_to_bazelrc 'build --cxxopt="-std=c++17"'
 write_to_bazelrc 'build --auto_output_filter=subpackages'
 write_to_bazelrc 'build --copt="-Wall" --copt="-Wno-sign-compare"'
 write_to_bazelrc 'build --linkopt="-lrt -lm"'
@@ -51,7 +51,7 @@ TF_NEED_CUDA=0
 # Check if it's installed
 TF_CFLAGS=""
 TF_LFLAGS=""
-if ${PIP} list | grep "tensorflow \|tensorflow-gpu\|tensorflow-cpu\|tf-nightly" >/dev/null ; then
+if ${PIP} list | grep "tensorflow \|tensorflow-gpu\|tensorflow-cpu\|tf-nightly\|tensorflow-metal" >/dev/null ; then
   echo 'Using installed tensorflow'
   TF_CFLAGS=( $(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))') )
   TF_LFLAGS="$(${PYTHON} -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_link_flags()))')"
@@ -82,16 +82,18 @@ if [[ "$PIP_MANYLINUX2010" == "1" ]]; then
   write_to_bazelrc "test --config=manylinux2010"
 fi
 
-export TF_VERSION="${TF_VERSION:-2.5.0}"
+export TF_VERSION="${TF_VERSION:-2.11.0}"
 export TF_VERSION_UNDERSCORE=$(echo $TF_VERSION | sed 's/\./_/g')
 export TF_VERSION_DASH=$(echo $TF_VERSION | sed 's/\./-/g')
 
 cat WORKSPACE.in | sed "s/TF_VERSION/${TF_VERSION_UNDERSCORE}/" > WORKSPACE
 cat pip_pkg_scripts/setup.py.in | sed "s/TF_VERSION/${TF_VERSION_DASH}/" > pip_pkg_scripts/setup.py
 
-if [[ ${TF_VERSION} == '1.14.0' ]]; then
-  write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"'
-else
-  write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0"'
-fi
-
+case "$TF_VERSION" in
+  1.14.0 | 2.9.* | 2.10.* | 2.11.*)
+    write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=1"'
+    ;;
+  *)
+    write_to_bazelrc 'build --cxxopt="-D_GLIBCXX_USE_CXX11_ABI=0"'
+    ;;
+esac
