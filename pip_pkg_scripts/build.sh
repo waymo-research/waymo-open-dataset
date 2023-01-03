@@ -25,7 +25,7 @@ set -e -x
 export PYTHON_VERSION="${PYTHON_VERSION:-3}"
 export PYTHON_MINOR_VERSION="${PYTHON_MINOR_VERSION}"
 export PIP_MANYLINUX2010="${PIP_MANYLINUX2010:-0}"
-export TF_VERSION="${TF_VERSION:-2.10.0}"
+export TF_VERSION="${TF_VERSION:-2.11.0}"
 
 if [[ -z "${PYTHON_MINOR_VERSION}" ]]; then
   PYTHON="python${PYTHON_VERSION}"
@@ -53,6 +53,9 @@ case "$TF_VERSION" in
     ;;
   2.10.*)
     export KERAS_VERSION='2.10.0'
+    ;;
+  2.11.*)
+    export KERAS_VERSION='2.11.0'
     ;;
   *)
     export KERAS_VERSION='nightly'

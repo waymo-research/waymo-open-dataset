@@ -3,7 +3,7 @@ FROM tensorflow/tensorflow:2.3.0-custom-op-gpu-ubuntu16
 ENV PYTHON_VERSION="3"
 ENV PYTHON_MINOR_VERSION=""
 ENV PIP_MANYLINUX2010="1"
-ENV TF_VERSION="2.10.0"
+ENV TF_VERSION="2.11.0"
 RUN wget https://github.com/bazelbuild/bazel/releases/download/5.3.2/bazel-5.3.2-installer-linux-x86_64.sh > /dev/null
 RUN bash bazel-5.3.2-installer-linux-x86_64.sh
 
@@ -14,6 +14,10 @@ RUN mkdir /tmp/python
 RUN apt-get update
 RUN apt-get install -y apt-utils
 RUN apt-get install -y build-essential checkinstall libreadline-gplv2-dev libncursesw5-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev libssl-dev zlib1g-dev openssl libffi-dev
+
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN apt-get update
+RUN apt-get install
 
 RUN for v in 3.7.12 3.8.12 3.9.10; do \
     wget "https://www.python.org/ftp/python/$v/Python-${v}.tar.xz" && \

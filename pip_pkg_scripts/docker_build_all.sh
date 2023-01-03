@@ -21,7 +21,7 @@ mkdir /tmp/artifacts | true
 mkdir /tmp/artifacts_all | true
 
 for pyv in 7 8 9 10; do
-  for tfv in 10; do
+  for tfv in 11; do
     docker run --mount type=bind,source=/tmp/artifacts,target=/tmp/artifacts -e "PYTHON_VERSION=3" -e "PYTHON_MINOR_VERSION=${pyv}" -e "PIP_MANYLINUX2010=1" -e "TF_VERSION=2.${tfv}.0" open_dataset_pip
     cp -f /tmp/artifacts/* /tmp/artifacts_all
   done
