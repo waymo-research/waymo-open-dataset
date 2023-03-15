@@ -54,7 +54,7 @@ class MotionMetricsEstimatorTest(tf.test.TestCase):
     gt_scenario_id = ['test']
     gt_object_id = [[1, 2]]
     gt_object_type = [[1, 1]]
-    gt_is_valid = np.ones([1, 2, 5], dtype=np.bool)
+    gt_is_valid = np.ones([1, 2, 5], dtype=bool)
     gt_trajectory = np.reshape([[[2, 2, 1, 1, 0.78539816, 20.0, 20.0],
                                  [4, 4, 1, 1, 0.78539816, 20.0, 20.0],
                                  [6, 6, 1, 1, 0.78539816, 20.0, 20.0],

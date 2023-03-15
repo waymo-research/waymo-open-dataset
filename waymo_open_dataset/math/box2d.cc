@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// Copyright 2009 Google Inc. All Rights Reserved.
+
 #include "waymo_open_dataset/math/box2d.h"
 
 #include <float.h>

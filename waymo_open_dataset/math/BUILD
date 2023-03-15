@@ -1,11 +1,11 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
-
+licenses(["notice"])
 # Libs
 
 cc_library(
@@ -40,7 +40,6 @@ cc_library(
     hdrs = ["exactfloat.h"],
 
     deps = [
-        "//waymo_open_dataset/common:integral_types",
         "@boringssl//:crypto",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:fixed_array",
@@ -97,6 +96,14 @@ cc_library(
 )
 
 cc_library(
+    name = "vec3d",
+    hdrs = [
+        "vec3d.h",
+    ],
+
+)
+
+cc_library(
     name = "vec2d",
     srcs = [
         "vec2d.h",
@@ -140,7 +147,6 @@ cc_test(
     srcs = ["exactfloat_test.cc"],
     deps = [
         ":exactfloat",
-        "//waymo_open_dataset/common:integral_types",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_glog//:glog",
@@ -164,6 +170,16 @@ cc_test(
     srcs = ["vec2d_test.cc"],
     deps = [
         ":vec2d",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "vec3d_test",
+    srcs = ["vec3d_test.cc"],
+    deps = [
+        ":vec3d",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],

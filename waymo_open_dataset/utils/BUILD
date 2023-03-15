@@ -1,10 +1,11 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 exports_files(["BUILD"])
 
@@ -16,13 +17,6 @@ py_library(
     deps = [
         ":transform_utils",
         "//waymo_open_dataset:label_proto_py_pb2",
-    ],
-)
-
-filegroup(
-    name = "occupancy_flow_test_data",
-    srcs = [
-        "testdata/motion_data_one_example.tfrecord",
     ],
 )
 
@@ -67,7 +61,7 @@ py_library(
     name = "occupancy_flow_test_util",
     srcs = ["occupancy_flow_test_util.py"],
     data = [
-        ":occupancy_flow_test_data",
+        "//waymo_open_dataset/utils/testdata:motion_dataset_test_data",
     ],
     deps = [
         ":occupancy_flow_data",
@@ -95,7 +89,13 @@ py_library(
     name = "test_utils",
     testonly = 1,
     srcs = ["test_utils.py"],
-    deps = [":transform_utils"],
+    data = [
+        "//waymo_open_dataset/utils/testdata:motion_dataset_test_data",
+    ],
+    deps = [
+        ":transform_utils",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
 )
 
 py_library(
@@ -114,7 +114,9 @@ py_library(
     deps = [
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
+        "//waymo_open_dataset/protos:box_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/protos:vector_proto_py_pb2",
     ],
 )
 
@@ -129,12 +131,19 @@ py_library(
 )
 
 py_library(
+    name = "plot_maps",
+    srcs = ["plot_maps.py"],
+    deps = ["//waymo_open_dataset/protos:map_proto_py_pb2"],
+)
+
+py_library(
     name = "keypoint_test_util",
     testonly = True,
     srcs = ["keypoint_test_util.py"],
     deps = [
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/protos:vector_proto_py_pb2",
     ],
 )
 
@@ -144,6 +153,33 @@ py_library(
     deps = [
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
+    ],
+)
+
+py_library(
+    name = "trajectory_utils",
+    srcs = ["trajectory_utils.py"],
+    deps = [
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+        "//waymo_open_dataset/protos:sim_agents_submission_proto_py_pb2",
+    ],
+)
+
+py_library(
+    name = "geometry_utils",
+    srcs = ["geometry_utils.py"],
+)
+
+py_library(
+    name = "womd_lidar_utils",
+    srcs = ["womd_lidar_utils.py"],
+    deps = [
+        ":range_image_utils",
+        ":transform_utils",
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset/protos:compressed_lidar_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+        "//waymo_open_dataset/utils/compression:delta_encoder",
     ],
 )
 
@@ -259,15 +295,58 @@ py_test(
         ":keypoint_test_util",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/protos:vector_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "plot_maps_test",
+    srcs = ["plot_maps_test.py"],
+    deps = [
+        ":plot_maps",
+        "//waymo_open_dataset/protos:map_proto_py_pb2",
     ],
 )
 
 py_test(
     name = "camera_segmentation_utils_test",
     srcs = ["camera_segmentation_utils_test.py"],
+    data = [
+        "//waymo_open_dataset/utils/testdata:pvps_test_data",
+    ],
     deps = [
         ":camera_segmentation_utils",
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "trajectory_utils_test",
+    srcs = ["trajectory_utils_test.py"],
+    python_version = "PY3",
+    deps = [
+        ":test_utils",
+        ":trajectory_utils",
+    ],
+)
+
+py_test(
+    name = "geometry_utils_test",
+    srcs = ["geometry_utils_test.py"],
+    python_version = "PY3",
+    deps = [":geometry_utils"],
+)
+
+py_test(
+    name = "womd_lidar_utils_test",
+    srcs = ["womd_lidar_utils_test.py"],
+    data = ["//waymo_open_dataset/utils/testdata:motion_dataset_test_data"],
+    python_version = "PY3",
+    deps = [
+        ":womd_lidar_utils",
+        "//waymo_open_dataset:dataset_proto_py_pb2",
+        "//waymo_open_dataset/protos:compressed_lidar_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
     ],
 )

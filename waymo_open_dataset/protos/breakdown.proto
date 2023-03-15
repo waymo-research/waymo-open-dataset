@@ -31,8 +31,6 @@ message Breakdown {
     OBJECT_TYPE = 2;
     // Shard by box center distance.
     RANGE = 3;
-
-    // The following are not implemented.
     // Shard by time of the day at which the scene is.
     TIME_OF_DAY = 4;
     // Shard by location of the scene.

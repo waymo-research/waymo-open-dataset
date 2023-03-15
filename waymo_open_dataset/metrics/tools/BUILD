@@ -1,10 +1,11 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 filegroup(
     name = "fakedata",
@@ -21,7 +22,6 @@ cc_binary(
     srcs = ["compute_detection_metrics_main.cc"],
     deps = [
         "//waymo_open_dataset:label_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:config_util",
         "//waymo_open_dataset/metrics:detection_metrics",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
@@ -35,7 +35,6 @@ cc_binary(
     srcs = ["compute_segmentation_metrics_main.cc"],
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:segmentation_metrics",
         "//waymo_open_dataset/protos:segmentation_cc_proto",
         "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",
@@ -49,7 +48,6 @@ cc_binary(
     srcs = ["compute_tracking_metrics_main.cc"],
     deps = [
         "//waymo_open_dataset:label_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:config_util",
         "//waymo_open_dataset/metrics:tracking_metrics",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
@@ -63,7 +61,6 @@ cc_binary(
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "//waymo_open_dataset/protos:submission_cc_proto",
         "@com_google_absl//absl/flags:flag",
@@ -80,7 +77,6 @@ cc_binary(
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
         "//waymo_open_dataset:label_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:config_util",
         "//waymo_open_dataset/metrics:detection_metrics",
         "//waymo_open_dataset/protos:breakdown_cc_proto",

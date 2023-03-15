@@ -47,7 +47,7 @@ REGISTER_OP("DetectionMetrics")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
 
-      return Status::OK();
+      return ::tensorflow::Status();
     })
     .Doc(R"doc(
 Computes detection metrics.
@@ -105,7 +105,7 @@ REGISTER_OP("MotionMetrics")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 
-      return Status::OK();
+      return ::tensorflow::Status();
     })
     .Doc(R"doc(
 Computes motion metrics.
@@ -178,7 +178,7 @@ REGISTER_OP("TrackingMetrics")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 
-      return Status::OK();
+      return ::tensorflow::Status();
     })
     .Doc(R"doc(
 Computes tracking metrics.

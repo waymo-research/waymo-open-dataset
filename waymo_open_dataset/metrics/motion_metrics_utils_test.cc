@@ -343,6 +343,92 @@ TEST(MotionMetricsUtils, SubmissionToPredictionsJoint) {
       google::protobuf::util::MessageDifferencer::Equals(result, expected_result));
 }
 
+TEST(MotionMetricsUtils, PredictionToTrackStep) {
+  MotionMetricsConfig metrics_config;
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+    track_steps_per_second: 10
+    prediction_steps_per_second: 2
+    track_history_samples: 5
+    track_future_samples: 80
+  )",
+                                            &metrics_config)); */
+  EXPECT_EQ(PredictionToTrackStep(metrics_config, 1), 15);
+}
+
+TEST(MotionMetricsUtils, CurrentTrackStep) {
+  MotionMetricsConfig metrics_config;
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+    track_steps_per_second: 10
+    prediction_steps_per_second: 2
+    track_history_samples: 5
+    track_future_samples: 80
+  )",
+                                            &metrics_config)); */
+  EXPECT_EQ(CurrentTrackStep(metrics_config), 5);
+}
+
+TEST(MotionMetricsUtils, PredictionToPolygon) {
+  MotionMetricsConfig metrics_config;
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+    track_steps_per_second: 1
+    prediction_steps_per_second: 1
+    track_history_samples: 1
+    track_future_samples: 1
+  )",
+                                            &metrics_config)); */
+
+  Track track;
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+    object_type: TYPE_VEHICLE
+    states {
+      length: 2
+      width: 2
+      valid: true
+    }
+    states {
+      length: 4
+      width: 2
+      valid: true
+    }
+    states {
+      length: 6
+      width: 2
+      valid: true
+    }
+  )",
+                                            &track)); */
+  SingleTrajectory trajectory;
+ /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+    center_x: [1, 2, 3]
+    center_y: [0, 0, 0]
+  )",
+                                            &trajectory)); */
+
+  const int trajectory_step = 0;
+  {
+    const bool use_current_box_dimensions = false;
+    const Polygon2d got =
+        PredictionToPolygon(metrics_config, trajectory, trajectory_step, track,
+                            use_current_box_dimensions);
+    const Polygon2d want(Box2d(/*center= */ {3, 0},
+                               /*heading=*/0,
+                               /*length=*/6,
+                               /*width=*/2));
+    EXPECT_EQ(got.Area(), want.Area());
+  }
+  {
+    const bool use_current_box_dimensions = true;
+    const Polygon2d got =
+        PredictionToPolygon(metrics_config, trajectory, trajectory_step, track,
+                            use_current_box_dimensions);
+    const Polygon2d want(Box2d(/*center= */ {3, 0},
+                               /*heading=*/0,
+                               /*length=*/4,
+                               /*width=*/2));
+    EXPECT_EQ(got.Area(), want.Area());
+  }
+}
+
 }  // namespace
 }  // namespace open_dataset
 }  // namespace waymo

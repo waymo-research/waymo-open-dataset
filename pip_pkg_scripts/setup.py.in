@@ -18,13 +18,19 @@ from setuptools import setup
 from setuptools.command.install import install
 from setuptools.dist import Distribution
 
-__version__ = '1.4.9'
+__version__ = '1.5.0'
 REQUIRED_PACKAGES = [
     'tensorflow==' + '.'.join('TF_VERSION'.split('-')),
     'plotly>=5.5.0',
     'matplotlib>=3.2.2',
-    'scikit-image>=0.17.2'
-    'immutabledict>=2.0.0'
+    'scikit-image>=0.17.2',
+    'immutabledict>=2.0.0',
+    'scipy>=1.9.3',
+    'absl-py>=1.0.0',
+    'pyarrow>=10.0.0',
+    'dask>=2022.11.1',
+    'pandas>=1.1.5',
+    'tensorflow-probability'
 ]
 project_name = 'waymo-open-dataset-tf-TF_VERSION'
 

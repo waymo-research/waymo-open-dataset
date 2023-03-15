@@ -119,6 +119,10 @@ message MotionMetricsBundle {
   // Same as mean_average_precision but duplicate true positives per ground
   // truth trajectory are ignored rather than counted as false positives.
   optional float soft_mean_average_precision = 8;
+
+  // Custom metrics (those not already included above) can be stored in the
+  // following map, identified by name.
+  map<string, float> custom_metrics = 9;
 }
 
 message MotionMetrics {

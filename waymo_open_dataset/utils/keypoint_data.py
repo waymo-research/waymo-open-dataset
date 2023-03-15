@@ -22,7 +22,9 @@ import tensorflow as tf
 
 from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset import label_pb2
+from waymo_open_dataset.protos import box_pb2
 from waymo_open_dataset.protos import keypoint_pb2
+from waymo_open_dataset.protos import vector_pb2
 
 KeypointType = keypoint_pb2.KeypointType
 
@@ -81,7 +83,7 @@ class LaserLabel:
   """
   object_type: 'ObjectType'
   box: label_pb2.Label.Box
-  keypoints: Optional[Collection[keypoint_pb2.LaserKeypoint]] = None
+  keypoints: Optional[keypoint_pb2.LaserKeypoints] = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -165,11 +167,11 @@ def group_object_labels(frame: dataset_pb2.Frame) -> Dict[str, ObjectLabel]:
   return object_labels
 
 
-def _vec2d_as_array(location_px: keypoint_pb2.Vec2d) -> np.ndarray:
+def _vec2d_as_array(location_px: vector_pb2.Vector2d) -> np.ndarray:
   return np.array([location_px.x, location_px.y])
 
 
-def _vec3d_as_array(location_m: keypoint_pb2.Vec3d) -> np.ndarray:
+def _vec3d_as_array(location_m: vector_pb2.Vector3d) -> np.ndarray:
   return np.array([location_m.x, location_m.y, location_m.z])
 
 
@@ -251,11 +253,21 @@ class KeypointsTensors:
     N - number of keypoints.
     D - number of dimensions (e.g. 2 or 3).
 
+  There are two kinds of keypoint labels available in the ground truth data:
+    - fully visible - with KeypointVisibility.is_occluded=False
+    - occluded - with KeypointVisibility.is_occluded=True
+  The `visibility` field has value 0 - for keypoints missing in the ground truth
+  or predictions, 1 - for occluded and 2 - for visible. For details about
+  differences between occluded and not occluded keypoints refer to the
+  `KeypointVisibility` proto.
+
   Attributes:
     location: a float tensor with shape [B, N, D] or [N, D].
     visibility: a int32 tensor with shape [B, N] or [N], with values: 0 -
-      corresponding point is missing (not labeled or not detected), 1 - present,
-      but marked as occluded, 2 - marked as visible or not occluded.
+      the corresponding point is missing (not labeled or not detected), 1 -
+      occluded, 2 - fully visible.
+    is_fully_visible: a bool tensor with shape [B, N], with values: True - if
+      the corresponding point is missing.
     mask: a float tensor with shape [B, N], with values: 0 - if corresponding
       point is missing (not labeled or not detected), 1 - otherwise.
     has_batch_dimension: True if location and visibility have batch dimensions.
@@ -277,6 +289,10 @@ class KeypointsTensors:
     if self.location.shape[-1] not in (2, 3):
       raise ValueError(
           f'Support only 2 or 3 dimensions: got {self.location.shape[-1]}')
+
+  @property
+  def is_fully_visible(self) -> tf.Tensor:
+    return self.visibility > 1
 
   @property
   def mask(self) -> tf.Tensor:
@@ -452,9 +468,96 @@ def create_laser_box_tensors(
       heading=tf.constant(proto.heading, dtype=dtype))
 
 
+def _stack_optional_headings(
+    values: List[BoundingBoxTensors], axis: int = 0
+) -> Optional[tf.Tensor]:
+  no_heading = sum([1 if v.heading else 0 for v in values])
+  if no_heading == 0:
+    return None
+  elif no_heading == len(values):
+    return tf.stack([v.heading for v in values], axis)
+  else:
+    raise AssertionError(
+        'Either all or none of the boxes need to have heading, got'
+        f' {no_heading} without heading out of {len(values)}'
+    )
+
+
 def stack_boxes(values: List[BoundingBoxTensors],
                 axis: int = 0) -> BoundingBoxTensors:
   """Dispatch method to support tf.stack for `BoundingBoxTensors`."""
   return BoundingBoxTensors(
       center=tf.stack([v.center for v in values], axis),
-      size=tf.stack([v.size for v in values], axis))
+      size=tf.stack([v.size for v in values], axis),
+      heading=_stack_optional_headings(values, axis),
+  )
+
+
+@dataclasses.dataclass(frozen=True)
+class PoseEstimationTensors:
+  """Pose of objects with keypoints.
+
+  Shape descriptions below use the following notation:
+    B - number of objects.
+    N - number of keypoints
+
+  Attributes:
+    keypoints: keypoints for B objects
+    box: boxes for B objects
+    object_mask: a tensor with shape [B]. With values 1 - valid object and 0 -
+      otherwise.
+  """
+
+  keypoints: KeypointsTensors
+  box: BoundingBoxTensors
+
+
+def label_box_from_box_proto(box: box_pb2.Box3d) -> label_pb2.Label.Box:
+  """Converts Box3d proto into Label.Box proto."""
+  return label_pb2.Label.Box(
+      center_x=box.center.x,
+      center_y=box.center.y,
+      center_z=box.center.z,
+      width=box.size.x,
+      length=box.size.y,
+      height=box.size.z,
+      heading=box.heading,
+  )
+
+
+def create_pose_estimation_tensors(
+    labels: Collection[LaserLabel],
+    default_location: np.ndarray,
+    order: Collection['KeypointType'],
+    dtype: tf.DType = tf.float32,
+) -> PoseEstimationTensors:
+  """Creates pose estimation tensors for labels in a single frame.
+
+  Args:
+    labels: a list of labels to convert into tensors. Can be created using
+      `group_object_labels(frame)`.
+    default_location: coordinates used for missing keypoints.
+    order: a 1-to-1 mapping of keypoint types to output keypoints - the type of
+      the output keypoint `PoseEstimationTensors.keypoints.location[i]` will be
+      `order[i]`.
+    dtype: type of output tensors.
+
+  Returns:
+    an object with all pose estimation tensors.
+  """
+  keypoints = []
+  boxes = []
+  for label in labels:
+    keypoints.append(
+        create_laser_keypoints_tensors(
+            label.keypoints.keypoint,
+            default_location=default_location,
+            order=order,
+            dtype=dtype,
+        )
+    )
+    boxes.append(create_laser_box_tensors(label.box, dtype=dtype))
+  return PoseEstimationTensors(
+      keypoints=stack_keypoints(keypoints, axis=0),
+      box=stack_boxes(boxes, axis=0),
+  )

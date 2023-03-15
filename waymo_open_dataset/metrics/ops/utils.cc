@@ -29,6 +29,11 @@ limitations under the License.
 namespace waymo {
 namespace open_dataset {
 namespace {
+
+typedef int32_t int32;
+typedef int64_t int64;
+typedef uint8_t uint8;
+
 using LB = Label::Box;
 typedef void (LB::*Setter)(double);
 

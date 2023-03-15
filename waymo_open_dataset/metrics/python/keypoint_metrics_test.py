@@ -231,7 +231,7 @@ class MpjpeTest(tf.test.TestCase):
 
     self.assertNear(metrics['MPJPE'], (1 + 2 + 0 + 4 + 5 + 0) / 4, err=1e-5)
 
-  def test_takes_respects_sample_weights(self):
+  def test_respects_sample_weights(self):
     # batch_size = 3, num_points = 2
     gt = _data.KeypointsTensors(
         location=tf.constant([[[1.0, 1.0], [-1.0, -1.0]],
@@ -599,6 +599,413 @@ class AllMetricsTest(tf.test.TestCase):
     result = metric.result()
 
     self.assertCountEqual(result.keys(), _ALL_METRIC_NAMES)
+
+
+class HungarianAssignmentTest(tf.test.TestCase):
+
+  def test_returns_continious_range_for_eye(self):
+    iou = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=tf.float32)
+
+    lhs, rhs = _lib.hungarian_assignment(iou)
+
+    self.assertAllEqual(lhs, [0, 1, 2])
+    self.assertAllEqual(rhs, [0, 1, 2])
+
+  def test_reorders_shuffled_elements(self):
+    iou = tf.constant([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=tf.float32)
+
+    lhs, rhs = _lib.hungarian_assignment(iou)
+
+    self.assertAllEqual(lhs, [0, 1, 2])
+    self.assertAllEqual(rhs, [1, 2, 0])
+
+  def test_sets_mask_to_false_for_unmatched(self):
+    # iou[2, :] = iou[:,2] = 0 - there is no match for both of them.
+    iou = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=tf.float32)
+
+    lhs, rhs = _lib.hungarian_assignment(iou)
+
+    # We don't care about the last element, because it is not matched.
+    self.assertAllEqual(lhs, [0, 1])
+    self.assertAllEqual(rhs, [0, 1])
+
+  def test_supports_different_number_of_elements(self):
+    # 2 ground truth, 3 predictions
+    iou = tf.constant([[1, 0, 0], [0, 1, 0]], dtype=tf.float32)
+
+    lhs, rhs = _lib.hungarian_assignment(iou)
+
+    self.assertAllEqual(lhs, [0, 1])
+    self.assertAllEqual(rhs, [0, 1])
+
+
+class MissingIdsTest(tf.test.TestCase):
+
+  def test_missing_ids_empty_if_nothing_is_missing(self):
+    ids = tf.constant([0, 1, 2], dtype=tf.int32)
+    missing = _lib.missing_ids(ids, count=3)
+    self.assertEqual(missing.numpy().tolist(), [])
+
+  def test_missing_ids_is_correct(self):
+    ids = tf.constant([1, 3, 5], dtype=tf.int32)
+    missing = _lib.missing_ids(ids, count=6)
+    self.assertEqual(missing.numpy().tolist(), [0, 2, 4])
+
+
+class MatchPoseEstimationsTest(tf.test.TestCase):
+
+  def test_keeps_gt_as_is(self):
+    # 3 objects with 3 keypoints each:
+    gt_kp = _data.KeypointsTensors(
+        location=tf.constant(
+            [
+                [[1, 1, 1], [2, 2, 2], [3, 3, 3]],
+                [[4, 4, 4], [5, 5, 5], [6, 6, 6]],
+                [[7, 7, 7], [8, 8, 8], [9, 9, 9]],
+            ],
+            dtype=tf.float32,
+        ),
+        visibility=tf.constant([[2, 2, 2], [2, 2, 2], [2, 2, 2]]),
+    )
+    gt_box = _data.BoundingBoxTensors(
+        center=gt_kp.location[:, 0, :],
+        size=tf.constant([[1, 1, 1], [1, 1, 1], [1, 1, 1]], dtype=tf.float32),
+        heading=tf.constant([0.1, 0.2, 0.3], dtype=tf.float32),
+    )
+    gt = _data.PoseEstimationTensors(keypoints=gt_kp, box=gt_box)
+
+    gtm, prm = _lib.match_pose_estimations(gt, gt)
+
+    self.assertAllClose(gtm.keypoints.location, gt.keypoints.location)
+    self.assertAllClose(gtm.keypoints.visibility, gt.keypoints.visibility)
+    self.assertAllClose(gtm.box.center, gt.box.center)
+    self.assertAllClose(gtm.box.size, gt.box.size)
+    self.assertAllClose(gtm.box.heading, gt.box.heading)
+    self.assertAllClose(gtm.keypoints.location, prm.keypoints.location)
+    self.assertAllClose(gtm.keypoints.visibility, prm.keypoints.visibility)
+    self.assertAllClose(gtm.box.center, prm.box.center)
+    self.assertAllClose(gtm.box.size, prm.box.size)
+    self.assertAllClose(gtm.box.heading, prm.box.heading)
+
+  def test_reorders_pr_to_match_gr(self):
+    # 3 objects with 1 keypoint each:
+    gt_kp = _data.KeypointsTensors(
+        location=tf.constant(
+            [[[1, 1, 1]], [[4, 4, 4]], [[7, 7, 7]]],
+            dtype=tf.float32,
+        ),
+        visibility=tf.constant([[2], [2], [2]]),
+    )
+    gt_box = _data.BoundingBoxTensors(
+        center=gt_kp.location[:, 0, :],
+        size=tf.constant([[1.1] * 3, [1.2] * 3, [1.3] * 3]),
+        heading=tf.constant([0.1, 0.2, 0.3], dtype=tf.float32),
+    )
+    gt = _data.PoseEstimationTensors(keypoints=gt_kp, box=gt_box)
+    # Predictions are the same, but reordered: 2, 0, 1
+    reorder = lambda t: tf.gather(t, [2, 0, 1])
+    pr_kp = _data.KeypointsTensors(
+        location=reorder(gt_kp.location), visibility=reorder(gt_kp.visibility)
+    )
+    pr_box = _data.BoundingBoxTensors(
+        center=reorder(gt_box.center),
+        size=reorder(gt_box.size),
+        heading=reorder(gt_box.heading),
+    )
+    pr = _data.PoseEstimationTensors(keypoints=pr_kp, box=pr_box)
+
+    gtm, prm = _lib.match_pose_estimations(gt, pr)
+
+    self.assertAllClose(gtm.keypoints.location, gt.keypoints.location)
+    self.assertAllClose(gtm.keypoints.visibility, gt.keypoints.visibility)
+    self.assertAllClose(gtm.box.center, gt.box.center)
+    self.assertAllClose(gtm.box.size, gt.box.size)
+    self.assertAllClose(gtm.box.heading, gt.box.heading)
+    self.assertAllClose(gtm.keypoints.location, prm.keypoints.location)
+    self.assertAllClose(gtm.keypoints.visibility, prm.keypoints.visibility)
+    self.assertAllClose(gtm.box.center, prm.box.center)
+    self.assertAllClose(gtm.box.size, prm.box.size)
+    self.assertAllClose(gtm.box.heading, prm.box.heading)
+
+  def test_inexact_pr_to_gr_match(self):
+    # 3 objects with 1 keypoint each:
+    gt_kp = _data.KeypointsTensors(
+        location=tf.constant(
+            [[[1, 1, 1]], [[4, 4, 4]], [[7, 7, 7]]],
+            dtype=tf.float32,
+        ),
+        visibility=tf.constant([[2], [2], [2]]),
+    )
+    gt_box = _data.BoundingBoxTensors(
+        center=gt_kp.location[:, 0, :],
+        size=tf.constant([[1.1] * 3, [1.2] * 3, [1.3] * 3]),
+        heading=tf.constant([0.1, 0.2, 0.3], dtype=tf.float32),
+    )
+    gt = _data.PoseEstimationTensors(keypoints=gt_kp, box=gt_box)
+    # Predicted boxes are similar to the gt ordered: 2, 0, 1
+    pr_kp = _data.KeypointsTensors(
+        location=tf.constant(
+            [[[7, 7, 7]], [[1, 1, 1]], [[4, 4, 4]]],
+            dtype=tf.float32,
+        ),
+        visibility=tf.constant([[2], [2], [2]]),
+    )
+    pr_box = _data.BoundingBoxTensors(
+        center=tf.constant([[7.1, 7.1, 7.1], [0.9, 1.1, 1.2], [3.9, 4, 4.1]]),
+        size=tf.constant([[1.2] * 3, [1.2] * 3, [1.2] * 3], dtype=tf.float32),
+        heading=tf.constant([0.1, 0.1, 0.1], dtype=tf.float32),
+    )
+    pr = _data.PoseEstimationTensors(keypoints=pr_kp, box=pr_box)
+
+    gt_m, pr_m = _lib.match_pose_estimations(gt, pr)
+
+    # Spot checking coordinates to assert the order of objects.
+    self.assertAllClose(gt_m.keypoints.location[:, 0, 0], [1, 4, 7])
+    self.assertAllClose(gt_m.box.center[:, 0], [1, 4, 7])
+    self.assertAllClose(pr_m.keypoints.location[:, 0, 0], [1, 4, 7])
+    self.assertAllClose(pr_m.box.center[:, 0], [0.9, 3.9, 7.1])
+
+  def test_appends_false_negatives_and_false_positives(self):
+    # 2 object with 1 keypoint each:
+    gt = _data.PoseEstimationTensors(
+        keypoints=_data.KeypointsTensors(
+            location=tf.constant(
+                [[[1.5, 1.5, 1.5]], [[3.5, 3.5, 3.5]]], dtype=tf.float32
+            ),
+            visibility=tf.constant([[2], [2]]),
+        ),
+        box=_data.BoundingBoxTensors(
+            center=tf.constant([[1, 1, 1], [3, 3, 3]], dtype=tf.float32),
+            size=tf.constant([[1, 1, 1], [1, 1, 1]], dtype=tf.float32),
+            heading=tf.constant([0.1, 0.1], dtype=tf.float32),
+        ),
+    )
+    # 2 predicted boxes: one far away and one match.
+    pr = _data.PoseEstimationTensors(
+        keypoints=_data.KeypointsTensors(
+            location=tf.constant(
+                [[[10.5, 10.5, 10.5]], [[3.4, 3.4, 3.4]]], dtype=tf.float32
+            ),
+            visibility=tf.constant([[2], [2]]),
+        ),
+        box=_data.BoundingBoxTensors(
+            center=tf.constant(
+                [[10, 10, 10], [2.9, 2.9, 2.9]], dtype=tf.float32
+            ),
+            size=tf.constant([[1, 1, 1], [1, 1, 1]], dtype=tf.float32),
+            heading=tf.constant([0.1, 0.2], dtype=tf.float32),
+        ),
+    )
+
+    gt_m, pr_m = _lib.match_pose_estimations(gt, pr)
+
+    # The order of objects: true positives, false negatives, false positives.
+    self.assertAllClose(gt_m.keypoints.visibility, [[2], [2], [0]])
+    self.assertAllClose(pr_m.keypoints.visibility, [[2], [0], [2]])
+    # Check just the x coordinate to verify the order.
+    self.assertAllClose(gt_m.box.center[:, 0], [3, 1, 0])
+    self.assertAllClose(pr_m.box.center[:, 0], [2.9, 0, 10])
+
+  def test_padds_correctly_even_if_pad_size_is_greater_than_orig_size(self):
+    # Single object
+    gt = _data.PoseEstimationTensors(
+        keypoints=_data.KeypointsTensors(
+            location=tf.constant([[[1.5, 2.5, 3.5]]], dtype=tf.float32),
+            visibility=tf.constant([[2]]),
+        ),
+        box=_data.BoundingBoxTensors(
+            center=tf.constant([[1.0, 2.0, 3.0]], dtype=tf.float32),
+            size=tf.constant([[1, 1, 1]], dtype=tf.float32),
+            heading=tf.constant([0.1], dtype=tf.float32),
+        ),
+    )
+    # Two objects with the same box in the same center as the ground truth.
+    pr = _data.PoseEstimationTensors(
+        keypoints=_data.KeypointsTensors(
+            location=tf.constant(
+                [[[1.5, 2.5, 3.5]], [[1.4, 2.4, 3.4]]], dtype=tf.float32
+            ),
+            visibility=tf.constant([[2], [2]]),
+        ),
+        box=_data.BoundingBoxTensors(
+            center=tf.constant([[1, 2, 3], [1, 2, 3]], dtype=tf.float32),
+            size=tf.constant([[5, 4, 5], [5, 4, 6]], dtype=tf.float32),
+            heading=tf.constant([0.001, 0.001], dtype=tf.float32),
+        ),
+    )
+
+    gt_m, pr_m = _lib.match_pose_estimations(gt, pr)
+
+    # There is no match between gt and pr objects, so ground truth needs to be
+    # padded with more objects that it had. Previously `_reorder` used
+    # `tf.zeros_like(tensor[:num])`, which lead to incorrect shapes if
+    # tensor.shape[0] < num.
+    self.assertEqual(gt_m.box.center.shape, (3, 3))
+    self.assertEqual(pr_m.box.center.shape, (3, 3))
+
+
+class PemTest(tf.test.TestCase):
+
+  def test_returns_mean_square_error_for_all_visible_keypoints(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 1.0], [-1.0, -1.0]],
+            [[2.0, 2.0], [-2.0, -2.0]],
+            [[3.0, 3.0], [-3.0, -3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 2], [2, 2]]),
+    )
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 0.0], [1.0, -1.0]],
+            [[2.0, -1.0], [2.0, -2.0]],
+            [[3.0, -2.0], [-3.0, 3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 2], [2, 2]]),
+    )
+    box = None  # is not used by the metric
+
+    pem = _lib.PoseEstimationMetric(name='PEM', mismatch_penalty=0.25)
+    pem.update_state([gt, pr, box])
+    metrics = pem.result()
+
+    self.assertNear(metrics['PEM'], (1 + 2 + 3 + 4 + 5 + 6) / 6, err=1e-5)
+
+  def test_adds_penalty_for_mismatches(self):
+    # Three objects with two keypoints:
+    #  0 - match
+    #  1 - false negative
+    #  2 - false positive
+    # Mismatched keypoints have visibility=0
+    gt = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 1.0], [-1.0, -1.0]],
+            [[2.0, 2.0], [-2.0, -2.0]],
+            [[0.0, 0.0], [0.0, 0.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 2], [0, 0]]),
+    )
+    pr = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 0.0], [1.0, -1.0]],
+            [[0.0, 0.0], [0.0, 0.0]],
+            [[3.0, -2.0], [-3.0, 3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [0, 0], [2, 2]]),
+    )
+    box = None  # is not used by the metric
+
+    pem = _lib.PoseEstimationMetric(name='PEM', mismatch_penalty=0.25)
+    pem.update_state([gt, pr, box])
+    metrics = pem.result()
+
+    self.assertNear(metrics['PEM'], (1 + 2 + 4 * 0.25) / 6, err=1e-5)
+
+  def test_correctly_predicted_invisible_points_are_not_penalized(self):
+    gt = _data.KeypointsTensors(
+        # Values for keypoints with visibility 0 could be anything.
+        location=tf.constant([
+            [[1.0, 1.0], [-1.0, -1.0]],
+            [[2.0, 2.0], [666.0, 666.0]],
+            [[777.0, 777.0], [3.0, 3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 0], [0, 2]]),
+    )
+    pr = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 0.0], [1.0, -1.0]],
+            [[2.0, -1.0], [0.0, 0.0]],
+            [[3.0, -2.0], [-3.0, 3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 0], [0, 2]]),
+    )
+    box = None  # is not used by the metric
+
+    pem = _lib.PoseEstimationMetric(name='PEM', mismatch_penalty=0.25)
+    pem.update_state([gt, pr, box])
+    metrics = pem.result()
+
+    # Expected errors per keypoint: 1, 2, 3, 0, 0, 6
+    self.assertNear(metrics['PEM'], (1 + 2 + 3 + 6) / 4, err=1e-5)
+
+  def test_respects_sample_weights(self):
+    # batch_size = 3, num_points = 2
+    gt = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 1.0], [-1.0, -1.0]],
+            [[2.0, 2.0], [-2.0, -2.0]],
+            [[3.0, 3.0], [-3.0, -3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [0, 2], [2, 0]]),
+    )
+    # Predicted points are [1, 2, 3, 4, 5, 6] pixels away from ground truth.
+    pr = _data.KeypointsTensors(
+        location=tf.constant([
+            [[1.0, 0.0], [1.0, -1.0]],
+            [[2.0, -1.0], [2.0, -2.0]],
+            [[3.0, -2.0], [-3.0, 3.0]],
+        ]),
+        visibility=tf.constant([[2, 2], [2, 2], [2, 2]]),
+    )
+    box = None  # is not used by the metric
+    sample_weight = tf.constant([0.0, 0.5, 1.0])
+
+    pem = _lib.PoseEstimationMetric(name='PEM', mismatch_penalty=0.25)
+    pem.update_state([gt, pr, box], sample_weight=sample_weight)
+    metrics = pem.result()
+
+    self.assertNear(
+        metrics['PEM'],
+        (0 + 0 + (0.25 + 4) * 0.5 + (5 + 0.25) * 1.0)
+        / (2 * 0 + 2 * 0.5 + 2 * 1.0),
+        err=1e-5,
+    )
+
+
+class KeypointVisibilityPrecisionTest(tf.test.TestCase):
+
+  def test_ratio_of_num_true_positives_to_predicted(self):
+    # batch_size = 3, num_points = 2
+    # Location is ignored by this metric
+    gt = _data.KeypointsTensors(
+        location=tf.constant(0.0, shape=[3, 2, 2]),
+        visibility=tf.constant([[2, 2], [2, 0], [0, 0]]),
+    )
+    pr = _data.KeypointsTensors(
+        location=tf.constant(0.0, shape=[3, 2, 2]),
+        visibility=tf.constant([[2, 2], [0, 0], [2, 2]]),
+    )
+    box = None  # is not used by the metric
+
+    precision = _lib.KeypointVisibilityPrecision(name='P')
+    precision.update_state([gt, pr, box])
+    metrics = precision.result()
+
+    self.assertNear(metrics['P'], 2.0 / 4, err=1e-5)
+
+
+class KeypointVisibilityRecallTest(tf.test.TestCase):
+
+  def test_ratio_of_num_true_positives_to_ground_truth(self):
+    # batch_size = 3, num_points = 2
+    # Location is ignored by this metric
+    gt = _data.KeypointsTensors(
+        location=tf.constant(0.0, shape=[3, 2, 2]),
+        visibility=tf.constant([[2, 2], [2, 0], [0, 0]]),
+    )
+    pr = _data.KeypointsTensors(
+        location=tf.constant(0.0, shape=[3, 2, 2]),
+        visibility=tf.constant([[2, 2], [0, 0], [2, 2]]),
+    )
+    box = None  # is not used by the metric
+
+    recall = _lib.KeypointVisibilityRecall(name='R')
+    recall.update_state([gt, pr, box])
+    metrics = recall.result()
+
+    self.assertNear(metrics['R'], 2.0 / 3, err=1e-5)
 
 
 if __name__ == '__main__':

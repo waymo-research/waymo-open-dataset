@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// Copyright 2009 Google Inc. All Rights Reserved.
+
 #include "waymo_open_dataset/math/exactfloat.h"
 
 #include <stdio.h>
@@ -20,6 +22,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <string>
 
@@ -28,10 +31,12 @@ limitations under the License.
 #include "absl/container/fixed_array.h"
 #include "openssl/bn.h"
 #include "openssl/crypto.h"
-#include "waymo_open_dataset/common/integral_types.h"
 
 namespace waymo {
 namespace open_dataset {
+
+typedef int64_t int64;
+typedef uint64_t uint64;
 
 using std::max;
 using std::min;

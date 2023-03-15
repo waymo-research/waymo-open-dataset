@@ -1,10 +1,13 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
+
+
 
 cc_library(
     name = "breakdown_generator",
@@ -140,7 +143,6 @@ cc_library(
     srcs = ["segmentation_metrics.cc"],
     hdrs = ["segmentation_metrics.h"],
     deps = [
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/common:status",
         "//waymo_open_dataset/protos:segmentation_cc_proto",
         "//waymo_open_dataset/protos:segmentation_metrics_cc_proto",
@@ -171,10 +173,12 @@ cc_library(
     hdrs = ["motion_metrics_utils.h"],
     deps = [
         "//waymo_open_dataset/common:status",
+        "//waymo_open_dataset/math:polygon2d",
         "//waymo_open_dataset/math:vec2d",
         "//waymo_open_dataset/protos:motion_metrics_cc_proto",
         "//waymo_open_dataset/protos:motion_submission_cc_proto",
         "//waymo_open_dataset/protos:scenario_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/types:optional",
     ],
 )
@@ -318,6 +322,7 @@ cc_test(
         ":mot",
         ":test_utils",
         "//waymo_open_dataset/protos:metrics_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",

@@ -1,12 +1,13 @@
 
 
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 py_library(
     name = "config_util_py",
@@ -40,6 +41,8 @@ py_test(
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],
 )
+
+
 
 py_library(
     name = "motion_metrics",
@@ -85,12 +88,15 @@ py_test(
     ],
 )
 
+
+
 py_library(
     name = "keypoint_metrics",
     srcs = ["keypoint_metrics.py"],
     deps = [
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
         "//waymo_open_dataset/utils:keypoint_data",
+        "@keras_cv//keras_cv",
     ],
 )
 

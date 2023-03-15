@@ -65,7 +65,7 @@ class WODDetectionEvaluatorTest(tf.test.TestCase):
     num_frames, gt_num_bboxes, pd_num_bboxes = 10, 10, 2000
     pd_bbox, pd_type, pd_frameid, pd_score = self._GenerateRandomBBoxes(
         num_frames, pd_num_bboxes)
-    pd_overlap_nlz = np.zeros_like(pd_frameid, dtype=np.bool)
+    pd_overlap_nlz = np.zeros_like(pd_frameid, dtype=bool)
     gt_bbox, gt_type, gt_frameid, _ = self._GenerateRandomBBoxes(
         num_frames, gt_num_bboxes)
     config = self._BuildConfig()
@@ -124,7 +124,7 @@ class WODDetectionEvaluatorTest(tf.test.TestCase):
     num_frames, gt_num_bboxes, pd_num_bboxes = 10, 10, 2000
     pd_bbox, pd_type, pd_frameid, pd_score = self._GenerateRandomBBoxes(
         num_frames, pd_num_bboxes)
-    pd_overlap_nlz = np.zeros_like(pd_frameid, dtype=np.bool)
+    pd_overlap_nlz = np.zeros_like(pd_frameid, dtype=bool)
     gt_bbox, gt_type, gt_frameid, _ = self._GenerateRandomBBoxes(
         num_frames, gt_num_bboxes)
 

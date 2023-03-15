@@ -15,6 +15,7 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/segmentation_metrics.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -22,7 +23,6 @@ limitations under the License.
 #include <vector>
 
 #include <glog/logging.h>
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/common/status.h"
 
 namespace waymo {
@@ -113,8 +113,8 @@ SegmentationMetrics SegmentationMetricsIOU::ComputeIOU() {
 SegmentationMetrics SegmentationMetricsIOU::MergeResults(
     std::vector<SegmentationMeasurements> results) {
   SegmentationMetrics merged;
-  std::vector<int64> num_intersections(num_classes_, 0);
-  std::vector<int64> num_unions(num_classes_, 0);
+  std::vector<int64_t> num_intersections(num_classes_, 0);
+  std::vector<int64_t> num_unions(num_classes_, 0);
   for (const auto& result : results) {
    /* CHECK(result.unions_size() == num_classes_); */
    /* CHECK(result.intersections_size() == num_classes_); */

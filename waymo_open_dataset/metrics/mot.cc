@@ -64,7 +64,8 @@ void BuildTrackingIdToDetectionBoxIndexMaps(
 
 }  // namespace
 
-void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level) {
+void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level,
+               bool include_details_in_measurements) {
  /* CHECK(matcher_ptr != nullptr); */
   Matcher& matcher = *matcher_ptr;
   // The implementation follows the 'Mapping procedure' in the paper.
@@ -131,6 +132,48 @@ void MOT::Eval(Matcher* matcher_ptr, Label::DifficultyLevel difficulty_level) {
   for (const auto& kv : gt_pd_matchings_) {
    /* CHECK(pd_gt_matchings_.emplace(kv.second, kv.first).second)
         << kv.first << " " << kv.second; */
+  }
+
+  if (include_details_in_measurements) {
+    // Add matching details to measurement for downstream use.
+    TrackingMeasurement::Details *details = measurement_.add_details();
+    absl::flat_hash_set<std::string> matched_pd_ids;
+    absl::flat_hash_set<std::string> matched_gt_ids;
+    for (const auto& [gt_id, pred_id] : gt_pd_new_matchings) {
+      details->add_tp_gt_ids(gt_id);
+      matched_gt_ids.insert(gt_id);
+      details->add_tp_pred_ids(pred_id);
+      matched_pd_ids.insert(pred_id);
+    }
+
+    const std::vector<int>& ground_truth_subset = matcher.ground_truth_subset();
+    const std::vector<Object>& ground_truths = matcher.ground_truths();
+    for (const int gt_idx : ground_truth_subset) {
+      const std::string& gt_id = ground_truths[gt_idx].object().id();
+
+      // ground_truth_subset holds ids for all ground-truth detections in this
+      // frame corresponding to the current breakdown shard, while
+      // matched_gt_ids contains ids which are succesfully matched to a
+      // prediction. Hence, the set difference represents unmatched ground-truth
+      // detections, which are false negatives.
+      if (!matched_gt_ids.contains(gt_id)) {
+        details->add_fn_gt_ids(gt_id);
+      }
+    }
+    const std::vector<int>& prediction_subset = matcher.prediction_subset();
+    const std::vector<Object>& predictions = matcher.predictions();
+    for (const int pd_idx : prediction_subset) {
+      const std::string& pd_id = predictions[pd_idx].object().id();
+
+      // prediction_subset holds ids for all predicted detections in this
+      // frame corresponding to the current breakdown shard, while
+      // matched_pd_ids contains ids which are succesfully matched to a
+      // ground-truth. Hence, the set difference represents unmatched predicted
+      // detections, which are false positives.
+      if (!matched_pd_ids.contains(pd_id)) {
+        details->add_fp_pred_ids(pd_id);
+      }
+    }
   }
 }
 

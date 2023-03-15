@@ -317,7 +317,7 @@ def _add_ground_truth_observed_occupancy_to_waypoint_grids(
   waypoint_size = config.num_future_steps // config.num_waypoints
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_future_steps]
-    future_obs = timestep_grids.view(object_type).future_observed_occupancy
+    future_obs = timestep_grids.view(object_type).future_observed_occupancy  # pytype: disable=wrong-arg-types
     for k in range(config.num_waypoints):
       waypoint_end = (k + 1) * waypoint_size
       if config.cumulative_waypoints:
@@ -329,7 +329,7 @@ def _add_ground_truth_observed_occupancy_to_waypoint_grids(
       else:
         # [batch_size, height, width, 1]
         waypoint_occupancy = future_obs[..., waypoint_end - 1:waypoint_end]
-      waypoint_grids.view(object_type).observed_occupancy.append(
+      waypoint_grids.view(object_type).observed_occupancy.append(  # pytype: disable=wrong-arg-types
           waypoint_occupancy)
 
 
@@ -348,7 +348,7 @@ def _add_ground_truth_occluded_occupancy_to_waypoint_grids(
   waypoint_size = config.num_future_steps // config.num_waypoints
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_future_steps]
-    future_occ = timestep_grids.view(object_type).future_occluded_occupancy
+    future_occ = timestep_grids.view(object_type).future_occluded_occupancy  # pytype: disable=wrong-arg-types
     for k in range(config.num_waypoints):
       waypoint_end = (k + 1) * waypoint_size
       if config.cumulative_waypoints:
@@ -360,7 +360,7 @@ def _add_ground_truth_occluded_occupancy_to_waypoint_grids(
       else:
         # [batch_size, height, width, 1]
         waypoint_occupancy = future_occ[..., waypoint_end - 1:waypoint_end]
-      waypoint_grids.view(object_type).occluded_occupancy.append(
+      waypoint_grids.view(object_type).occluded_occupancy.append(  # pytype: disable=wrong-arg-types
           waypoint_occupancy)
 
 
@@ -385,7 +385,7 @@ def _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
 
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_past_steps + 1 + num_future_steps]
-    all_occupancy = timestep_grids.view(object_type).all_occupancy
+    all_occupancy = timestep_grids.view(object_type).all_occupancy  # pytype: disable=wrong-arg-types
     # Keep only the section containing flow_origin_occupancy timesteps.
     # First remove `waypoint_size` from the end.  Then keep the tail containing
     # num_future_steps timesteps.
@@ -404,7 +404,7 @@ def _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
         # [batch_size, height, width, 1]
         waypoint_flow_origin = flow_origin_occupancy[..., waypoint_end -
                                                      1:waypoint_end]
-      waypoint_grids.view(object_type).flow_origin_occupancy.append(
+      waypoint_grids.view(object_type).flow_origin_occupancy.append(  # pytype: disable=wrong-arg-types
           waypoint_flow_origin)
 
 
@@ -426,7 +426,7 @@ def _add_ground_truth_flow_to_waypoint_grids(
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # num_flow_steps = (num_past_steps + num_futures_steps) - waypoint_size
     # [batch_size, height, width, num_flow_steps, 2]
-    flow = timestep_grids.view(object_type).all_flow
+    flow = timestep_grids.view(object_type).all_flow  # pytype: disable=wrong-arg-types
     # Keep only the flow tail, containing num_future_steps timesteps.
     # [batch_size, height, width, num_future_steps, 2]
     flow = flow[:, :, :, -num_future_steps:, :]
@@ -450,7 +450,7 @@ def _add_ground_truth_flow_to_waypoint_grids(
         waypoint_flow = mean_flow
       else:
         waypoint_flow = flow[:, :, :, waypoint_end - 1, :]
-      waypoint_grids.view(object_type).flow.append(waypoint_flow)
+      waypoint_grids.view(object_type).flow.append(waypoint_flow)  # pytype: disable=wrong-arg-types
 
 
 def create_ground_truth_vis_grids(

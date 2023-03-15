@@ -4,6 +4,33 @@ We have released the Waymo Open Dataset publicly to aid the research community i
 
 The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 2,030 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
 
+## March 2023 Update
+This major update includes supporting code to four challenges at waymo.com/open, and dataset updates to both the Perception and Motion Datasets.
+
+v2.0.0 of the Perception Dataset
+ - Introduced the dataset in modular format, enabling users to selectively download only the components they need.
+ - Includes all features in v1.4.2 of the Perception Dataset except maps.
+ - Added a [tutorial](waymo-open-dataset/tutorial/tutorial_v2.ipynb) and supporting code.
+
+v1.4.2 of the Perception Dataset
+ - For the 2D video panoptic segmentation labels, added a mask to indicate the number of cameras covering each pixel.
+ - Added 3D map data as polylines or polygons.
+
+v1.2.0 of the Motion Dataset
+ - Added Lidar data for the training set (first 1s of each 9s windows), and the corresponding [tutorial](waymo_open_dataset/tutorial/tutorial_womd_lidar.ipynb) and supporting code.
+ - Added driveway entrances to the map data. Adjusted some road edge boundary height estimates.
+ - Increased the max number of map points in tf_examples to 30k and reduced sampling to 1.0m to increase map coverage, so the coverage equalizes that of the dataset in scenario proto format. Added conversion code from scenario proto format to tf_examples format.
+
+Added supporting code for the four 2023 Waymo Open Dataset Challenges
+ - Sim Agents Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_sim_agents.ipynb)
+ - Pose Estimation Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_keypoints.ipynb)
+ - 2D Video Panoptic Segmentation Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_2d_pvps.ipynb)
+ - Motion Prediction Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_motion.ipynb)
+
+## December 2022 Update
+We released v1.4.1 of the Perception dataset.
+- Improved the quality of the 2D video panoptic segmentation labels.
+
 ## June 2022 Update
 We released v1.4.0 of the Perception dataset.
  - Added 2D video panoptic segmentation labels and supporting code.

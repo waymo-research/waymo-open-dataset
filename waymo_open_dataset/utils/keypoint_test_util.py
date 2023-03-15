@@ -13,10 +13,13 @@
 # limitations under the License.
 # ==============================================================================
 """Convenience functions for unit tests for human keypoints."""
-from typing import Any, Dict, Tuple, Optional
+
+from typing import Any, Dict, Optional, Tuple
 
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import keypoint_pb2
+from waymo_open_dataset.protos import vector_pb2
+
 
 KeypointType = keypoint_pb2.KeypointType
 ObjectType = label_pb2.Label.Type
@@ -30,8 +33,10 @@ def laser_keypoint(point_type: KeypointType = KeypointType.KEYPOINT_TYPE_NOSE,
   return keypoint_pb2.LaserKeypoint(
       type=point_type,
       keypoint_3d=keypoint_pb2.Keypoint3d(
-          location_m=keypoint_pb2.Vec3d(x=x, y=y, z=z),
-          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded)))
+          location_m=vector_pb2.Vector3d(x=x, y=y, z=z),
+          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded),
+      ),
+  )
 
 
 def laser_object(
@@ -61,8 +66,10 @@ def camera_keypoint(point_type: KeypointType = KeypointType.KEYPOINT_TYPE_NOSE,
   return keypoint_pb2.CameraKeypoint(
       type=point_type,
       keypoint_2d=keypoint_pb2.Keypoint2d(
-          location_px=keypoint_pb2.Vec2d(x=x, y=y),
-          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded)))
+          location_px=vector_pb2.Vector2d(x=x, y=y),
+          visibility=keypoint_pb2.KeypointVisibility(is_occluded=is_occluded),
+      ),
+  )
 
 
 def camera_object(camera_obj_id: str,
@@ -85,3 +92,29 @@ def camera_object(camera_obj_id: str,
       box=box,
       association=label_pb2.Label.Association(laser_object_id=laser_obj_id),
       camera_keypoints=camera_keypoints)
+
+
+def camera_box(
+    center: tuple[float, float], size: tuple[float, float]
+) -> label_pb2.Label.Box:
+  """Creates a laser box."""
+  return label_pb2.Label.Box(
+      center_x=center[0], center_y=center[1], length=size[0], width=size[1]
+  )
+
+
+def laser_box(
+    center: tuple[float, float, float],
+    size: tuple[float, float, float],
+    heading: float,
+) -> label_pb2.Label.Box:
+  """Creates a laser box."""
+  return label_pb2.Label.Box(
+      center_x=center[0],
+      center_y=center[1],
+      center_z=center[2],
+      length=size[0],
+      width=size[1],
+      height=size[2],
+      heading=heading,
+  )

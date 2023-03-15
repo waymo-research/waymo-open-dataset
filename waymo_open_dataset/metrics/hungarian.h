@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// Copyright 2007 Google Inc. All Rights Reserved.
+
 // Purpose: Find a maximum weight matching in a complete bipartite graph.
 
 #ifndef WAYMO_OPEN_DATASET_METRICS_HUNGARIAN_H_

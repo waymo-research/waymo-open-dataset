@@ -16,6 +16,7 @@ limitations under the License.
 // A binary to compare an objects file from the latency evaluator (containing
 // results from a subset of the test set's frames) against a submission proto
 // (containing results from the full test set) for equivalence.
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -27,7 +28,6 @@ limitations under the License.
 #include <glog/logging.h>
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/metrics/matcher.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
@@ -107,7 +107,7 @@ Objects ReadObjectsFromFile(const std::vector<std::string>& paths) {
 int Compute(const std::string& latency_result_filename,
             const std::vector<std::string>& full_result_filename,
             double iou_threshold, double minimum_score) {
-  using KeyTuple = std::tuple<std::string, int64, CameraName::Name>;
+  using KeyTuple = std::tuple<std::string, int64_t, CameraName::Name>;
   Objects latency_result_objs = ReadObjectsFromFile({latency_result_filename});
   Objects full_result_objs = ReadObjectsFromFile(full_result_filename);
 

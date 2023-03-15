@@ -1,4 +1,5 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
@@ -12,7 +13,6 @@ cc_binary(
 
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/metrics:matcher",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "//waymo_open_dataset/protos:submission_cc_proto",

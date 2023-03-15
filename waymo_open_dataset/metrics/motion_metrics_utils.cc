@@ -25,7 +25,7 @@ limitations under the License.
 namespace waymo {
 namespace open_dataset {
 
-absl::optional<TrajectoryType> ClassifyTrack(const int prediction_step,
+absl::optional<TrajectoryType> ClassifyTrack(int prediction_step,
                                              const Track& track) {
   // Parameters for classification.
   static constexpr float kMaxSpeedForStationary = 2.0;                 // (m/s)
@@ -191,6 +191,11 @@ Status ConvertJointPrediction(const JointPrediction& joint_prediction,
   return OkStatus();
 }
 
+// Returns a vector position for the given step in a trajectory.
+Vec2d Position(const SingleTrajectory& trajectory, int step) {
+  return Vec2d(trajectory.center_x(step), trajectory.center_y(step));
+}
+
 }  // namespace
 
 Status ConvertChallengePredictions(
@@ -204,6 +209,92 @@ Status ConvertChallengePredictions(
                                   predictions.scenario_id(), result);
   }
   return InvalidArgumentError("Submission is missing trajectories.");
+}
+
+Status GetTrack(int object_id,
+                const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
+                const Track** track) {
+  const auto iter = ids_to_tracks.find(object_id);
+  if (iter == ids_to_tracks.end()) {
+    return InvalidArgumentError(absl::StrCat(
+        "Invalid prediction object ID. Track not found for : ", object_id));
+  }
+  *track = iter->second;
+  return OkStatus();
+}
+
+int PredictionToTrackStep(const MotionMetricsConfig& config,
+                          int prediction_step) {
+  const int ratio =
+      config.track_steps_per_second() / config.prediction_steps_per_second();
+  return (prediction_step + 1) * ratio + CurrentTrackStep(config);
+}
+
+// Track step corresponding to the current (not future) state.
+int CurrentTrackStep(const MotionMetricsConfig& config) {
+  return config.track_history_samples();
+}
+
+Polygon2d PredictionToPolygon(const MotionMetricsConfig& config,
+                              const SingleTrajectory& trajectory,
+                              int trajectory_step, const Track& track,
+                              bool use_current_box_dimensions) {
+  const Vec2d center(trajectory.center_x(trajectory_step),
+                     trajectory.center_y(trajectory_step));
+
+  // Compute the heading from the positions.
+  double heading;
+  if (trajectory.center_x_size() < 2) {
+    return Polygon2d();
+  }
+  if (trajectory_step == 0) {
+    heading = (Position(trajectory, 1) - Position(trajectory, 0)).Angle();
+  } else if (trajectory_step == trajectory.center_x_size() - 1) {
+    heading = (Position(trajectory, trajectory_step) -
+               Position(trajectory, trajectory_step - 1))
+                  .Angle();
+  } else {
+    // Compute the mean heading using the vectors from the previous and next
+    // steps.
+    const Vec2d previous = Position(trajectory, trajectory_step - 1);
+    const Vec2d current = Position(trajectory, trajectory_step);
+    const Vec2d next = Position(trajectory, trajectory_step + 1);
+    heading = ((next - current).Angle() + (current - previous).Angle()) / 2.0;
+  }
+
+  const int track_step = use_current_box_dimensions
+                             ? CurrentTrackStep(config)
+                             : PredictionToTrackStep(config, trajectory_step);
+  const ObjectState state = track.states(track_step);
+  return Polygon2d(Box2d(center, heading, state.length(), state.width()));
+}
+
+Polygon2d StateToPolygon(const ObjectState& state) {
+  const Vec2d center(state.center_x(), state.center_y());
+  return Polygon2d(
+      Box2d(center, state.heading(), state.length(), state.width()));
+}
+
+std::vector<float> GetNormalizedConfidences(
+    const MultimodalPrediction& prediction) {
+  const int num_predictions = prediction.joint_predictions_size();
+  if (num_predictions == 0) {
+    return {};
+  }
+  std::vector<float> result(num_predictions);
+  float sum = 0.0;
+  for (int i = 0; i < num_predictions; ++i) {
+    const float confidence = prediction.joint_predictions(i).confidence();
+    result[i] = confidence;
+    sum += confidence;
+  }
+
+  // Normalize the confidences.
+  float nominal = 1.0f / num_predictions;
+  for (int i = 0; i < num_predictions; ++i) {
+    result[i] = sum == 0.0 ? nominal : result[i] / sum;
+  }
+  return result;
 }
 
 }  // namespace open_dataset

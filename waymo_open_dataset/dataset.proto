@@ -18,6 +18,8 @@ syntax = "proto2";
 package waymo.open_dataset;
 
 import "waymo_open_dataset/label.proto";
+import "waymo_open_dataset/protos/map.proto";
+import "waymo_open_dataset/protos/vector.proto";
 
 message MatrixShape {
   // Dimensions for the Matrix messages defined below. Must not be empty.
@@ -298,6 +300,12 @@ message CameraSegmentationLabel {
   // The sequence id for this label. The above instance_id_to_global_id_mapping
   // is only valid with other labels with the same sequence id.
   optional string sequence_id = 4;
+
+  // A uint8 png encoded image, with the same resolution as the corresponding
+  // camera image. The value on each pixel indicates the number of cameras that
+  // overlap with this pixel. Used for the weighted Segmentation and Tracking
+  // Quality (wSTQ) metric.
+  optional bytes num_cameras_covered = 5;
 }
 
 // All timestamps in this proto are represented as seconds since Unix epoch.
@@ -417,4 +425,13 @@ message Frame {
 
   // No label zones in the *global* frame.
   repeated Polygon2dProto no_label_zones = 7;
+
+  // Map features. Only the first frame in a segment will contain map data. This
+  // field will be empty for other frames as the map is identical for all
+  // frames.
+  repeated MapFeature map_features = 10;
+
+  // Map pose offset. This offset must be added to lidar points from this frame
+  // to compensate for pose drift and align with the map features.
+  optional Vector3d map_pose_offset = 11;
 }

@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// Copyright 2011 Google Inc. All Rights Reserved.
+
 #include "waymo_open_dataset/math/vec2d.h"
 
 #include <limits>

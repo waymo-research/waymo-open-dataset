@@ -1,0 +1,57 @@
+/* Copyright 2023 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset.keypoints;
+
+import "waymo_open_dataset/protos/box.proto";
+import "waymo_open_dataset/protos/keypoint.proto";
+
+message PoseEstimation {
+  // Fields to identify the predicted keypoints.
+  message Key {
+    // Same as Frame.context.name.
+    optional string context_name = 1;
+    // Same as Frame.timestamp_micros.
+    optional int64 frame_timestamp_micros = 2;
+  }
+  optional Key key = 1;
+  optional keypoints.LaserKeypoints laser_keypoints = 2;
+  optional Box3d box = 3;
+}
+
+message PoseEstimationSubmission {
+  // This must be set as the full email used to register at waymo.com/open.
+  optional string account_name = 1;
+
+  // This name needs to be short, descriptive and unique. Only the latest result
+  // of the method from a user will show up on the leaderboard.
+  optional string unique_method_name = 2;
+
+  // Author information.
+  repeated string authors = 3;
+  optional string affiliation = 4;
+
+  // A brief description of the method.
+  optional string description = 5;
+
+  // Link to paper or other link that describes the method.
+  optional string method_link = 6;
+
+  // Estimated pose for all objects in the validation or test subset of the
+  // dataset.
+  repeated PoseEstimation pose_estimations = 7;
+}

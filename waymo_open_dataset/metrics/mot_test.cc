@@ -19,6 +19,7 @@ limitations under the License.
 #include <vector>
 
 #include <gtest/gtest.h>
+#include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
 #include "waymo_open_dataset/metrics/test_utils.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
@@ -97,7 +98,7 @@ TEST_F(MOTTest, MissAndFalsePositive) {
       }));
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 1);
@@ -106,6 +107,23 @@ TEST_F(MOTTest, MissAndFalsePositive) {
   EXPECT_EQ(m.num_matches(), 2);
   EXPECT_EQ(m.num_objects_gt(), 3);
   EXPECT_NEAR(m.matching_cost(), 0.2 + 0.4, 1e-6);
+
+  for (int i = 0; i < 2; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    EXPECT_EQ(d.tp_gt_ids_size(), 1);
+    EXPECT_EQ(d.tp_gt_ids(0), "o1");
+    EXPECT_EQ(d.tp_pred_ids_size(), 1);
+    EXPECT_EQ(d.tp_pred_ids(0), "h1");
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
+  TrackingMeasurement::Details d = m.details(2);
+  EXPECT_EQ(d.tp_gt_ids_size(), 0);
+  EXPECT_EQ(d.tp_pred_ids_size(), 0);
+  EXPECT_EQ(d.fn_gt_ids_size(), 1);
+  EXPECT_EQ(d.fn_gt_ids(0), "o1");
+  EXPECT_EQ(d.fp_pred_ids_size(), 1);
+  EXPECT_EQ(d.fp_pred_ids(0), "h1");
 }
 
 // Figure 2(b).
@@ -160,7 +178,7 @@ TEST_F(MOTTest, Mismatch) {
 
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 0);
@@ -170,6 +188,49 @@ TEST_F(MOTTest, Mismatch) {
   EXPECT_EQ(m.num_matches(), 8 * 3);
   EXPECT_EQ(m.num_objects_gt(), 8 * 3);
   EXPECT_NEAR(m.matching_cost(), 0.2 * 8 * 3, 1e-6);
+
+  for (int i = 0; i < 3; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    absl::flat_hash_map<std::string, int> gt_idx;
+    absl::flat_hash_map<std::string, int> pr_idx;
+    for (int j = 0; j < d.tp_gt_ids_size(); ++j) {
+      gt_idx[d.tp_gt_ids(j)] = j;
+      pr_idx[d.tp_pred_ids(j)] = j;
+    }
+    EXPECT_EQ(gt_idx["h1"], pr_idx["o1"]);
+    EXPECT_EQ(gt_idx["h2"], pr_idx["o2"]);
+    EXPECT_EQ(gt_idx["h3"], pr_idx["o3"]);
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
+  for (int i = 3; i < 5; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    absl::flat_hash_map<std::string, int> gt_idx;
+    absl::flat_hash_map<std::string, int> pr_idx;
+    for (int j = 0; j < d.tp_gt_ids_size(); ++j) {
+      gt_idx[d.tp_gt_ids(j)] = j;
+      pr_idx[d.tp_pred_ids(j)] = j;
+    }
+    EXPECT_EQ(gt_idx["h1"], pr_idx["o2"]);
+    EXPECT_EQ(gt_idx["h2"], pr_idx["o1"]);
+    EXPECT_EQ(gt_idx["h3"], pr_idx["o3"]);
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
+  for (int i = 5; i < 8; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    absl::flat_hash_map<std::string, int> gt_idx;
+    absl::flat_hash_map<std::string, int> pr_idx;
+    for (int j = 0; j < d.tp_gt_ids_size(); ++j) {
+      gt_idx[d.tp_gt_ids(j)] = j;
+      pr_idx[d.tp_pred_ids(j)] = j;
+    }
+    EXPECT_EQ(gt_idx["h1"], pr_idx["o3"]);
+    EXPECT_EQ(gt_idx["h2"], pr_idx["o1"]);
+    EXPECT_EQ(gt_idx["h3"], pr_idx["o2"]);
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
 }
 
 // Figure 2(c). Case 1.
@@ -197,7 +258,7 @@ TEST_F(MOTTest, SequenceLevelBestIsNotIdeal_Case1) {
   }
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 0);
@@ -206,6 +267,25 @@ TEST_F(MOTTest, SequenceLevelBestIsNotIdeal_Case1) {
   EXPECT_EQ(m.num_matches(), 9);
   EXPECT_EQ(m.num_objects_gt(), 9);
   EXPECT_NEAR(m.matching_cost(), 0.2 * 9, 1e-6);
+
+  for (int i = 0; i < 2; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    EXPECT_EQ(d.tp_gt_ids_size(), 1);
+    EXPECT_EQ(d.tp_gt_ids(0), "o1");
+    EXPECT_EQ(d.tp_pred_ids_size(), 1);
+    EXPECT_EQ(d.tp_pred_ids(0), "h1");
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
+  for (int i = 2; i < 9; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    EXPECT_EQ(d.tp_gt_ids_size(), 1);
+    EXPECT_EQ(d.tp_gt_ids(0), "o1");
+    EXPECT_EQ(d.tp_pred_ids_size(), 1);
+    EXPECT_EQ(d.tp_pred_ids(0), "h2");
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
 }
 
 // Figure 2(c). Case 2.
@@ -233,7 +313,7 @@ TEST_F(MOTTest, SequenceLevelBestIsNotIdeal_Case2) {
   }
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 0);
@@ -242,6 +322,25 @@ TEST_F(MOTTest, SequenceLevelBestIsNotIdeal_Case2) {
   EXPECT_EQ(m.num_matches(), 9);
   EXPECT_EQ(m.num_objects_gt(), 9);
   EXPECT_NEAR(m.matching_cost(), 0.2 * 9, 1e-6);
+
+  for (int i = 0; i < 4; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    EXPECT_EQ(d.tp_gt_ids_size(), 1);
+    EXPECT_EQ(d.tp_gt_ids(0), "o1");
+    EXPECT_EQ(d.tp_pred_ids_size(), 1);
+    EXPECT_EQ(d.tp_pred_ids(0), "h1");
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
+  for (int i = 4; i < 9; ++i) {
+    TrackingMeasurement::Details d = m.details(i);
+    EXPECT_EQ(d.tp_gt_ids_size(), 1);
+    EXPECT_EQ(d.tp_gt_ids(0), "o1");
+    EXPECT_EQ(d.tp_pred_ids_size(), 1);
+    EXPECT_EQ(d.tp_pred_ids(0), "h2");
+    EXPECT_EQ(d.fn_gt_ids_size(), 0);
+    EXPECT_EQ(d.fp_pred_ids_size(), 0);
+  }
 }
 
 // Figure 2(d).
@@ -269,7 +368,7 @@ TEST_F(MOTTest, CorrectReinitialization) {
 
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 1);
@@ -278,6 +377,30 @@ TEST_F(MOTTest, CorrectReinitialization) {
   EXPECT_EQ(m.num_matches(), 2);
   EXPECT_EQ(m.num_objects_gt(), 3);
   EXPECT_NEAR(m.matching_cost(), 0.2 * 2, 1e-6);
+
+  TrackingMeasurement::Details d = m.details(0);
+  EXPECT_EQ(d.tp_gt_ids_size(), 1);
+  EXPECT_EQ(d.tp_gt_ids(0), "o1");
+  EXPECT_EQ(d.tp_pred_ids_size(), 1);
+  EXPECT_EQ(d.tp_pred_ids(0), "h1");
+  EXPECT_EQ(d.fn_gt_ids_size(), 0);
+  EXPECT_EQ(d.fp_pred_ids_size(), 0);
+
+  d = m.details(1);
+  EXPECT_EQ(d.tp_gt_ids_size(), 0);
+  EXPECT_EQ(d.tp_pred_ids_size(), 0);
+  EXPECT_EQ(d.fn_gt_ids_size(), 1);
+  EXPECT_EQ(d.fn_gt_ids(0), "o1");
+  EXPECT_EQ(d.fp_pred_ids_size(), 0);
+
+  d = m.details(2);
+  EXPECT_EQ(d.tp_gt_ids_size(), 1);
+  EXPECT_EQ(d.tp_gt_ids(0), "o1");
+  EXPECT_EQ(d.tp_pred_ids_size(), 1);
+  EXPECT_EQ(d.tp_pred_ids(0), "h1");
+  EXPECT_EQ(d.fn_gt_ids_size(), 0);
+  EXPECT_EQ(d.fp_pred_ids_size(), 1);
+  EXPECT_EQ(d.fp_pred_ids(0), "h2");
 }
 
 // t0: o1->h1, o2->h2
@@ -304,7 +427,7 @@ TEST_F(MOTTest, Mismatch_GT_Eviction) {
       }));
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 0);
@@ -340,7 +463,7 @@ TEST_F(MOTTest, Missmatch_Miss_GT_Eviction) {
       }));
   MOT mot;
   for (auto& m : matchers) {
-    mot.Eval(m.get(), Label::LEVEL_2);
+    mot.Eval(m.get(), Label::LEVEL_2, true);
   }
   const TrackingMeasurement m = mot.measurement();
   EXPECT_EQ(m.num_fps(), 0);
@@ -349,6 +472,27 @@ TEST_F(MOTTest, Missmatch_Miss_GT_Eviction) {
   EXPECT_EQ(m.num_matches(), 3);
   EXPECT_EQ(m.num_objects_gt(), 4);
   EXPECT_NEAR(m.matching_cost(), 0.2 * 3, 1e-6);
+
+  TrackingMeasurement::Details d = m.details(0);
+  absl::flat_hash_map<std::string, int> gt_idx;
+  absl::flat_hash_map<std::string, int> pr_idx;
+  for (int j = 0; j < d.tp_gt_ids_size(); ++j) {
+    gt_idx[d.tp_gt_ids(j)] = j;
+    pr_idx[d.tp_pred_ids(j)] = j;
+  }
+  EXPECT_EQ(gt_idx["h1"], pr_idx["o1"]);
+  EXPECT_EQ(gt_idx["h2"], pr_idx["o2"]);
+  EXPECT_EQ(d.fn_gt_ids_size(), 0);
+  EXPECT_EQ(d.fp_pred_ids_size(), 0);
+
+  d = m.details(1);
+  EXPECT_EQ(d.tp_gt_ids_size(), 1);
+  EXPECT_EQ(d.tp_gt_ids(0), "o1");
+  EXPECT_EQ(d.tp_pred_ids_size(), 1);
+  EXPECT_EQ(d.tp_pred_ids(0), "h2");
+  EXPECT_EQ(d.fn_gt_ids_size(), 1);
+  EXPECT_EQ(d.fn_gt_ids(0), "o2");
+  EXPECT_EQ(d.fp_pred_ids_size(), 0);
 }
 
 // TODO: Add NLZ and difficulty level related tests.

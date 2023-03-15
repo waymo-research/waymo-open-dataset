@@ -234,7 +234,7 @@ REGISTER_OP("WorldToImage")
       } else {
         c->set_output(0, c->input(4));
       }
-      return Status::OK();
+      return ::tensorflow::Status();
     })
     .Doc(R"doc(
 Maps global coordinates to image coordinates. See dataset.proto for more
@@ -264,7 +264,7 @@ REGISTER_OP("ImageToWorld")
     .Output("global_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(4));
-      return Status::OK();
+      return ::tensorflow::Status();
     })
     .Doc(R"doc(
 Maps global coordinates to image coordinates. See dataset.proto for more

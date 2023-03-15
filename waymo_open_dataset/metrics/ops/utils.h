@@ -16,12 +16,12 @@ limitations under the License.
 #ifndef WAYMO_OPEN_DATASET_METRICS_OPS_UTILS_H_
 #define WAYMO_OPEN_DATASET_METRICS_OPS_UTILS_H_
 
+#include <cstdint>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/types/optional.h"
 #include "tensorflow/core/framework/tensor.h"
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 #include "waymo_open_dataset/protos/motion_metrics.pb.h"
@@ -38,7 +38,7 @@ int GetDesiredBoxDOF(Label::Box::Type box_type);
 // Parses objects from tensors.
 // bbox: [N, D] float tensor encodes the boxes.
 // type: [N] uint8 tensor encodes the object types.
-// frame_id: [N] int64 tensor tells which frame the box belongs to.
+// frame_id: [N] int64_t tensor tells which frame the box belongs to.
 // score: [N] float tensor encodes the confidence scrore of each box.
 // overlap_nlz: [N] boolean tensor tells whether a box overlaps with any no
 //   label zone.
@@ -47,7 +47,7 @@ int GetDesiredBoxDOF(Label::Box::Type box_type);
 // tracking_dificulty: [N] uint8 tensor tells the difficulty level of each box
 //   for tracking problems.
 // Returns objects parsed from tensors grouped by frame IDs.
-absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
+absl::flat_hash_map<int64_t, std::vector<Object>> ParseObjectFromTensors(
     const tensorflow::Tensor& bbox, const tensorflow::Tensor& type,
     const tensorflow::Tensor& frame_id,
     const absl::optional<const tensorflow::Tensor>& score,
@@ -60,9 +60,9 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
 // then frame_id.
 // bbox: [N, D] float tensor encodes the boxes.
 // type: [N] uint8 tensor encodes the object types.
-// frame_id: [N] int64 tensor tells which frame the box belongs to.
+// frame_id: [N] int64_t tensor tells which frame the box belongs to.
 // sequence_id: [N] string tensor tells which frame the box belongs to.
-// object_id: [N] int64 tensor tells which frame the box belongs to.
+// object_id: [N] int64_t tensor tells which frame the box belongs to.
 // score: [N] float tensor encodes the confidence scrore of each box.
 // overlap_nlz: [N] boolean tensor tells whether a box overlaps with any no
 //   label zone.
@@ -72,7 +72,7 @@ absl::flat_hash_map<int64, std::vector<Object>> ParseObjectFromTensors(
 //   for tracking problems.
 // object_speed: [N, 2] float tensor that tells the speed in xy of the object.
 absl::flat_hash_map<std::string,
-                    absl::flat_hash_map<int64, std::vector<Object>>>
+                    absl::flat_hash_map<int64_t, std::vector<Object>>>
 ParseObjectGroupedBySequenceFromTensors(
     const tensorflow::Tensor& bbox, const tensorflow::Tensor& type,
     const tensorflow::Tensor& frame_id, const tensorflow::Tensor& sequence_id,

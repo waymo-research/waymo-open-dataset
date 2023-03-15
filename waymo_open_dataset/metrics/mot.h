@@ -75,7 +75,12 @@ class MOT final {
   // non-const functions in the given matcher. Ideally we should have another
   // wrapper on Matcher to abstracts these non-const calls to avoid mutating
   // matcher in this class. For now, we leave it as this way for simpler code.
-  void Eval(Matcher *matcher_ptr, Label::DifficultyLevel difficulty_level);
+  //
+  // If 'include_details_in_measurements' is set to true, the measurements
+  // are populated with TrackingMetrics::Details protos which keeps track of
+  // which predictions were matched to which labels.
+  void Eval(Matcher *matcher_ptr, Label::DifficultyLevel difficulty_level,
+            bool include_details_in_measurements);
 
   // Returns tracking result for all evaluations so far.
   TrackingMeasurement measurement() const { return measurement_; }

@@ -73,6 +73,7 @@ RANGE_TYPE_CYCLIST_[50, +inf)_LEVEL_1: [MOTA 0] [MOTP 0] [Miss 0] [Mismatch 0] [
 RANGE_TYPE_CYCLIST_[50, +inf)_LEVEL_2: [MOTA 0] [MOTP 0] [Miss 0] [Mismatch 0] [FP 0]
 */
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -83,7 +84,6 @@ RANGE_TYPE_CYCLIST_[50, +inf)_LEVEL_2: [MOTA 0] [MOTP 0] [Miss 0] [Mismatch 0] [
 #include <utility>
 #include <vector>
 
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/config_util.h"
 #include "waymo_open_dataset/metrics/tracking_metrics.h"
@@ -136,9 +136,9 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     return;
   }
 
-  std::map<std::string, std::map<int64, std::vector<Object>>> pd_map;
-  std::map<std::string, std::map<int64, std::vector<Object>>> gt_map;
-  std::map<std::string, std::set<int64>> all_example_keys;
+  std::map<std::string, std::map<int64_t, std::vector<Object>>> pd_map;
+  std::map<std::string, std::map<int64_t, std::vector<Object>>> gt_map;
+  std::map<std::string, std::set<int64_t>> all_example_keys;
   for (auto& o : *pd_objects.mutable_objects()) {
     all_example_keys[o.context_name()].insert(o.frame_timestamp_micros());
     pd_map[o.context_name()][o.frame_timestamp_micros()].push_back(
@@ -154,7 +154,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   std::vector<std::vector<std::vector<Object>>> gts(all_example_keys.size());
   int i = 0;
   for (const auto& example_key : all_example_keys) {
-    for (int64 ts : example_key.second) {
+    for (int64_t ts : example_key.second) {
       pds[i].push_back(pd_map[example_key.first][ts]);
       gts[i].push_back(gt_map[example_key.first][ts]);
     }

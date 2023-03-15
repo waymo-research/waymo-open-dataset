@@ -16,13 +16,17 @@
 
 import abc
 import dataclasses
+import enum
 from typing import Callable, Collection, Dict, List, Mapping, Optional, Tuple
 
 import immutabledict
+import keras_cv
+from scipy import optimize
 import tensorflow as tf
 
 from waymo_open_dataset.protos import keypoint_pb2
 from waymo_open_dataset.utils import keypoint_data as _data
+
 
 KeypointType = keypoint_pb2.KeypointType
 
@@ -323,6 +327,134 @@ class MeanPerJointPositionError(KeypointsMetric):
   def _result(self) -> Dict[str, tf.Tensor]:
     """See base class."""
     return {self.name: self._mean.result()}
+
+
+class PoseEstimationMetric(KeypointsMetric):
+  """Computes Pose Estimation Metric (PEM).
+
+  It is a sum of the Mean Per Joint Position Error (MPJPE) over visible matched
+  keypoints and a penalty for mismatched keypoints.
+
+  Predicted and ground truth boxes are supposed to be already matched.
+  Boxes and keypoints for missing ground truth or predicted objects have to be
+  padded with zeros in order to have identical shapes. If a visible ground truth
+  keypoint has a corresponding prediction with visibility set to zero (i.e.
+  padded) it will be considered as a false negative keypoint detection. If a
+  visible predicted keypoint has corresponding ground truth keypoints with
+  visibility set to 0 or 1 (KeypointVisibility.is_occluded=True), it will be
+  considered as as false positive.
+
+  The evaluation service for the Pose Estimation challenge uses the Hungarian
+  method based on Intersection over Union scores larger than 0.5 (a configurable
+  threshold) to do the matching. But any other matching method could be used as
+  well to pre-process the inputs for the PEM metric.
+  """
+
+  def __init__(self, mismatch_penalty: float, name: Optional[str] = None):
+    """Initializes the metric.
+
+    Args:
+      mismatch_penalty: a value added for each mismatched keypoints.
+      name: name of the metric.
+    """
+    super().__init__(name=name)
+    self._mean = tf.keras.metrics.Mean(name=f'{name}_mean')
+    self._mismatch_penalty = mismatch_penalty
+
+  def _update_state(
+      self,
+      gt: _data.KeypointsTensors,
+      pr: _data.KeypointsTensors,
+      box: _data.BoundingBoxTensors,
+      sample_weight: Optional[tf.Tensor] = None,
+  ) -> List[tf.Operation]:
+    """See base class."""
+    error = tf.linalg.norm(gt.location - pr.location, axis=-1)
+    gt_or_pr_mask = gt.is_fully_visible | pr.is_fully_visible
+    gt_and_pr_mask = gt.is_fully_visible & pr.is_fully_visible
+    # Set to zero errors for keypoints where `gt_or_pr_mask` is False.
+    # Errors for keypoints with false positives and false negatives will be
+    # replaced with the penalty later.
+    error = tf.where(gt_or_pr_mask, error, tf.zeros_like(error))
+    penalty = tf.fill(error.shape, self._mismatch_penalty)
+    # Combine the error and the penalty. True positive keypoints have errors,
+    # false positives and false negatives - the penalty.
+    error_w_penalty = tf.where(gt_and_pr_mask, error, penalty)
+    # The denominator for the metric is a sum of all weights and it will include
+    # matched keypoints, false positives and false negatives.
+    weights = _masked_weights(tf.cast(gt_or_pr_mask, tf.float32), sample_weight)
+    update_op = self._mean.update_state(error_w_penalty, sample_weight=weights)
+    return [update_op]
+
+  def _result(self) -> Dict[str, tf.Tensor]:
+    """See base class."""
+    return {self.name: self._mean.result()}
+
+
+class KeypointVisibilityPrecision(KeypointsMetric):
+  """Computes Precision of keypoints visibility."""
+
+  def __init__(self, name: Optional[str] = None):
+    super().__init__(name=name)
+    self._precision = tf.keras.metrics.Precision(name=f'{name}_precision')
+
+  def _update_state(
+      self,
+      gt: _data.KeypointsTensors,
+      pr: _data.KeypointsTensors,
+      box: _data.BoundingBoxTensors,
+      sample_weight: Optional[tf.Tensor] = None,
+  ) -> List[tf.Operation]:
+    """See base class."""
+    del box
+    # Predicted and ground truth boxes and corresponding keypoints are
+    # supposed to be already matched. Keypoints for missing ground truth or
+    # predicted objects has to be padded with zeros in order to have identical
+    # shapes. The field `is_fully_visible` can have two values - True and False,
+    # So precision of the keypoint detection is a precision of the binary
+    # classification task.
+    return [
+        self._precision.update_state(
+            gt.is_fully_visible, pr.is_fully_visible, sample_weight
+        )
+    ]
+
+  def _result(self) -> Dict[str, tf.Tensor]:
+    """See base class."""
+    return {self.name: self._precision.result()}
+
+
+class KeypointVisibilityRecall(KeypointsMetric):
+  """Computes Recall of keypoints visibility."""
+
+  def __init__(self, name: Optional[str] = None):
+    super().__init__(name=name)
+    self._recall = tf.keras.metrics.Recall(name=f'{name}_recall')
+
+  def _update_state(
+      self,
+      gt: _data.KeypointsTensors,
+      pr: _data.KeypointsTensors,
+      box: _data.BoundingBoxTensors,
+      sample_weight: Optional[tf.Tensor] = None,
+  ) -> List[tf.Operation]:
+    """See base class."""
+    del box
+    # Predicted and ground truth boxes and corresponding keypoints are
+    # supposed to be already matched. Keypoints for missing ground truth or
+    # predicted objects has to be padded with zeros in order to have identical
+    # shapes. The field `is_fully_visible` can have two values - True and False,
+    # So recall of the keypoint detection is a recall of the binary
+    # classification task.
+    return [
+        self._recall.update_state(
+            gt.is_fully_visible, pr.is_fully_visible, sample_weight
+        )
+    ]
+
+  def _result(self) -> Dict[str, tf.Tensor]:
+    """See base class."""
+    return {self.name: self._recall.result()}
 
 
 DEFAULT_PCK_THRESHOLDS = (0.05, 0.1, 0.2, 0.3, 0.4, 0.5)
@@ -684,3 +816,153 @@ def create_combined_metric(config: CombinedMetricsConfig) -> KeypointsMetric:
       subsets=config.subsets,
       create_metric_fn=_create_pck)
   return CombinedMetric([mpjpe, pck, oks])
+
+
+class MatchingMethod(enum.Enum):
+  HUNGARIAN = 1
+
+
+@dataclasses.dataclass(frozen=True)
+class MatchingConfig:
+  method: MatchingMethod = MatchingMethod.HUNGARIAN
+  iou_threshold: float = 0.5
+
+
+def _box_to_keras_cv(b: _data.BoundingBoxTensors) -> tf.Tensor:
+  # Boxes should have the format CENTER_XYZ_DXDYDZ_PHI. Details
+  # https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box_3d/formats.py
+  return tf.concat([b.center, b.size, tf.expand_dims(b.heading, axis=-1)], -1)
+
+
+def hungarian_assignment(
+    iou: tf.Tensor, min_iou: float = 0.5
+) -> tuple[tf.Tensor, tf.Tensor]:
+  """Performs assignment using Hungarian algorithm.
+
+  It's just a wrapper for linear_sum_assignment in SciPy.
+  NOTE: It is not differentiable.
+
+  Args:
+    iou: an [M, N] matrix with pairwise IoU scores iou_ij = iou(lhs_i, rhs_j)
+    min_iou: minimal value for the IoU to consider a match.
+
+  Returns:
+    a 2-tuple (lhs_ids, rhs_ids), where `lhs_ids' and 'rhs_ids` are indices
+    which maximize the IoU of the assignment. Both are tensors with shape [K],
+    where K=min(M,N).
+  """
+  fn = lambda iou: optimize.linear_sum_assignment(iou.numpy(), maximize=True)
+  # Shape of both `lhs` and `rhs` is [K], where K=min(M,N).
+  lhs, rhs = tf.py_function(func=fn, inp=[iou], Tout=(tf.int32, tf.int32))
+  # Shape of `mask`: [K].
+  mask = tf.gather_nd(iou, tf.stack([lhs, rhs], axis=1)) > min_iou
+  return tf.boolean_mask(lhs, mask, axis=0), tf.boolean_mask(rhs, mask, axis=0)
+
+
+def missing_ids(ids: tf.Tensor, count: int) -> tf.Tensor:
+  """Returns a list of ids, missing in the input.
+
+  Args:
+    ids: input ids which are present, a tensor with shape [K].
+    count: total number of ids.
+
+  Returns:
+    a tensor with ids, which are not present in the input.
+    It has shape [count-K].
+  """
+  all_ids = tf.range(count, dtype=ids.dtype)
+  # Shape of `all_mask` is [K]
+  all_mask = tf.ones_like(ids) > 0
+  # Shape of `mask` is [count]
+  mask = tf.scatter_nd(ids[:, tf.newaxis], all_mask, shape=[count])
+  # Shape of the returned tensor is [count - K].
+  return tf.boolean_mask(all_ids, tf.logical_not(mask), axis=0)
+
+
+def _reorder(tensor: tf.Tensor, *args: int | tf.Tensor) -> tf.Tensor:
+  """Reorders slices of the tensor with optional paddings with zeros.
+
+  Example:
+    _reorder([0, 1, 2, 3, 4], [[1, 3], 2, [2, 4], 3]) will return
+    [1, 3, 0, 0, 2, 4, 0, 0, 0]
+
+  Args:
+    tensor: input tensor with shape[N, ...].
+    *args: a sequence with tensors or integers, where elements could be indices
+      of the slices or number of elements to pad.
+
+  Returns:
+    a tensor with shape [sum(n_i), ...], where n_i is the length of ids tensor
+    or corresponding padding.
+  """
+  parts = []
+  for ids_or_num in args:
+    if isinstance(ids_or_num, tf.Tensor):
+      ids = ids_or_num
+      parts.append(tf.gather(tensor, ids, axis=0))
+    elif isinstance(ids_or_num, int):
+      num = ids_or_num
+      parts.append(tf.zeros((num,) + tensor.shape[1:], dtype=tensor.dtype))
+    else:
+      raise AssertionError('')
+  return tf.concat(parts, axis=0)
+
+
+def _reorder_objects(
+    objects: _data.PoseEstimationTensors, *args: int | tf.Tensor
+) -> _data.PoseEstimationTensors:
+  """Reorders all tensors in the input dataclass according to the *args."""
+  reorder = lambda t: _reorder(t, *args)
+  return _data.PoseEstimationTensors(
+      keypoints=_data.KeypointsTensors(
+          location=reorder(objects.keypoints.location),
+          visibility=reorder(objects.keypoints.visibility),
+      ),
+      box=_data.BoundingBoxTensors(
+          center=reorder(objects.box.center),
+          size=reorder(objects.box.size),
+          heading=reorder(objects.box.heading),
+      ),
+  )
+
+
+def match_pose_estimations(
+    gt: _data.PoseEstimationTensors,
+    pr: _data.PoseEstimationTensors,
+    config: MatchingConfig = MatchingConfig(),
+) -> Tuple[_data.PoseEstimationTensors, _data.PoseEstimationTensors]:
+  """Reorders input tensors by matching bounding boxes of `gt` and `pr`.
+
+  Shapes of output boxes and keypoints are [K, N, ...], where K is a sum of the
+  number of matched and mismatched objects.
+
+  Args:
+    gt: a ground truth pose estimation tensors for all objects in a frame.
+    pr: a predicted pose estimation tensors for all objects in a frame. Number
+      of predicted objects is likely to be different from the number of ground
+      truth objects.
+    config: Configuration for the matching method.
+
+  Returns:
+    a 2-tuple (gt, pr) with reordered ground truth and prediction data
+    compatible with `KeypointMetric` classes - shapes of all tensors in the
+    corresponding dataclasses fields will match between `gt` and `pr`. For
+    example: gt.keypoints.location.shape == pr.keypoints.location.shape
+    and the 3D coordinate of the j-th keypoint for the i-th ground truth object
+    will correspond to pr.keypoints.location[i, j].
+  """
+  # Compute IoU between ground truth and predicted boxes.
+  gt_box = _box_to_keras_cv(gt.box)
+  pr_box = _box_to_keras_cv(pr.box)
+  iou = keras_cv.ops.iou_3d(gt_box, pr_box)
+  # Identify indices of ground truth and prediction boxes that match.
+  gt_ids, pr_ids = hungarian_assignment(iou, min_iou=config.iou_threshold)
+  # Indices of false negative ground truth objects.
+  fn_ids = missing_ids(gt_ids, count=gt.box.center.shape[0])
+  # Indices of false positive predicted objects.
+  fp_ids = missing_ids(pr_ids, count=pr.box.center.shape[0])
+  # Output ground truth order: matched objects, false negatives, zero padding.
+  gt_m = _reorder_objects(gt, gt_ids, fn_ids, fp_ids.shape[0])
+  # Output predictions order: matched objects, zero padding, false positives.
+  pr_m = _reorder_objects(pr, pr_ids, fn_ids.shape[0], fp_ids)
+  return (gt_m, pr_m)

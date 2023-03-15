@@ -19,6 +19,7 @@ syntax = "proto2";
 
 package waymo.open_dataset;
 
+import "waymo_open_dataset/protos/compressed_lidar.proto";
 import "waymo_open_dataset/protos/map.proto";
 
 message ObjectState {
@@ -138,6 +139,12 @@ message Scenario {
   // submissions. This field is populated in the training set only as a
   // suggestion of objects to train on.
   repeated RequiredPrediction tracks_to_predict = 11;
+
+  // Per time step Lidar data. This contains lidar up to the current time step
+  // such that compressed_frame_laser_data[i] corresponds to the states at
+  // timestamps_seconds[i] where i <= current_time_index.
+  // This field is not populated in all versions of the dataset.
+  repeated CompressedFrameLaserData compressed_frame_laser_data = 12;
 
 
 }

@@ -1,0 +1,100 @@
+/* Copyright 2023 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto contains the compressed lidar data for Waymo Open Motion Dataset.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/dataset.proto";
+
+// Range image is a 2d tensor. The first dimension (rows) represents pitch.
+// The second dimension represents yaw (columns).
+// Zlib compressed range images include:
+// Raw range image: Raw range image with a non-empty
+// 'range_image_pose_delta_compressed' which tells the vehicle pose of each
+// range image cell.
+// NOTE: 'range_image_pose_delta_compressed' is only populated for the first
+// range image return. The second return has the exact the same range image pose
+// as the first one.
+message CompressedRangeImage {
+  // Zlib compressed [H, W, 4] serialized DeltaEncodedData message version which
+  // stores MatrixFloat.
+  // MatrixFloat range_image;
+  // range_image.ParseFromString(val);
+  // Inner dimensions are:
+  //   * channel 0: range
+  //   * channel 1: intensity
+  //   * channel 2: elongation
+  //   * channel 3: is in any no label zone.
+  optional bytes range_image_delta_compressed = 1;
+
+  // Zlib compressed [H, W, 4] serialized DeltaEncodedData message version which
+  // stores MatrixFloat.
+  // To decompress (Please see the documentation for lidar delta encoding):
+  // string val = delta_encoder.decompress(range_image_pose_compressed);
+  // MatrixFloat range_image_pose;
+  // range_image_pose.ParseFromString(val);
+  // Inner dimensions are [roll, pitch, yaw, x, y, z] represents a transform
+  // from vehicle frame to global frame for every range image pixel.
+  // This is ONLY populated for the first return. The second return is assumed
+  // to have exactly the same range_image_pose_compressed.
+  //
+  // The roll, pitch and yaw are specified as 3-2-1 Euler angle rotations,
+  // meaning that rotating from the navigation to vehicle frame consists of a
+  // yaw, then pitch and finally roll rotation about the z, y and x axes
+  // respectively. All rotations use the right hand rule and are positive
+  // in the counter clockwise direction.
+  optional bytes range_image_pose_delta_compressed = 4;
+}
+
+// Metadata used for delta encoder.
+message Metadata {
+  // Range image's shape information in the compressed data.
+  repeated int32 shape = 1;
+  // Range image quantization precision for each range image channel.
+  repeated float quant_precision = 2;
+}
+
+// Delta Encoded data structure. The protobuf compressed mask and residual data
+// and the compressed data is encoded via zlib:
+// compressed_bytes = zlib.compress(
+//  metadata + data_bytes + mask_bytes + residuals_bytes)
+// The range_image_delta_compressed and range_image_pose_delta_compressed in the
+// CompressedRangeImage are both encoded using this method.
+message DeltaEncodedData {
+  repeated sint64 residual = 1 [packed = true];
+  repeated uint32 mask = 2 [packed = true];
+  optional Metadata metadata = 3;
+}
+
+// Compressed Laser data.
+message CompressedLaser {
+  optional LaserName.Name name = 1;
+  optional CompressedRangeImage ri_return1 = 2;
+  optional CompressedRangeImage ri_return2 = 3;
+}
+
+// Lidar data of a frame.
+message CompressedFrameLaserData {
+  // The Lidar data for each timestamp.
+  repeated CompressedLaser lasers = 1;
+  // Laser calibration data has the same length as that of lasers.
+  repeated LaserCalibration laser_calibrations = 2;
+  // Poses of the SDC corresponding to the track states for each step in the
+  // scenario, similar to the one in the Frame proto.
+  optional Transform pose = 3;
+}

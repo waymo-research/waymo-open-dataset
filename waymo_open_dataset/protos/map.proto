@@ -80,6 +80,7 @@ message MapFeature {
     StopSign stop_sign = 7;
     Crosswalk crosswalk = 8;
     SpeedBump speed_bump = 9;
+    Driveway driveway = 10;
   }
 }
 
@@ -243,5 +244,12 @@ message SpeedBump {
   // The polygon defining the outline of the speed bump. The polygon is assumed
   // to be closed (i.e. a segment exists between the last point and the first
   // point).
+  repeated MapPoint polygon = 1;
+}
+
+message Driveway {
+  // The polygon defining the outline of the driveway region. The polygon is
+  // assumed to be closed (i.e. a segment exists between the last point and the
+  // first point).
   repeated MapPoint polygon = 1;
 }

@@ -41,7 +41,7 @@ Follow instructions in [pip_pkg_scripts](../pip_pkg_scripts/README.md).
 ## Local compilation without docker system requirements
 
 *   g++ 5 or higher.
-*   python 3.7, 3.8, 3.9 with TensorFlow 2.4.0, 2.5.0, 2.6.0
+*   python 3.7, 3.8, 3.9 with TensorFlow 2.4.0, 2.5.0, 2.6.0, 2.10.0, 2.11.0
 
 The code has two main parts. One is a utility written in C++ to compute the
 evaluation metrics. The other part is a set of

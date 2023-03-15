@@ -261,6 +261,22 @@ message TrackingMeasurement {
 
   // The score cutoff used to compute this measurement.
   optional float score_cutoff = 7;
+
+  message Details {
+    // False positive prediction ids.
+    repeated string fp_pred_ids = 1;
+    // False negative ground truth ids.
+    repeated string fn_gt_ids = 2;
+    // True positive ground truth ids. Should be of the same length with
+    // tp_pr_ids, tp_ious. Each pair of ids of the same index correspond to
+    // the ids of ground truth object and prediction objects which are matched.
+    repeated string tp_gt_ids = 3;
+    // True positive prediction ids.
+    repeated string tp_pred_ids = 4;
+  }
+  // If set, will include the ids of the fp/tp/fn objects. Each element
+  // corresponds to one frame of matching.
+  repeated Details details = 8;
 }
 
 message TrackingMeasurements {
@@ -280,6 +296,8 @@ message TrackingMetrics {
   optional float mismatch = 4;
   // False positive ratio (num_fps / num_objects_gt).
   optional float fp = 5;
+  // Total number of ground truth objects (i.e. labeled objects).
+  optional int32 num_objects_gt = 9;
 
   optional float score_cutoff = 6;
 

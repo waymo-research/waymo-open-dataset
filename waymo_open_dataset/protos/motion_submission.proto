@@ -153,6 +153,10 @@ message MotionChallengeSubmission {
   // The challenge submission type.
   optional SubmissionType submission_type = 2;
 
+  // Set this to true if your model uses the lidar data provided in the motion
+  // dataset.
+  optional bool uses_lidar_data = 9;
+
   // The set of scenario predictions to evaluate. One entry should exist for
   // every record in the test set.
   repeated ChallengeScenarioPredictions scenario_predictions = 1;

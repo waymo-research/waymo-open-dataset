@@ -1,0 +1,90 @@
+# proto-file: protos/sim_agents_metrics.proto
+# proto-message: car.open_dataset.SimAgentMetricsConfig
+
+linear_speed: {
+  histogram: {
+    min_val: 0.0
+    max_val: 30.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+linear_acceleration: {
+  histogram: {
+    min_val: 0.0
+    max_val: 5.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+angular_speed: {
+  histogram: {
+    min_val: 0.0
+    max_val: 1.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+angular_acceleration: {
+  histogram: {
+    min_val: 0.0
+    max_val: 0.3
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+distance_to_nearest_object: {
+  histogram: {
+    min_val: -5.0
+    max_val: 100.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+collision_indication: {
+  bernoulli: {}
+  metametric_weight: 1.0
+}
+
+distance_to_road_edge: {
+  histogram: {
+    min_val: -5.0
+    max_val: 15.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+
+offroad_indication: {
+  bernoulli: {}
+  metametric_weight: 1.0
+}
+
+time_to_collision: {
+  histogram: {
+    min_val: 0.0
+    max_val: 5.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.1
+  }
+  independent_timesteps: true
+  metametric_weight: 1.0
+}
+

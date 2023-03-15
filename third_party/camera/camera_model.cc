@@ -38,7 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "Eigen/Geometry"
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/math/vec2d.h"
 

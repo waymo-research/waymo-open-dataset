@@ -22,9 +22,11 @@ import tensorflow as tf
 
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import keypoint_pb2
+from waymo_open_dataset.protos import vector_pb2
 from waymo_open_dataset.utils import keypoint_data as _data
 from waymo_open_dataset.utils import keypoint_draw as _lib
 from waymo_open_dataset.utils import keypoint_test_util as _util
+
 
 _NOSE = keypoint_pb2.KeypointType.KEYPOINT_TYPE_NOSE
 _LEFT_SHOULDER = keypoint_pb2.KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER
@@ -37,7 +39,7 @@ def _get_collection(ax, col_type):
   return cols[0]
 
 
-def _vec2d_as_array(location_px: keypoint_pb2.Vec2d) -> np.ndarray:
+def _vec2d_as_array(location_px: vector_pb2.Vector2d) -> np.ndarray:
   return np.array([location_px.x, location_px.y])
 
 

@@ -1,4 +1,5 @@
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
@@ -14,7 +15,6 @@ cc_library(
     hdrs = ["camera_model.h"],
     deps = [
         "//waymo_open_dataset:dataset_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/math:vec2d",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/types:optional",

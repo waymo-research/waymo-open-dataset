@@ -27,6 +27,7 @@ limitations under the License.
 // For python, it should be similar but just python proto interface.
 
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <streambuf>
@@ -38,7 +39,6 @@ limitations under the License.
 #include "absl/flags/parse.h"
 #include "absl/strings/str_cat.h"
 #include "absl/time/time.h"
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
@@ -48,7 +48,7 @@ ABSL_FLAG(std::vector<std::string>, input_filenames, {},
           "Comma separated list of files that contains "
           "car.open_dataset.Objects proto.");
 ABSL_FLAG(std::string, output_filename, "", "The output filename.");
-ABSL_FLAG(waymo::open_dataset::int32, num_shards, 4, "Number of sharded files.");
+ABSL_FLAG(int32_t, num_shards, 4, "Number of sharded files.");
 ABSL_FLAG(std::string, submission_filename, "",
           "Filename of a submission file that has a text proto of the "
           "Submission proto.");
@@ -69,7 +69,7 @@ void example_code_to_create_a_prediction_file() {
       "dataset.proto.");
   // The frame timestamp for the prediction. See Frame::timestamp_micros in
   // dataset.proto.
-  constexpr int64 kInvalid = -1;
+  constexpr int64_t kInvalid = -1;
   o->set_frame_timestamp_micros(kInvalid);
   // This is only needed for 2D detection or tracking tasks.
   // Set it to the camera name the prediction is for.
@@ -111,7 +111,7 @@ void ValidateFlags() {
   if (output_filename.empty()) {
     LOG(FATAL) << "--output_filename must be set.";
   }
-  const int32 num_shards = absl::GetFlag(FLAGS_num_shards);
+  const int32_t num_shards = absl::GetFlag(FLAGS_num_shards);
   if (num_shards <= 0) {
     LOG(FATAL) << "--num_shards must be > 0.";
   }

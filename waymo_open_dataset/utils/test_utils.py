@@ -21,6 +21,9 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
+# copybara removed file resource import
+
+from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.utils import transform_utils
 
 __all__ = ['generate_boxes', 'generate_range_image', 'generate_extrinsic']
@@ -103,3 +106,16 @@ def generate_extrinsic(yaw, pitch, roll, translation, batch=1):
           transform_utils.get_transform(
               rotation_matrix, tf.constant(translation, dtype=tf.float32)),
           axis=0), [batch, 1, 1])
+
+
+def get_womd_test_scenario() -> scenario_pb2.Scenario:
+  """Returns the testing scenario packaged into the `testdata` subdirectory.
+
+  The test scenario is from the training set, with ID: 637f20cafde22ff8.
+  """
+  # pylint: disable=line-too-long
+  # pyformat: disable
+  test_data_path = '{pyglib_resource}waymo_open_dataset/utils/testdata/motion_data_one_scenario.tfrecord'.format(pyglib_resource='')
+  dataset = tf.data.TFRecordDataset(test_data_path)
+  scenario_bytes = dataset.get_single_element().numpy()
+  return scenario_pb2.Scenario.FromString(scenario_bytes)

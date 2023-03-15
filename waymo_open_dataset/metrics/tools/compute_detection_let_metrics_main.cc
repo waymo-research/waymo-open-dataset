@@ -77,6 +77,7 @@ limitations under the License.
 // NOLINTEND(whitespace/line_length)
 
 #include <array>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <streambuf>
@@ -85,7 +86,6 @@ limitations under the License.
 #include <utility>
 
 #include "absl/strings/str_cat.h"
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/config_util.h"
@@ -206,9 +206,9 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     *gt_objects.add_objects() = o;
   }
 
-  std::map<std::pair<std::string, int64>, std::vector<Object>> pd_map;
-  std::map<std::pair<std::string, int64>, std::vector<Object>> gt_map;
-  std::set<std::pair<std::string, int64>> all_example_keys;
+  std::map<std::pair<std::string, int64_t>, std::vector<Object>> pd_map;
+  std::map<std::pair<std::string, int64_t>, std::vector<Object>> gt_map;
+  std::set<std::pair<std::string, int64_t>> all_example_keys;
   auto get_key = [](const Object& object) {
     return std::make_pair(
         absl::StrCat(object.context_name(), "_", object.camera_name()),

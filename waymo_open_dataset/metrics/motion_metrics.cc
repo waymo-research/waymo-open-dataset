@@ -21,12 +21,12 @@ limitations under the License.
 #include <cmath>
 #include <limits>
 #include <unordered_map>
+#include <vector>
 
 #include "google/protobuf/text_format.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_cat.h"
 #include "absl/types/optional.h"
-#include "waymo_open_dataset/math/box2d.h"
 #include "waymo_open_dataset/math/polygon2d.h"
 #include "waymo_open_dataset/math/vec2d.h"
 #include "waymo_open_dataset/metrics/motion_metrics_utils.h"
@@ -228,36 +228,13 @@ Status ValidatePredictionIds(
   return OkStatus();
 }
 
-using ConstTrackPtr = const Track*;
-
-// Get the track with the given ID from ids_to_tracks. Returns an error if
-// the ID is not found in the map.
-Status GetTrack(int object_id,
-                const absl::flat_hash_map<int, ConstTrackPtr>& ids_to_tracks,
-                ConstTrackPtr* track) {
-  const auto iter = ids_to_tracks.find(object_id);
-  if (iter == ids_to_tracks.end()) {
-    return InvalidArgumentError(absl::StrCat(
-        "Invalid prediction object ID. Track not found for : ", object_id));
-  }
-  *track = iter->second;
-  return OkStatus();
-}
-
-// Returns the track step corresponding to a given prediction step.
-int PredictionToTrack(const MotionMetricsConfig& config, int prediction_step) {
-  const int ratio =
-      config.track_steps_per_second() / config.prediction_steps_per_second();
-  return (prediction_step + 1) * ratio + config.track_history_samples();
-}
-
 // Computes L2 deviation of the trajectory from the track at the given step.
 // Returns nullopt if the track state is not valid at the given step.
 absl::optional<double> DisplacementAtStep(const MotionMetricsConfig& config,
                                           const SingleTrajectory& trajectory,
                                           const Track& track,
                                           int trajectory_step) {
-  const int track_step = PredictionToTrack(config, trajectory_step);
+  const int track_step = PredictionToTrackStep(config, trajectory_step);
   const ObjectState& track_state = track.states(track_step);
   if (!track_state.valid()) {
     return absl::nullopt;
@@ -286,7 +263,7 @@ struct Displacement {
 absl::optional<Displacement> GetDisplacementAtStep(
     const MotionMetricsConfig& config, const SingleTrajectory& trajectory,
     const Track& track, int trajectory_step) {
-  const int track_step = PredictionToTrack(config, trajectory_step);
+  const int track_step = PredictionToTrackStep(config, trajectory_step);
   const ObjectState& track_state = track.states(track_step);
   if (!track_state.valid()) {
     return absl::nullopt;
@@ -316,7 +293,8 @@ absl::optional<double> AverageDisplacement(const MotionMetricsConfig& config,
   double error = 0.0;
   int state_count = 0;
   for (int i = 0; i <= max_prediction_step; ++i) {
-    const ObjectState& track_state = track.states(PredictionToTrack(config, i));
+    const ObjectState& track_state =
+        track.states(PredictionToTrackStep(config, i));
     if (track_state.valid()) {
       const double dx = trajectory.center_x(i) - track_state.center_x();
       const double dy = trajectory.center_y(i) - track_state.center_y();
@@ -346,7 +324,7 @@ Status AverageDisplacement(
   int ade_count = 0;
   for (const auto& trajectory : joint_prediction.trajectories()) {
     // Get the track associated with the trajectory prediction.
-    ConstTrackPtr track;
+    const Track* track;
     Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track);
     if (!status.ok()) {
       return InternalError(
@@ -467,7 +445,7 @@ Status IsMatch(const MotionMetricsConfig& config,
   int measurement_count = 0;
   for (int index = 0; index < num_trajectories; ++index) {
     const SingleTrajectory& trajectory = joint_prediction.trajectories(index);
-    ConstTrackPtr track_ptr;
+    const Track* track_ptr;
     auto status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
     if (!status.ok()) {
       return status;
@@ -565,70 +543,6 @@ Status ComputeMissRate(
   return OkStatus();
 }
 
-// Returns a normalized vector of the prediction trajectory confidences.
-std::vector<float> GetNormalizedConfidences(
-    const MultimodalPrediction& prediction) {
-  const int num_predictions = prediction.joint_predictions_size();
-  if (num_predictions == 0) {
-    return {};
-  }
-  std::vector<float> result(num_predictions);
-  float sum = 0.0;
-  for (int i = 0; i < num_predictions; ++i) {
-    const float confidence = prediction.joint_predictions(i).confidence();
-    result[i] = confidence;
-    sum += confidence;
-  }
-
-  // Normalize the confidences.
-  float nominal = 1.0f / num_predictions;
-  for (int i = 0; i < num_predictions; ++i) {
-    result[i] = sum == 0.0 ? nominal : result[i] / sum;
-  }
-  return result;
-}
-
-// Returns a vector position for the given step in a trajectory.
-Vec2d Position(const SingleTrajectory& trajectory, int step) {
-  return Vec2d(trajectory.center_x(step), trajectory.center_y(step));
-}
-
-// Returns a bounding box polygon for the given trajectory at the given step
-// using the dimensions of the original track box.
-Polygon2d PredictionToPolygon(const MotionMetricsConfig& config,
-                              const SingleTrajectory& trajectory,
-                              int trajectory_step, const Track& track) {
-  const int track_step = PredictionToTrack(config, trajectory_step);
-  const ObjectState state = track.states(track_step);
-  const Vec2d center(trajectory.center_x(trajectory_step),
-                     trajectory.center_y(trajectory_step));
-
-  // Compute the heading from the positions.
-  double heading;
-  if (trajectory_step == 0) {
-    heading = (Position(trajectory, 1) - Position(trajectory, 0)).Angle();
-  } else if (trajectory_step == trajectory.center_x_size() - 1) {
-    heading = (Position(trajectory, trajectory_step) -
-               Position(trajectory, trajectory_step - 1))
-                  .Angle();
-  } else {
-    // Compute the mean heading using the vectors from the previous and next
-    // steps.
-    const Vec2d previous = Position(trajectory, trajectory_step - 1);
-    const Vec2d current = Position(trajectory, trajectory_step);
-    const Vec2d next = Position(trajectory, trajectory_step + 1);
-    heading = ((next - current).Angle() + (current - previous).Angle()) / 2.0;
-  }
-  return Polygon2d(Box2d(center, heading, state.length(), state.width()));
-}
-
-// Returns a bounding box polygon for the given object state.
-Polygon2d StateToPolygon(const ObjectState& state) {
-  const Vec2d center(state.center_x(), state.center_y());
-  return Polygon2d(
-      Box2d(center, state.heading(), state.length(), state.width()));
-}
-
 // Computes the overlap rate for a single MultimodalPrediction.
 Status ComputeOverlapRate(
     const MotionMetricsConfig& config, int last_trajectory_step,
@@ -658,7 +572,7 @@ Status ComputeOverlapRate(
       prediction.joint_predictions(max_index);
   for (const auto& trajectory : joint_prediction.trajectories()) {
     for (int step = 0; step <= last_trajectory_step; ++step) {
-      ConstTrackPtr track_ptr;
+      const Track* track_ptr;
       Status status =
           GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
       if (!status.ok()) {
@@ -672,7 +586,7 @@ Status ComputeOverlapRate(
         if (track.id() == prediction_track.id()) {
           continue;
         }
-        const int track_step = PredictionToTrack(config, step);
+        const int track_step = PredictionToTrackStep(config, step);
         const ObjectState state = track.states(track_step);
         if (!state.valid()) {
           continue;
@@ -740,7 +654,7 @@ Status ComputeMeanAveragePrecision(
 
   for (const auto& trajectory :
        prediction.joint_predictions(0).trajectories()) {
-    ConstTrackPtr track_ptr;
+    const Track* track_ptr;
     Status status = GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
     if (!status.ok()) {
       return status;
@@ -828,7 +742,8 @@ Status ComputeMeanAveragePrecision(
 Status ComputeAllMetrics(
     const MotionMetricsConfig& config, const ScenarioPredictions& predictions,
     const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
-    const Scenario& scenario, BucketedMetricsStats* result) {
+    const Scenario& scenario, BucketedMetricsStats* result,
+    CustomMetricsFn custom_metrics_fn) {
   // Accumulate the metric values across all object predictions.
   for (const auto& multi_modal_prediction :
        predictions.multi_modal_predictions()) {
@@ -849,7 +764,7 @@ Status ComputeAllMetrics(
 
     for (const auto& trajectory :
          multi_modal_prediction.joint_predictions(0).trajectories()) {
-      ConstTrackPtr track_ptr;
+      const Track* track_ptr;
       Status status =
           GetTrack(trajectory.object_id(), ids_to_tracks, &track_ptr);
       if (!status.ok()) {
@@ -941,6 +856,18 @@ Status ComputeAllMetrics(
       }
       metrics_stats.soft_mean_average_precision.Accumulate(
           soft_mean_average_precision_stats);
+
+      // Compute custom metrics if custom_metrics_fn exists. We intentionally
+      // run custom_metrics_fn last since it is capable of using the already
+      // metrics_stats computed for the standard (non-custom) metrics.
+      if (custom_metrics_fn) {
+        status =
+            custom_metrics_fn(config, ids_to_tracks, scenario, evaluation_step,
+                              multi_modal_prediction, metrics_stats);
+        if (!status.ok()) {
+          return status;
+        }
+      }
     }
   }
   return OkStatus();
@@ -956,6 +883,9 @@ void MetricsStats::Accumulate(const MetricsStats& metrics_stats) {
   mean_average_precision.Accumulate(metrics_stats.mean_average_precision);
   soft_mean_average_precision.Accumulate(
       metrics_stats.soft_mean_average_precision);
+  for (auto const& [k, v] : metrics_stats.custom_metrics) {
+    custom_metrics[k].Accumulate(v);
+  }
 }
 
 void PredictionStats::Accumulate(const PredictionStats& prediction_stats) {
@@ -1080,7 +1010,8 @@ double ComputeMapMetric(MeanAveragePrecisionStats* stats) {
 Status ComputeMetricsStats(const MotionMetricsConfig& config,
                            const ScenarioPredictions& predictions,
                            const Scenario& scenario,
-                           BucketedMetricsStats* result) {
+                           BucketedMetricsStats* result,
+                           CustomMetricsFn custom_metrics_fn) {
   Status status = ValidateConfig(config);
   if (!status.ok()) {
     return status;
@@ -1117,8 +1048,8 @@ Status ComputeMetricsStats(const MotionMetricsConfig& config,
   }
 
   // Compute the metrics for the predictions.
-  status =
-      ComputeAllMetrics(config, predictions, ids_to_tracks, scenario, result);
+  status = ComputeAllMetrics(config, predictions, ids_to_tracks, scenario,
+                             result, custom_metrics_fn);
   if (!status.ok()) {
     return status;
   }
@@ -1145,6 +1076,9 @@ void ComputeBundle(int step, Track::ObjectType object_type, MetricsStats* stats,
       ComputeMapMetric(&stats->mean_average_precision));
   bundle->set_soft_mean_average_precision(
       ComputeMapMetric(&stats->soft_mean_average_precision));
+  for (auto const& [k, v] : stats->custom_metrics) {
+    (*bundle->mutable_custom_metrics())[k] = v.Mean();
+  }
 }
 
 }  // namespace
@@ -1199,7 +1133,7 @@ Status ComputeMotionMetrics(
     const MotionMetricsConfig& config,
     const absl::flat_hash_map<std::string, ScenarioPredictions>& predictions,
     const absl::flat_hash_map<std::string, Scenario>& scenarios,
-    MotionMetrics* metrics) {
+    MotionMetrics* metrics, CustomMetricsFn custom_metrics_fn) {
   BucketedMetricsStats total_stats;
 
   // Compute statistics for all prediction, scenario pairs.
@@ -1211,8 +1145,8 @@ Status ComputeMotionMetrics(
     const Scenario& scenario = iter->second;
 
     BucketedMetricsStats metrics_stats;
-    Status status =
-        ComputeMetricsStats(config, predictions, scenario, &metrics_stats);
+    Status status = ComputeMetricsStats(config, predictions, scenario,
+                                        &metrics_stats, custom_metrics_fn);
     if (!status.ok()) {
       return status;
     }

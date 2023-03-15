@@ -16,6 +16,10 @@ limitations under the License.
 #ifndef WAYMO_OPEN_DATASET_METRICS_MOTION_METRICS_H_
 #define WAYMO_OPEN_DATASET_METRICS_MOTION_METRICS_H_
 
+#include <functional>
+#include <map>
+#include <vector>
+
 #include "absl/container/flat_hash_map.h"
 #include "waymo_open_dataset/common/status.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
@@ -123,6 +127,9 @@ struct MetricsStats {
   // measurements is equal to the overall overlap rate.
   Accumulator overlap_rate;
 
+  // Accumulators for custom metrics identified by name.
+  absl::flat_hash_map<std::string, Accumulator> custom_metrics;
+
   // The mean average precision stats. The mAP metric is computed by
   // accumulating true and false positive measurements based on thresholding the
   // FDE at the measurement time step. The measurements are separated into
@@ -183,6 +190,14 @@ double ComputeMapMetric(MeanAveragePrecisionStats* stats);
 // Get the default config for the metrics server.
 MotionMetricsConfig GetChallengeConfig();
 
+// Custom metrics can be computed by supplying a callback of type
+// CustomMetricsFn. See ComputeMetricsStats() and ComputeMotionMetrics().
+using CustomMetricsFn = std::function<Status(
+    const MotionMetricsConfig& config,
+    const absl::flat_hash_map<int, const Track*>& ids_to_tracks,
+    const Scenario& scenario, int evaluation_step,
+    const MultimodalPrediction& prediction, MetricsStats& metrics_stats)>;
+
 // Computes metrics stats broken down by object type and measurement time step
 // for a single ScenarioPredictions proto.
 // Metric stats are measured up to a given prediction time step as if that were
@@ -195,10 +210,12 @@ MotionMetricsConfig GetChallengeConfig();
 //   scenario - The scenario proto containing the data used to generate the
 //      given submission proto.
 //   stats - Return value container.
+//   custom_metrics_fn - Callback to compute custom metrics.
 Status ComputeMetricsStats(const MotionMetricsConfig& config,
                            const ScenarioPredictions& predictions,
                            const Scenario& scenario,
-                           BucketedMetricsStats* result);
+                           BucketedMetricsStats* result,
+                           CustomMetricsFn custom_metrics_fn = {});
 
 // Computes the metrics values for each combination of object type and
 // measurement time step. Returns a MotionMetrics proto. All precision samples
@@ -212,11 +229,12 @@ MotionMetrics ComputeMotionMetrics(BucketedMetricsStats* total_stats);
 //   predictions - The predictions keyed by scenario ID.
 //   scenarios - The scenarios keyed by scenario ID.
 //   metrics - Computed metric values.
+//   custom_metrics_fn - Callback to compute custom metrics.
 Status ComputeMotionMetrics(
     const MotionMetricsConfig& config,
     const absl::flat_hash_map<std::string, ScenarioPredictions>& predictions,
     const absl::flat_hash_map<std::string, Scenario>& scenarios,
-    MotionMetrics* metrics);
+    MotionMetrics* metrics, CustomMetricsFn custom_metrics_fn = {});
 
 }  // namespace open_dataset
 }  // namespace waymo

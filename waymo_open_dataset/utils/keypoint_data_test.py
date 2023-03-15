@@ -13,13 +13,16 @@
 # limitations under the License.
 # ==============================================================================
 """Tests for keypoint_data."""
+
 import numpy as np
 import tensorflow as tf
 
 from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset import label_pb2
+from waymo_open_dataset.protos import keypoint_pb2
 from waymo_open_dataset.utils import keypoint_data as _lib
 from waymo_open_dataset.utils import keypoint_test_util as _util
+
 
 _NOSE = _lib.KeypointType.KEYPOINT_TYPE_NOSE
 _LEFT_SHOULDER = _lib.KeypointType.KEYPOINT_TYPE_LEFT_SHOULDER
@@ -253,20 +256,54 @@ class KeypointUtilsTest(tf.test.TestCase):
     self.assertAllEqual(tensors.size, [3, 4])
 
   def test_create_tensors_from_laser_boxes(self):
-    box = label_pb2.Label.Box(
-        center_x=1,
-        center_y=2,
-        center_z=3,
-        length=4,
-        width=5,
-        height=6,
-        heading=7)
+    box = _util.laser_box((1, 2, 3), (4, 5, 6), 7)
 
     tensors = _lib.create_laser_box_tensors(box)
 
     self.assertAllEqual(tensors.center, [1, 2, 3])
     self.assertAllEqual(tensors.size, [4, 5, 6])
     self.assertAllEqual(tensors.heading, 7)
+
+  def test_stack_boxes_supports_optional_heading(self):
+    boxes = [_util.camera_box((1, 2), (3, 4)), _util.camera_box((5, 6), (7, 8))]
+    box_tensors = [_lib.create_camera_box_tensors(b) for b in boxes]
+
+    stacked = _lib.stack_boxes(box_tensors)
+
+    self.assertEqual(stacked.center.shape, [2, 2])
+    self.assertEqual(stacked.size.shape, [2, 2])
+
+
+class CreatePoseEstimationTensorsTest(tf.test.TestCase):
+
+  def test_returns_tensors_with_expected_shapes(self):
+    nose = _util.laser_keypoint(_NOSE, location_m=(1, 2, 3))
+    lshoulder = _util.laser_keypoint(_LEFT_SHOULDER, location_m=(4, 5, 6))
+    rshoulder = _util.laser_keypoint(_RIGHT_SHOULDER, location_m=(6, 5, 4))
+    labels = [
+        _lib.LaserLabel(
+            object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
+            box=_util.laser_box((1, 2, 3), (4, 5, 6), 7),
+            keypoints=keypoint_pb2.LaserKeypoints(keypoint=[nose, lshoulder]),
+        ),
+        _lib.LaserLabel(
+            object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
+            box=_util.laser_box((6, 6, 5), (4, 3, 2), 1),
+            keypoints=keypoint_pb2.LaserKeypoints(keypoint=[rshoulder]),
+        ),
+    ]
+
+    tensors = _lib.create_pose_estimation_tensors(
+        labels,
+        default_location=tf.zeros(3, dtype=tf.float32),
+        order=[_NOSE, _LEFT_SHOULDER, _RIGHT_SHOULDER],
+    )
+
+    self.assertEqual(tensors.keypoints.location.shape, [2, 3, 3])
+    self.assertEqual(tensors.keypoints.visibility.shape, [2, 3])
+    self.assertEqual(tensors.box.center.shape, [2, 3])
+    self.assertEqual(tensors.box.size.shape, [2, 3])
+    self.assertEqual(tensors.box.heading.shape, [2])
 
 
 if __name__ == '__main__':

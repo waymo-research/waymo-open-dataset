@@ -17,16 +17,7 @@ syntax = "proto2";
 
 package waymo.open_dataset.keypoints;
 
-message Vec2d {
-  optional double x = 1;
-  optional double y = 2;
-}
-
-message Vec3d {
-  optional double x = 1;
-  optional double y = 2;
-  optional double z = 3;
-}
+import "waymo_open_dataset/protos/vector.proto";
 
 // Attributes related to the keypoint's visibility.
 message KeypointVisibility {
@@ -44,7 +35,7 @@ message Keypoint2d {
   extensions 1000 to max;
 
   // Camera image coordinates (in pixels, x=0, y=0 is top-left pixel).
-  optional Vec2d location_px = 1;
+  optional Vector2d location_px = 1;
   // Visibility attributes determined based on camera image only.
   optional KeypointVisibility visibility = 2;
 }
@@ -57,7 +48,7 @@ message Keypoint3d {
 
   // A 3D coordinate in vehicle or camera frame (depending which message it is
   // part of - LaserKeypoint or CameraKeypoint).
-  optional Vec3d location_m = 1;
+  optional Vector3d location_m = 1;
   // Visibility attributes determined based on all available data (camera image
   // and or lidar).
   optional KeypointVisibility visibility = 2;

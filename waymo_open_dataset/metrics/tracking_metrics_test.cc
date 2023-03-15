@@ -145,6 +145,7 @@ TEST(TrackingMetricsTest, OneShard) {
   EXPECT_NEAR(metrics[0].fp(), 0.0 / 8.0, 1e-6);
   EXPECT_NEAR(metrics[0].mota(), 4.0 / 8.0, 1e-6);
   EXPECT_NEAR(metrics[0].motp(), 0.1, 1e-6);
+  EXPECT_EQ(metrics[0].num_objects_gt(), 8);
 }
 
 TEST(TrackingMetricsTest, MultipleShards) {

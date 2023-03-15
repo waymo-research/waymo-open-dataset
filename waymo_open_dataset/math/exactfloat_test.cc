@@ -13,16 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// Copyright 2009 Google Inc. All Rights Reserved.
+
 #include "waymo_open_dataset/math/exactfloat.h"
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <vector>
 
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 #include "absl/base/casts.h"
-#include "waymo_open_dataset/common/integral_types.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -147,7 +149,7 @@ const double kSpecialUnsignedDoubleValues[] = {
     static_cast<double>(std::numeric_limits<int>::min()),
     static_cast<double>(std::numeric_limits<long long>::max()),
     static_cast<double>(std::numeric_limits<long long>::min()),
-    static_cast<double>(std::numeric_limits<uint64>::max()),
+    static_cast<double>(std::numeric_limits<uint64_t>::max()),
     0,
 
     // Small and large values that are not quite minimums or maximums.
@@ -207,27 +209,27 @@ class ExactFloatTest : public ::testing::Test {
 
   // Return the difference measured in ulps (units in the last place) between
   // two floating-point values.  Return 0 if the values are equal or both are
-  // NaN, and return the largest possible uint64 if exactly one
+  // NaN, and return the largest possible uint64_t if exactly one
   // value is NaN. Note that +0 and -0 are equal (i.e., they differ by 0 ulps),
   // and that the smallest positive and negative values differ by 2 ulps.
   // Infinity is one ulp larger than the largest finite number.
-  static uint64 GetErrorUlps(double a, double b) {
+  static uint64_t GetErrorUlps(double a, double b) {
     if (std::isnan(a) && std::isnan(b)) return 0;
     if (std::isnan(a) || std::isnan(b)) {
-      return std::numeric_limits<uint64>::max();
+      return std::numeric_limits<uint64_t>::max();
     }
 
     // Floating-point numbers are arranged so that for numbers of the same
     // sign, the difference in ulps is just the difference between the two
     // numbers viewed as 64-bit unsigned integers.
-    uint64 a_bits = absl::bit_cast<uint64>(a);
-    uint64 b_bits = absl::bit_cast<uint64>(b);
+    uint64_t a_bits = absl::bit_cast<uint64_t>(a);
+    uint64_t b_bits = absl::bit_cast<uint64_t>(b);
     if (std::signbit(a) == std::signbit(b)) {
       return (a_bits > b_bits) ? (a_bits - b_bits) : (b_bits - a_bits);
     }
     // For numbers of opposite sign, we take the difference in ulps between
     // each number and the zero of the same sign, and add them together.
-    a_bits ^= static_cast<uint64>(1) << 63;
+    a_bits ^= static_cast<uint64_t>(1) << 63;
     return a_bits + b_bits;
   }
 
@@ -235,7 +237,7 @@ class ExactFloatTest : public ::testing::Test {
   // the given number of ulps (units in the last place).  The two values are
   // also required to have the same sign bit unless they are both NaN.  (So for
   // example, +0 and -0 are not equivalent.)
-  static bool IsExpected(double expected, double actual, uint64 ulps) {
+  static bool IsExpected(double expected, double actual, uint64_t ulps) {
     // We require the sign bit to match unless the values are NaN.
     if (!std::isnan(expected) &&
         std::signbit(expected) != std::signbit(actual)) {
@@ -280,7 +282,7 @@ class ExactFloatTest : public ::testing::Test {
   // check that their results agree to within the given number of ulps for a
   // range of test arguments.
   void TestMathcall1(const char *fname, double f(double),
-                     ExactFloat mp_f(const ExactFloat &), uint64 ulps) {
+                     ExactFloat mp_f(const ExactFloat &), uint64_t ulps) {
     for (int i = 0; i < kSpecialDoubleValues.size(); ++i) {
       double a = kSpecialDoubleValues[i];
       double expected = f(a);
@@ -298,7 +300,7 @@ class ExactFloatTest : public ::testing::Test {
   // range of test arguments.
   void TestMathcall2(const char *fname, double f(double, double),
                      ExactFloat mp_f(const ExactFloat &, const ExactFloat &),
-                     uint64 ulps) {
+                     uint64_t ulps) {
     for (int i = 0; i < kSpecialDoubleValues.size(); ++i) {
       double a = kSpecialDoubleValues[i];
       for (int j = 0; j < kSpecialDoubleValues.size(); ++j) {
@@ -415,7 +417,7 @@ TEST_F(ExactFloatTest, GetErrorUlps) {
   EXPECT_EQ(2, GetErrorUlps(std::numeric_limits<double>::denorm_min(),
                             -std::numeric_limits<double>::denorm_min()));
   EXPECT_EQ(1, GetErrorUlps(std::numeric_limits<double>::max(), INFINITY));
-  EXPECT_EQ(std::numeric_limits<uint64>::max(), GetErrorUlps(0, NAN));
+  EXPECT_EQ(std::numeric_limits<uint64_t>::max(), GetErrorUlps(0, NAN));
 }
 
 TEST_F(ExactFloatTest, Constructors) {
@@ -771,8 +773,8 @@ TEST_METHOD0_VS_FUNCTION(int, sgn, ref_sgn)
 
 // Test a zero-argument ExactFloat member function against a corresponding
 // one-argument reference macro.
-#define TEST_METHOD0_VS_MACRO(ResultType, method, macro) \
-  ResultType ref_##macro(double a) { return std::macro(a); }  \
+#define TEST_METHOD0_VS_MACRO(ResultType, method, macro)     \
+  ResultType ref_##macro(double a) { return std::macro(a); } \
   TEST_METHOD0_VS_FUNCTION(ResultType, method, ref_##macro)
 
 TEST_METHOD0_VS_MACRO(bool, is_inf, isinf)

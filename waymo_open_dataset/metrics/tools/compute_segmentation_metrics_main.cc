@@ -52,6 +52,7 @@ limitations under the License.
 // TYPE_ROAD:0
 // miou=0.00395302
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -63,7 +64,6 @@ limitations under the License.
 #include <vector>
 
 #include <glog/logging.h>
-#include "waymo_open_dataset/common/integral_types.h"
 #include "waymo_open_dataset/dataset.pb.h"
 #include "waymo_open_dataset/metrics/segmentation_metrics.h"
 #include "waymo_open_dataset/protos/segmentation.pb.h"
@@ -140,9 +140,9 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     return;
   }
   std::cout << gt_frames.frames_size() << " frames found in groundtruth.\n";
-  std::map<std::pair<std::string, int64>, SegmentationFrame> pd_map;
-  std::map<std::pair<std::string, int64>, SegmentationFrame> gt_map;
-  std::set<std::pair<std::string, int64>> all_example_keys;
+  std::map<std::pair<std::string, int64_t>, SegmentationFrame> pd_map;
+  std::map<std::pair<std::string, int64_t>, SegmentationFrame> gt_map;
+  std::set<std::pair<std::string, int64_t>> all_example_keys;
   auto get_key = [](const SegmentationFrame& segmentation_frame) {
     return std::make_pair(segmentation_frame.context_name(),
                           segmentation_frame.frame_timestamp_micros());

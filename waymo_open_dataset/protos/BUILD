@@ -3,12 +3,13 @@ load("//tf:build_config.bzl", "all_proto_library")
 
 
 package(
+    default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
         "//visibility:public",
     ],
 )
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 exports_files(["BUILD"])
 
@@ -21,9 +22,6 @@ all_proto_library(
 
 all_proto_library(
     src = "map.proto",
-    deps = [
-        "//waymo_open_dataset:dataset_proto",
-    ],
 )
 
 all_proto_library(
@@ -59,6 +57,21 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "camera_segmentation_metrics.proto",
+    deps = [
+        ":camera_segmentation_proto",
+        "//waymo_open_dataset:dataset_proto",
+    ],
+)
+
+all_proto_library(
+    src = "camera_segmentation_submission.proto",
+    deps = [
+        ":camera_segmentation_metrics_proto",
+    ],
+)
+
+all_proto_library(
     src = "motion_submission.proto",
 )
 
@@ -73,6 +86,7 @@ all_proto_library(
 all_proto_library(
     src = "scenario.proto",
     deps = [
+        ":compressed_lidar_proto",
         ":map_proto",
     ],
 )
@@ -86,7 +100,17 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "vector.proto",
+)
+
+all_proto_library(
+    src = "box.proto",
+    deps = [":vector_proto"],
+)
+
+all_proto_library(
     src = "keypoint.proto",
+    deps = [":vector_proto"],
 )
 
 all_proto_library(
@@ -95,6 +119,40 @@ all_proto_library(
 
 all_proto_library(
     src = "camera_segmentation.proto",
+)
+
+all_proto_library(
+    src = "conversion_config.proto",
+    deps = [
+        ":scenario_proto",
+    ],
+)
+
+all_proto_library(
+    src = "sim_agents_submission.proto",
+)
+
+all_proto_library(
+    src = "sim_agents_metrics.proto",
+)
+
+all_proto_library(
+    src = "keypoints_metrics.proto",
+)
+
+all_proto_library(
+    src = "keypoints_submission.proto",
+    deps = [
+        ":box_proto",
+        ":keypoint_proto",
+    ],
+)
+
+all_proto_library(
+    src = "compressed_lidar.proto",
+    deps = [
+        "//waymo_open_dataset:dataset_proto",
+    ],
 )
 
 

@@ -46,6 +46,8 @@ ScenarioPredictions CreateTestSubmissionProto(
     const Track& track = scenario.tracks(track_index);
     auto* prediction = submission.add_multi_modal_predictions();
 
+    constexpr int kFirstFutureState = 15;
+    constexpr int kLastFutureState = 90;
     // Add predicted trajectories each offset from the ground truth by a
     // constant value.
     for (int offset_index = 0; offset_index < offsets.size(); ++offset_index) {
@@ -55,7 +57,7 @@ ScenarioPredictions CreateTestSubmissionProto(
       // submission (interactive challenge submissions will have multiple).
       auto* trajectory = joint_prediction->add_trajectories();
       trajectory->set_object_id(track.id());
-      for (int i = 15; i < 91; i += 5) {
+      for (int i = kFirstFutureState; i <= kLastFutureState; i += 5) {
         const ObjectState& track_state = track.states(i);
         if (track_state.valid()) {
           trajectory->add_center_x(track_state.center_x() +

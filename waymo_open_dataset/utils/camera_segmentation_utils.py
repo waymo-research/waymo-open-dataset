@@ -71,7 +71,7 @@ def decode_semantic_and_instance_labels_from_panoptic_label(
     A tuple containing the semantic and instance labels, respectively.
   """
   if panoptic_label_divisor <= 0:
-    raise ValueError("panoptic_label_divisor must be > 0.")
+    raise ValueError('panoptic_label_divisor must be > 0.')
   return np.divmod(panoptic_label, panoptic_label_divisor)
 
 
@@ -83,6 +83,9 @@ def encode_semantic_and_instance_labels_to_panoptic_label(
   Encoding uses the equation:
   panoptic_label = semantic_label * panoptic_label_divisor + instance_label
 
+  Note that the output of this function will be cast to uint32 to prevent
+  overflow issues.
+
   Args:
     semantic_label: A 2D numpy array containing the semantic class for each
       pixel.
@@ -90,14 +93,17 @@ def encode_semantic_and_instance_labels_to_panoptic_label(
     panoptic_label_divisor: An int specifying the separation between semantic
       classes. Must be greater than the maximum instance ID.
   Returns:
-    A 2D numpy array containing the panoptic label for each pixel.
+    A 2D uint32 numpy array containing the panoptic label for each pixel.
   """
   return np.add(
-      np.multiply(semantic_label, panoptic_label_divisor), instance_label)
+      np.multiply(np.array(semantic_label).astype(np.uint32),
+                  panoptic_label_divisor),
+      np.array(instance_label).astype(np.uint32))
 
 
 def _remap_global_ids(
-    segmentation_proto_list: Sequence[dataset_pb2.CameraSegmentationLabel]
+    segmentation_proto_list: Sequence[dataset_pb2.CameraSegmentationLabel],
+    remap_to_sequential: bool = False,
 ) -> Dict[str, Dict[int, int]]:
   """Remaps the global ids in segmentation_proto_list to consecutive values.
 
@@ -108,6 +114,8 @@ def _remap_global_ids(
 
   Args:
     segmentation_proto_list: a sequence of CameraSegmentationLabel protos.
+    remap_to_sequential: whether to remap the instance IDs to sequential values.
+      This is not recommended for eval.
 
   Returns:
     A dict of dicts, mapping, for each sequence, from the original global
@@ -144,8 +152,12 @@ def _remap_global_ids(
 
   # Remap the global ids to consecutive values and return as a dict.
   all_global_ids_offset = sum(global_instance_ids_offset.values(), [])
-  global_ids_remapped, _, _ = segmentation.relabel_sequential(
-      np.array(all_global_ids_offset))
+  if remap_to_sequential:
+    global_ids_remapped, _, _ = segmentation.relabel_sequential(
+        np.array(all_global_ids_offset))
+  else:
+    global_ids_remapped = all_global_ids_offset
+
   all_global_ids = []
   all_sequences = []
   for sequence in global_instance_ids:
@@ -168,6 +180,7 @@ def decode_single_panoptic_label_from_proto(
 
   Args:
     segmentation_proto: a CameraSegmentationLabel proto to be decoded.
+
   Returns:
     A 2D numpy array containing the per-pixel panoptic segmentation label.
   """
@@ -177,8 +190,10 @@ def decode_single_panoptic_label_from_proto(
 
 def decode_multi_frame_panoptic_labels_from_protos(
     segmentation_proto_list: Sequence[dataset_pb2.CameraSegmentationLabel],
-    remap_values: bool = True,
-) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
+    remap_to_global: bool = True,
+    remap_to_sequential: bool = False,
+    new_panoptic_label_divisor: Optional[int] = None
+) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], int]:
   """Parses a set of panoptic labels with consistent instance ids from protos.
 
   This functions supports an arbitrary number of CameraSegmentationLabel protos,
@@ -186,9 +201,13 @@ def decode_multi_frame_panoptic_labels_from_protos(
 
   Args:
     segmentation_proto_list: a sequence of CameraSegmentationLabel protos.
-    remap_values: if true, will remap the instance ids using the
+    remap_to_global: if true, will remap the instance ids using the
       instance_id_to_global_id_mapping such that they are consistent within each
       sequence, and that they are consecutive between all output labels.
+    remap_to_sequential: whether to remap the instance IDs to sequential values.
+      This is not recommended for eval.
+    new_panoptic_label_divisor: if provided, the output panoptic label will be
+      shifted to this new panoptic label divisor.
 
   Returns:
     A tuple containing
@@ -196,46 +215,76 @@ def decode_multi_frame_panoptic_labels_from_protos(
         panoptic labels. If any labels have instance_id_to_global_id_mappings,
         instances with these mappings will be mapped to the same value across
         frames.
+      num_cameras_covered: a list of uint8 numpy arrays, containing the parsed
+        arrays representing the number of cameras covered for each pixel. This
+        is used to compute the weighted Segmentation and Tracking Quality (wSTQ)
+        metric.
       is_tracked_masks: a list of uint8 numpy arrays, where a pixel is True if
         its instance is tracked over multiple frames.
       panoptic_label_divisor: the int32 divisor used to generate the panoptic
         labels.
+
+  Raises:
+    ValueError: if the output panoptic_label_divisor is lower than the maximum
+      instance id.
   """
   # Use the existing panoptic_label_divisor if possible to maintain consistency
   # in the data and keep the panoptic labels more comprehensible.
-  panoptic_label_divisor = segmentation_proto_list[0].panoptic_label_divisor
-  if remap_values:
-    global_id_mapping = _remap_global_ids(segmentation_proto_list)
+  if new_panoptic_label_divisor is None:
+    panoptic_label_divisor = segmentation_proto_list[0].panoptic_label_divisor
+  else:
+    panoptic_label_divisor = new_panoptic_label_divisor
 
-    max_instance_id = max(
-        [max([global_id for _, global_id in mapping.items()])
-         for _, mapping in global_id_mapping.items()])
-    panoptic_label_divisor = max(panoptic_label_divisor, max_instance_id)
+  if remap_to_global:
+    global_id_mapping = _remap_global_ids(
+        segmentation_proto_list, remap_to_sequential=remap_to_sequential)
+    if global_id_mapping:
+      max_instance_id = max(
+          [max([global_id for _, global_id in mapping.items()])
+           for _, mapping in global_id_mapping.items()])
+      if new_panoptic_label_divisor is None:
+        panoptic_label_divisor = max(panoptic_label_divisor, max_instance_id)
 
   panoptic_labels = []
+  num_cameras_covered = []
   is_tracked_masks = []
   for label in segmentation_proto_list:
     sequence = label.sequence_id
     panoptic_label = decode_single_panoptic_label_from_proto(label)
-    semantic_label, instance_label = decode_semantic_and_instance_labels_from_panoptic_label(
-        panoptic_label, label.panoptic_label_divisor)
+    semantic_label, instance_label = (
+        decode_semantic_and_instance_labels_from_panoptic_label(
+            panoptic_label, label.panoptic_label_divisor))
+    camera_coverage = np.ones_like(instance_label, dtype=np.uint8)
     is_tracked_mask = np.zeros_like(instance_label, dtype=np.uint8)
 
     instance_label_copy = np.copy(instance_label)
-    if remap_values:
+    if remap_to_global:
       for mapping in label.instance_id_to_global_id_mapping:
         instance_mask = (instance_label == mapping.local_instance_id)
         is_tracked_mask[instance_mask] = mapping.is_tracked
         instance_label_copy[instance_mask] = global_id_mapping[sequence][
             mapping.global_instance_id]
 
+    if np.amax(instance_label) >= panoptic_label_divisor:
+      raise ValueError('A panoptic_label_divisor of '
+                       f'{panoptic_label_divisor} is requested, but the '
+                       'maximum instance id exceeds this.')
+
+    if label.num_cameras_covered:
+      camera_coverage = tf.io.decode_png(label.num_cameras_covered).numpy()
+
     panoptic_labels.append(
         encode_semantic_and_instance_labels_to_panoptic_label(
-            semantic_label, instance_label_copy,
-            max(panoptic_label_divisor, label.panoptic_label_divisor)))
+            semantic_label, instance_label_copy, panoptic_label_divisor))
+    num_cameras_covered.append(camera_coverage)
     is_tracked_masks.append(is_tracked_mask)
 
-  return panoptic_labels, is_tracked_masks, panoptic_label_divisor
+  return (
+      panoptic_labels,
+      is_tracked_masks,
+      num_cameras_covered,
+      panoptic_label_divisor,
+  )
 
 
 def _generate_color_map(
@@ -322,3 +371,108 @@ def panoptic_label_to_rgb(semantic_label: np.ndarray,
                                   color_image[:, :, 1])
   color_image = np.clip(color_image, 0, 255)
   return color_image
+
+
+def save_panoptic_label_to_proto(
+    panoptic_label: np.ndarray, panoptic_label_divisor: int,
+    sequence_id: str, new_panoptic_label_divisor: int = 1000
+) -> dataset_pb2.CameraSegmentationLabel:
+  """Converts a panoptic prediction to a CameraSegmentationLabel proto.
+
+  The instance segmentation labels will be remapped to sequential values, with
+  the mapping stored in the instance_id_to_global_id_mapping.
+
+  Args:
+    panoptic_label: a [H, W, 1] ndarray containing the predicted panoptic
+      segmentation.
+    panoptic_label_divisor: the panoptic_label_divisor used to encode the input
+      panoptic_prediciton.
+    sequence_id: the sequence id corresponding to this panoptic label.
+    new_panoptic_label_divisor: the panoptic label divisor used for the encoded
+      CameraSegmentationLabel proto. If the number of instances exceeds this
+      value, the maximum instance id + 1 will be used instead.
+
+  Returns:
+    The input panoptic prediction encoded into a CameraSegmentationLabel proto.
+
+  Raises:
+    ValueError: if the maximum output panoptic label is greater than the max
+      uint16 value.
+  """
+  semantic_label, instance_label = (
+      decode_semantic_and_instance_labels_from_panoptic_label(
+          panoptic_label, panoptic_label_divisor))
+  instance_label_shape = instance_label.shape
+  instance_label_flat = np.reshape(instance_label, [-1])
+  # Remap the instance labels to sequential values to make the range of instance
+  # ids as compact as possible.
+  instance_label_sequential, _, inverse_map = segmentation.relabel_sequential(
+      instance_label_flat)
+  instance_label_sequential = tf.reshape(
+      instance_label_sequential, instance_label_shape)
+  # Update the new_panoptic_label_divisor if the maximum number of instances
+  # exceeds the desired one.
+  new_panoptic_label_divisor = max(
+      new_panoptic_label_divisor,
+      tf.reduce_max(instance_label_sequential) + 1)
+  panoptic_label = encode_semantic_and_instance_labels_to_panoptic_label(
+      semantic_label, instance_label_sequential, new_panoptic_label_divisor)
+  if np.amax(panoptic_label) >= np.iinfo(np.uint16).max:
+    raise ValueError(
+        f'The maximum panoptic label of {new_panoptic_label_divisor} would '
+        'overflow a uint16. Consider lowering the panoptic_label_divisor or '
+        'reducing the number of instances.')
+  encoded_panoptic_label = tf.io.encode_png(
+      tf.cast(panoptic_label, tf.uint16)).numpy()
+  seg_proto = dataset_pb2.CameraSegmentationLabel(
+      panoptic_label_divisor=new_panoptic_label_divisor,
+      sequence_id=sequence_id,
+      panoptic_label=encoded_panoptic_label,
+  )
+  # Store the mapping back to the original instance ids.
+  for remapped, orig in zip(inverse_map.in_values, inverse_map.out_values):
+    # No need to map the unknown class.
+    if orig == 0 or remapped == 0:
+      continue
+    id_mapping = (
+        dataset_pb2.CameraSegmentationLabel.InstanceIDToGlobalIDMapping(
+            local_instance_id=remapped, global_instance_id=orig))
+    seg_proto.instance_id_to_global_id_mapping.append(id_mapping)
+
+  return seg_proto
+
+
+def load_frames_with_labels_from_dataset(
+    tf_dataset: tf.data.Dataset,
+    keep_first_k: int = 3
+) -> Tuple[List[dataset_pb2.Frame], Optional[str]]:
+  """Loads dataset frames with panoptic labels and sequence id for evaluation.
+
+  Args:
+    tf_dataset: An instance of the tf.data.Dataset containing the Open Dataset
+      frames.
+    keep_first_k: An integer, indicating the number of frames to load. Load all
+      frames with panoptic labels if the number is greater.
+
+  Returns:
+    A tuple containing the following elements.
+      - A list of Open Dataset frames.
+      - The sequence id for the camera segmentation label.
+  """
+  frames_with_seg = []
+  sequence_id = None
+
+  for data in tf_dataset:
+    frame = dataset_pb2.Frame()
+    frame.ParseFromString(bytearray(data.numpy()))
+
+    if frame.images[0].camera_segmentation_label.panoptic_label:
+      frames_with_seg.append(frame)
+      if sequence_id is None:
+        sequence_id = frame.images[0].camera_segmentation_label.sequence_id
+
+      if (frame.images[0].camera_segmentation_label.sequence_id != sequence_id
+          or len(frames_with_seg) >= keep_first_k):
+        break
+
+  return frames_with_seg, sequence_id

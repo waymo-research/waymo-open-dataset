@@ -13,7 +13,6 @@ http_archive(
         "https://github.com/google/googletest/archive/b6cd405286ed8635ece71c72f118e659f4ade3fb.zip",
     ],
 )
-
 http_archive(
     name = "com_github_gflags_gflags",
     sha256 = "ae27cdbcd6a2f935baa78e4f21f675649271634c092b1be01469440495609d0e",
@@ -23,7 +22,6 @@ http_archive(
         "https://github.com/gflags/gflags/archive/v2.2.1.tar.gz",
     ],
 )
-
 http_archive(
     name = "com_google_glog",
     build_file = "//third_party:glog.BUILD",
@@ -33,7 +31,6 @@ http_archive(
         "https://github.com/google/glog/archive/v0.4.0.tar.gz",
     ],
 )
-
 http_archive(
     name = "boringssl",
     sha256 = "1188e29000013ed6517168600fc35a010d58c5d321846d6a6dfee74e4c788b45",
@@ -43,7 +40,6 @@ http_archive(
         "https://github.com/google/boringssl/archive/7f634429a04abc48e2eb041c81c5235816c96514.tar.gz",
     ],
 )
-
 http_archive(
     name = "bazel_skylib",
     sha256 = "1dde365491125a3db70731e25658dfdd3bc5dbdfd11b840b3e987ecf043c7ca0",
@@ -52,7 +48,6 @@ http_archive(
         "https://github.com/bazelbuild/bazel-skylib/releases/download/0.9.0/bazel_skylib-0.9.0.tar.gz",
     ],
 )
-
 http_archive(
     name = "six_archive",
     build_file = "//third_party:six.BUILD",
@@ -62,6 +57,35 @@ http_archive(
         "https://storage.googleapis.com/mirror.tensorflow.org/pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
         "https://pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
     ],
+)
+
+http_archive(
+    name = "rules_license",
+    urls = [
+        "https://github.com/bazelbuild/rules_license/releases/download/0.0.4/rules_license-0.0.4.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_license/releases/download/0.0.4/rules_license-0.0.4.tar.gz",
+    ],
+    sha256 = "6157e1e68378532d0241ecd15d3c45f6e5cfd98fc10846045509fb2a7cc9e381",
+)
+
+deeplab2_commit = "c4a533c14fac1a1071a6d24c5379c31a69a3e5e6"
+http_archive(
+    name = "deeplab2",
+    build_file = "//third_party:deeplab2.BUILD",
+    urls = [
+        "https://github.com/google-research/deeplab2/archive/{0}.zip".format(deeplab2_commit),
+    ],
+    strip_prefix = "deeplab2-{0}".format(deeplab2_commit),
+    sha256 = "f733c38d360ab278a8d08bc4156879de114cb702cca87eab73eaf7c2d6b70093",
+)
+
+http_archive(
+    name = "keras_cv",
+    strip_prefix = "keras-cv-0.4.2",
+    urls = [
+        "https://github.com/keras-team/keras-cv/archive/refs/tags/v0.4.2.tar.gz",
+    ],
+    sha256 = "ff495f29a6c4d5f353d587290c3b745121fa3b61f1e7a8b55178f4b339407de3",
 )
 
 bind(

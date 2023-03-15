@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <string>
@@ -172,9 +173,8 @@ class TrackingMetricsOp final : public OpKernel {
 
     // Map of sequence ids to (map of frame ids to list of objects in that
     // frame).
-    absl::flat_hash_map<
-        std::string,
-        absl::flat_hash_map<waymo::open_dataset::int64, std::vector<co::Object>>>
+    absl::flat_hash_map<std::string,
+                        absl::flat_hash_map<int64_t, std::vector<co::Object>>>
         pds_map = co::ParseObjectGroupedBySequenceFromTensors(
             /*bbox=*/*input.prediction_bbox,
             /*type=*/*input.prediction_type,
@@ -192,9 +192,8 @@ class TrackingMetricsOp final : public OpKernel {
               << input.ground_truth_frame_id->shape();
     // Map of sequence ids to (map of frame ids to list of objects in that
     // frame).
-    absl::flat_hash_map<
-        std::string,
-        absl::flat_hash_map<waymo::open_dataset::int64, std::vector<co::Object>>>
+    absl::flat_hash_map<std::string,
+                        absl::flat_hash_map<int64_t, std::vector<co::Object>>>
         gts_map = co::ParseObjectGroupedBySequenceFromTensors(
             /*bbox=*/*input.ground_truth_bbox,
             /*type=*/*input.ground_truth_type,
@@ -219,7 +218,7 @@ class TrackingMetricsOp final : public OpKernel {
     std::vector<std::vector<std::vector<co::Object>>> gts;
     std::vector<std::vector<std::vector<co::Object>>> pds;
     for (const auto& sequence_id : sequence_ids) {
-      std::set<int64> frame_ids;
+      std::set<int64_t> frame_ids;
       for (const auto& kv : pds_map[sequence_id]) {
         frame_ids.insert(kv.first);
       }
@@ -228,7 +227,7 @@ class TrackingMetricsOp final : public OpKernel {
       }
       std::vector<std::vector<co::Object>> pds_frames_of_objects;
       std::vector<std::vector<co::Object>> gts_frames_of_objects;
-      for (const int64 id : frame_ids) {
+      for (const int64_t id : frame_ids) {
         pds_frames_of_objects.push_back(std::move(pds_map[sequence_id][id]));
         gts_frames_of_objects.push_back(std::move(gts_map[sequence_id][id]));
       }

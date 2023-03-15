@@ -1,0 +1,57 @@
+/* Copyright 2023 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+syntax = "proto2";
+
+package waymo.open_dataset.keypoints;
+
+message KeypointGroupMetric {
+  // Numeric value of the metric.
+  optional float value = 1;
+  // Group of keypoins used for evaluation of the metric.
+  // Refer to metrics/python/keypoint_metrics.py for the list of canonical
+  // groups of keypoints.
+  optional string group_name = 2;
+}
+
+message KeypointThresholdMetric {
+  // Numeric value of the metric.
+  optional float value = 1;
+  // Group of keypoins used for evaluation of the metric.
+  // Refer to metrics/python/keypoint_metrics.py for the list of canonical
+  // groups of keypoints.
+  optional string group_name = 2;
+  optional float threshold = 3;
+}
+
+message KeypointMetrics {
+  // Mean Per Joint Position Error.
+  repeated KeypointGroupMetric mpjpe = 1;
+  // Precision at different thresholds for Object Keypoint Similarity
+  // (aka OKS) values. We use scales `DEFAULT_PER_TYPE_SCALES` from
+  // metrics/python/keypoint_metrics.py to compute OKS for different keypoint
+  // types.
+  repeated KeypointThresholdMetric oks = 2;
+  // Percentage of Correct Keypoints.
+  repeated KeypointThresholdMetric pck = 3;
+  // Pose Estimation Metric
+  repeated KeypointGroupMetric pem = 4;
+  // Keypoint detection precision
+  repeated KeypointGroupMetric precision = 5;
+  // Keypoint detection recall
+  repeated KeypointGroupMetric recall = 6;
+  // Average precision computed over all thresholds for Object Keypoint
+  // Similarity (aka OKS) values.
+  repeated KeypointGroupMetric oks_ap = 7;
+}

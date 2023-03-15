@@ -79,7 +79,8 @@ std::vector<TrackingMeasurements> ComputeTrackingMeasurementPerBreakdownShard(
         matchers[frame_index]->SetGroundTruthSubset(
             gt_subsets[frame_index][breakdown_shard_index].indices[0]);
 
-        mot.Eval(matchers[frame_index].get(), difficulty_levels[dl_idx]);
+        mot.Eval(matchers[frame_index].get(), difficulty_levels[dl_idx],
+                 config.include_details_in_measurements());
       }
       *measurements[dl_idx].add_measurements() = mot.measurement();
       measurements[dl_idx].mutable_measurements()->rbegin()->set_score_cutoff(
@@ -164,6 +165,7 @@ TrackingMetrics ToTrackingMetrics(TrackingMeasurements&& measurements) {
   for (const auto& measurement : m.measurements()) {
     if (measurement.num_objects_gt() == 0) continue;
     const float num_objects_gt = measurement.num_objects_gt();
+    metrics.set_num_objects_gt(num_objects_gt);
     miss_ratio = measurement.num_misses() / num_objects_gt;
     fp_ratio = measurement.num_fps() / num_objects_gt;
     mismatch_ratio = measurement.num_mismatches() / num_objects_gt;

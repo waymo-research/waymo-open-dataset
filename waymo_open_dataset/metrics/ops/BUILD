@@ -13,7 +13,6 @@ cc_library(
     hdrs = ["utils.h"],
     deps = [
         "//waymo_open_dataset:label_cc_proto",
-        "//waymo_open_dataset/common:integral_types",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "//waymo_open_dataset/protos:motion_metrics_cc_proto",
         "//waymo_open_dataset/protos:motion_submission_cc_proto",
