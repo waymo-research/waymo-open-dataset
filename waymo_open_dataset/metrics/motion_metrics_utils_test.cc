@@ -1,4 +1,4 @@
-/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2021 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -218,7 +218,7 @@ TEST(MotionMetricsUtils, SubmissionToPredictionsSingle) {
     }
   )";
   ChallengeScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   ScenarioPredictions result;
   Status status = ConvertChallengePredictions(predictions, &result);
   ASSERT_TRUE(status.ok());
@@ -255,7 +255,7 @@ TEST(MotionMetricsUtils, SubmissionToPredictionsSingle) {
     }
   )";
   ScenarioPredictions expected_result;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(results_str, &expected_result)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(results_str, &expected_result));
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(result, expected_result));
 }
@@ -301,7 +301,7 @@ TEST(MotionMetricsUtils, SubmissionToPredictionsJoint) {
     }
   )";
   ChallengeScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   ScenarioPredictions result;
   Status status = ConvertChallengePredictions(predictions, &result);
   ASSERT_TRUE(status.ok());
@@ -338,47 +338,47 @@ TEST(MotionMetricsUtils, SubmissionToPredictionsJoint) {
     }
   )";
   ScenarioPredictions expected_result;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(results_str, &expected_result)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(results_str, &expected_result));
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(result, expected_result));
 }
 
 TEST(MotionMetricsUtils, PredictionToTrackStep) {
   MotionMetricsConfig metrics_config;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  CHECK(google::protobuf::TextFormat::ParseFromString(R"(
     track_steps_per_second: 10
     prediction_steps_per_second: 2
     track_history_samples: 5
     track_future_samples: 80
   )",
-                                            &metrics_config)); */
+                                            &metrics_config));
   EXPECT_EQ(PredictionToTrackStep(metrics_config, 1), 15);
 }
 
 TEST(MotionMetricsUtils, CurrentTrackStep) {
   MotionMetricsConfig metrics_config;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  CHECK(google::protobuf::TextFormat::ParseFromString(R"(
     track_steps_per_second: 10
     prediction_steps_per_second: 2
     track_history_samples: 5
     track_future_samples: 80
   )",
-                                            &metrics_config)); */
+                                            &metrics_config));
   EXPECT_EQ(CurrentTrackStep(metrics_config), 5);
 }
 
 TEST(MotionMetricsUtils, PredictionToPolygon) {
   MotionMetricsConfig metrics_config;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  CHECK(google::protobuf::TextFormat::ParseFromString(R"(
     track_steps_per_second: 1
     prediction_steps_per_second: 1
     track_history_samples: 1
     track_future_samples: 1
   )",
-                                            &metrics_config)); */
+                                            &metrics_config));
 
   Track track;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  CHECK(google::protobuf::TextFormat::ParseFromString(R"(
     object_type: TYPE_VEHICLE
     states {
       length: 2
@@ -396,13 +396,13 @@ TEST(MotionMetricsUtils, PredictionToPolygon) {
       valid: true
     }
   )",
-                                            &track)); */
+                                            &track));
   SingleTrajectory trajectory;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  CHECK(google::protobuf::TextFormat::ParseFromString(R"(
     center_x: [1, 2, 3]
     center_y: [0, 0, 0]
   )",
-                                            &trajectory)); */
+                                            &trajectory));
 
   const int trajectory_step = 0;
   {

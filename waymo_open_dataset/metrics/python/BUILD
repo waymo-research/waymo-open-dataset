@@ -94,9 +94,11 @@ py_library(
     name = "keypoint_metrics",
     srcs = ["keypoint_metrics.py"],
     deps = [
+        ":matcher",
+        "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:keypoint_proto_py_pb2",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
         "//waymo_open_dataset/utils:keypoint_data",
-        "@keras_cv//keras_cv",
     ],
 )
 
@@ -113,3 +115,24 @@ py_test(
 )
 
 
+
+py_library(
+    name = "matcher",
+    srcs = ["matcher.py"],
+    deps = [
+        "//waymo_open_dataset:label_proto_py_pb2",
+
+        "//waymo_open_dataset/metrics/ops:py_metrics_ops",
+        "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "matcher_test",
+    srcs = ["matcher_test.py"],
+    deps = [
+        ":matcher",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)

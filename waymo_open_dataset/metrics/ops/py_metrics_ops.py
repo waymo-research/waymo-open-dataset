@@ -1,4 +1,4 @@
-# Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2019 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -127,3 +127,8 @@ def tracking_metrics(prediction_bbox,
       ground_truth_difficulty=ground_truth_difficulty,
       ground_truth_speed=ground_truth_speed,
       config=config)
+
+
+def match(prediction_boxes, groundtruth_boxes, config):
+  """Wraps match. See metrics_ops.cc for full documentation."""
+  return metrics_module.match(prediction_boxes, groundtruth_boxes, config)

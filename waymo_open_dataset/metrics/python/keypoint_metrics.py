@@ -1,4 +1,4 @@
-# Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2022 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 import abc
 import dataclasses
-import enum
 from typing import Callable, Collection, Dict, List, Mapping, Optional, Tuple
 
 import immutabledict
-import keras_cv
-from scipy import optimize
 import tensorflow as tf
 
+from waymo_open_dataset import label_pb2
+from waymo_open_dataset.metrics.python import matcher
 from waymo_open_dataset.protos import keypoint_pb2
+from waymo_open_dataset.protos import metrics_pb2
 from waymo_open_dataset.utils import keypoint_data as _data
 
 
@@ -818,45 +818,17 @@ def create_combined_metric(config: CombinedMetricsConfig) -> KeypointsMetric:
   return CombinedMetric([mpjpe, pck, oks])
 
 
-class MatchingMethod(enum.Enum):
-  HUNGARIAN = 1
-
-
 @dataclasses.dataclass(frozen=True)
 class MatchingConfig:
-  method: MatchingMethod = MatchingMethod.HUNGARIAN
+  method: metrics_pb2.MatcherProto.Type = (
+      metrics_pb2.MatcherProto.TYPE_HUNGARIAN
+  )
   iou_threshold: float = 0.5
 
 
-def _box_to_keras_cv(b: _data.BoundingBoxTensors) -> tf.Tensor:
-  # Boxes should have the format CENTER_XYZ_DXDYDZ_PHI. Details
-  # https://github.com/keras-team/keras-cv/blob/master/keras_cv/bounding_box_3d/formats.py
+def _box_to_tensor(b: _data.BoundingBoxTensors) -> tf.Tensor:
+  # Boxes should have the format CENTER_XYZ_DXDYDZ_PHI.
   return tf.concat([b.center, b.size, tf.expand_dims(b.heading, axis=-1)], -1)
-
-
-def hungarian_assignment(
-    iou: tf.Tensor, min_iou: float = 0.5
-) -> tuple[tf.Tensor, tf.Tensor]:
-  """Performs assignment using Hungarian algorithm.
-
-  It's just a wrapper for linear_sum_assignment in SciPy.
-  NOTE: It is not differentiable.
-
-  Args:
-    iou: an [M, N] matrix with pairwise IoU scores iou_ij = iou(lhs_i, rhs_j)
-    min_iou: minimal value for the IoU to consider a match.
-
-  Returns:
-    a 2-tuple (lhs_ids, rhs_ids), where `lhs_ids' and 'rhs_ids` are indices
-    which maximize the IoU of the assignment. Both are tensors with shape [K],
-    where K=min(M,N).
-  """
-  fn = lambda iou: optimize.linear_sum_assignment(iou.numpy(), maximize=True)
-  # Shape of both `lhs` and `rhs` is [K], where K=min(M,N).
-  lhs, rhs = tf.py_function(func=fn, inp=[iou], Tout=(tf.int32, tf.int32))
-  # Shape of `mask`: [K].
-  mask = tf.gather_nd(iou, tf.stack([lhs, rhs], axis=1)) > min_iou
-  return tf.boolean_mask(lhs, mask, axis=0), tf.boolean_mask(rhs, mask, axis=0)
 
 
 def missing_ids(ids: tf.Tensor, count: int) -> tf.Tensor:
@@ -951,12 +923,18 @@ def match_pose_estimations(
     and the 3D coordinate of the j-th keypoint for the i-th ground truth object
     will correspond to pr.keypoints.location[i, j].
   """
-  # Compute IoU between ground truth and predicted boxes.
-  gt_box = _box_to_keras_cv(gt.box)
-  pr_box = _box_to_keras_cv(pr.box)
-  iou = keras_cv.ops.iou_3d(gt_box, pr_box)
-  # Identify indices of ground truth and prediction boxes that match.
-  gt_ids, pr_ids = hungarian_assignment(iou, min_iou=config.iou_threshold)
+  # Run bipartite matching between prediction and groundtruth boxes.
+  gt_box = _box_to_tensor(gt.box)
+  pr_box = _box_to_tensor(pr.box)
+  match_results = matcher.match(
+      prediction_boxes=pr_box,
+      groundtruth_boxes=gt_box,
+      iou=config.iou_threshold,
+      box_type=label_pb2.Label.Box.TYPE_3D,
+      matcher_type=config.method,
+  )
+  gt_ids = match_results.groundtruth_ids
+  pr_ids = match_results.prediction_ids
   # Indices of false negative ground truth objects.
   fn_ids = missing_ids(gt_ids, count=gt.box.center.shape[0])
   # Indices of false positive predicted objects.

@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ void ValidateFlags() {
 // Read all content in a file to a string.
 std::string ReadFileToString(const std::string& filename) {
   std::ifstream s(filename.c_str());
- /* CHECK(s.is_open()) << filename << " does not exist."; */
+  CHECK(s.is_open()) << filename << " does not exist.";
   const std::string content((std::istreambuf_iterator<char>(s)),
                             std::istreambuf_iterator<char>());
   s.close();
@@ -151,19 +151,19 @@ void Run() {
     if (content.back() == '\n') {
       content.pop_back();
     }
-   /* CHECK(objects_all[i].ParseFromString(content)); */
+    CHECK(objects_all[i].ParseFromString(content));
     i++;
   }
 
   const std::string submission_content =
       ReadFileToString(absl::GetFlag(FLAGS_submission_filename));
   Submission submission;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(submission_content, &submission))
-      << "Failed to parse " << submission_content; */
- /* CHECK(!submission.unique_method_name().empty() &&
+  CHECK(google::protobuf::TextFormat::ParseFromString(submission_content, &submission))
+      << "Failed to parse " << submission_content;
+  CHECK(!submission.unique_method_name().empty() &&
         !submission.account_name().empty())
       << "unique_method_name and account_name must be set in "
-         "--submission_filename."; */
+         "--submission_filename.";
 
   std::vector<Submission> submissions(absl::GetFlag(FLAGS_num_shards),
                                       submission);

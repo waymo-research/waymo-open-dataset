@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ void Box2d::Set(const Vec2d bottom_left, const Vec2d top_right) {
   Vec2d center((bottom_left + top_right) / 2.0);
   axis_ = Segment2d(center, heading, std::max(length_x, length_y));
   width_ = std::min(length_x, length_y);
- /* CHECK_LE(0.0, width_); */
+  CHECK_LE(0.0, width_);
 }
 
 void Box2d::GetCorners(double *xx, double *yy) const {

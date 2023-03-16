@@ -66,7 +66,7 @@ DataType GetTensorflowType() {
   if (std::is_same<absl::remove_const_t<T>, float>::value) {
     return DT_FLOAT;
   }
- /* CHECK(false) << "Unsupported type."; */
+  CHECK(false) << "Unsupported type.";
 }
 
 // Parse input tensors to protos.
@@ -76,25 +76,25 @@ void ParseInput(const Input& input, co::CameraCalibration* calibration_ptr,
   auto& calibration = *calibration_ptr;
   auto& image = *image_ptr;
 
- /* CHECK_EQ(input.extrinsic->dim_size(0), 4); */
- /* CHECK_EQ(input.extrinsic->dim_size(1), 4); */
+  CHECK_EQ(input.extrinsic->dim_size(0), 4);
+  CHECK_EQ(input.extrinsic->dim_size(1), 4);
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
       calibration.mutable_extrinsic()->add_transform(
           input.extrinsic->matrix<T>()(i, j));
     }
   }
- /* CHECK_EQ(input.intrinsic->dim_size(0), kIntrinsicLen); */
+  CHECK_EQ(input.intrinsic->dim_size(0), kIntrinsicLen);
   for (int i = 0; i < kIntrinsicLen; ++i) {
     calibration.add_intrinsic(input.intrinsic->vec<T>()(i));
   }
- /* CHECK_EQ(input.metadata->dim_size(0), kMetadataLen); */
+  CHECK_EQ(input.metadata->dim_size(0), kMetadataLen);
   calibration.set_width(input.metadata->vec<int32>()(0));
   calibration.set_height(input.metadata->vec<int32>()(1));
   calibration.set_rolling_shutter_direction(
       static_cast<co::CameraCalibration::RollingShutterReadOutDirection>(
           input.metadata->vec<int32>()(2)));
- /* CHECK_EQ(input.camera_image_metadata->dim_size(0), kCameraImageMedataLen); */
+  CHECK_EQ(input.camera_image_metadata->dim_size(0), kCameraImageMedataLen);
   int idx = 0;
   const auto& cim = input.camera_image_metadata->vec<T>();
   for (; idx < 16; ++idx) {
@@ -138,7 +138,7 @@ class WorldToImageOp : public OpKernel {
 
     const int num_points = input.input_coordinate->dim_size(0);
     const int out_channel = 3 + return_depth_;
-   /* CHECK_EQ(3, input.input_coordinate->dim_size(1)); */
+    CHECK_EQ(3, input.input_coordinate->dim_size(1));
     Tensor image_coordinates(GetTensorflowType<T>(), {num_points, out_channel});
     for (int i = 0; i < num_points; ++i) {
       double u_d = 0.0;
@@ -191,7 +191,7 @@ class ImageToWorldOp final : public OpKernel {
     model.PrepareProjection(image);
 
     const int num_points = input.input_coordinate->dim_size(0);
-   /* CHECK_EQ(3, input.input_coordinate->dim_size(1)); */
+    CHECK_EQ(3, input.input_coordinate->dim_size(1));
     Tensor global_coordinates(GetTensorflowType<T>(), {num_points, 3});
     for (int i = 0; i < num_points; ++i) {
       double x = 0.0;

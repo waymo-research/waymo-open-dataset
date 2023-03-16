@@ -1,4 +1,4 @@
-/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2021 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include <glog/logging.h>
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/escaping.h"
 #include "absl/types/optional.h"
@@ -207,7 +208,7 @@ class MotionMetricsOp final : public OpKernel {
 
     co::BucketedMetricsStats total_stats;
     for (const auto& s : stats) {
-     /* CHECK(s.first.ok()) << s.first.message(); */
+      CHECK(s.first.ok()) << s.first.message();
       total_stats.Accumulate(s.second);
     }
 

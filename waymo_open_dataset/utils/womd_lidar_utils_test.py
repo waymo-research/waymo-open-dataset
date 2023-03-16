@@ -1,4 +1,4 @@
-# Copyright 2023 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2023 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,8 +85,8 @@ class WomdLidarUtilsTest(tf.test.TestCase):
         _get_point_xyz_and_feature_from_laser(frame_lasers, True))
     self.assertAllEqual(points_xyz_ri1.shape, tf.TensorShape([138378, 3]))
     self.assertAllEqual(points_xyz_ri2.shape, tf.TensorShape([6532, 3]))
-    self.assertShapeEqual(points_xyz_ri1, points_feature_ri1)
-    self.assertShapeEqual(points_xyz_ri2, points_feature_ri2)
+    self.assertAllEqual(points_xyz_ri1.shape, points_feature_ri1.shape)
+    self.assertAllEqual(points_xyz_ri2.shape, points_feature_ri2.shape)
 
   def test_extract_side_lidar_points(self):
     """Test of extract_side_lidar_points."""
@@ -99,9 +99,8 @@ class WomdLidarUtilsTest(tf.test.TestCase):
         _get_point_xyz_and_feature_from_laser(frame_lasers, False))
     self.assertAllEqual(points_xyz_ri1.shape, tf.TensorShape([3911, 3]))
     self.assertAllEqual(points_xyz_ri2.shape, tf.TensorShape([60, 3]))
-    self.assertShapeEqual(points_xyz_ri1, points_feature_ri1)
-    self.assertShapeEqual(points_xyz_ri2, points_feature_ri2)
-
+    self.assertAllEqual(points_xyz_ri1.shape, points_feature_ri1.shape)
+    self.assertAllEqual(points_xyz_ri2.shape, points_feature_ri2.shape)
 
 if __name__ == '__main__':
   tf.test.main()

@@ -38,7 +38,7 @@ RUN for python in python3.7 python3.8 python3.9; do \
       $python get-pip.py && \
       $python -m pip install --upgrade pip setuptools auditwheel && \
       $python -m pip install --upgrade grpcio>=1.24.3; \
-      $python -m pip install --upgrade matplotlib plotly scikit-image immutabledict scipy absl-py pandas==1.4 pyarrow dask; \
+      $python -m pip install --upgrade matplotlib plotly scikit-image immutabledict scipy sklearn absl-py pandas==1.4 numpy pyarrow dask[array]; \
       $python -m pip install --upgrade tensorflow==${TF_VERSION} OpenEXR==1.3.2 tensorflow_graphics; \
     done
 

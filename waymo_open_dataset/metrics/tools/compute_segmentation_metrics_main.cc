@@ -1,4 +1,4 @@
-/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2022 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -197,8 +197,8 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     } else {
       pd_vector = CreateEmptyPrediction(num_points);
     }
-   /* CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
-        << "Prediction and Groundtruth lengths do not match"; */
+    CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
+        << "Prediction and Groundtruth lengths do not match";
     // Measure the second return range image.
     gt_matrix.ParseFromString(Uncompress(gt_it->second.segmentation_labels()[0]
                                              .ri_return2()
@@ -213,8 +213,8 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     } else {
       pd_vector = CreateEmptyPrediction(num_points);
     }
-   /* CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
-        << "Prediction and Groundtruth length do not match"; */
+    CHECK(miou.Update(pd_vector, Flatten(gt_matrix)).ok())
+        << "Prediction and Groundtruth length do not match";
   }
   const SegmentationMetrics segmentation_metrics = miou.ComputeIOU();
   for (auto it = segmentation_metrics.per_class_iou().begin();

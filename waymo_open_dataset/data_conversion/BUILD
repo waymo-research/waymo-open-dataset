@@ -28,6 +28,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_glog//:glog",
         "@com_google_protobuf//:protobuf_lite",
         "@local_config_tf//:libtensorflow_framework",
         "@local_config_tf//:tf_header_lib",

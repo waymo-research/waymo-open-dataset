@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -171,11 +171,11 @@ void ImproveFeasibleLabeling(int n, const weight_t* edge,
 // parentT[k] is an index into S of the parent of T[k].
 void AugmentMatching(const std::vector<int>& S, const OrderedSet& T,
                      const std::vector<int>& parentT, Matching* m) {
- /* CHECK(S.size() == T.size()); */
+  CHECK(S.size() == T.size());
 
   // The leaf of the alternating tree. It should be unmatched.
   int j = T[T.size() - 1];
- /* CHECK_EQ(m->GetI(j), -1); */
+  CHECK_EQ(m->GetI(j), -1);
 
   // Find an alternating path from the leaf to the root.
   // An alternating path is a path in which the edges alternate
@@ -194,7 +194,7 @@ void AugmentMatching(const std::vector<int>& S, const OrderedSet& T,
       // If we have reached the root of the alternating tree, we are done.
       if (ii == 0) {
         // Checks that the root was unmatched when we got to it.
-       /* CHECK_EQ(tmp_j, -1); */
+        CHECK_EQ(tmp_j, -1);
         return;
       }
     }
@@ -225,11 +225,11 @@ void Hungarian(int n, const weight_t* edge, int* perm) {
 
 void Hungarian(int n, const weight_t* edge, int* perm, weight_t* lx,
                weight_t* ly) {
- /* CHECK_GT(n, 0); */
- /* CHECK(edge); */
- /* CHECK(perm); */
- /* CHECK(lx); */
- /* CHECK(ly); */
+  CHECK_GT(n, 0);
+  CHECK(edge);
+  CHECK(perm);
+  CHECK(lx);
+  CHECK(ly);
 
   // Find initial feasible labeling: lx[i] + ly[j] >= edge[i][j] for all (i, j).
   for (int i = 0; i < n; ++i) {

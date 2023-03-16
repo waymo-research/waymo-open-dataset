@@ -10,22 +10,22 @@ This major update includes supporting code to four challenges at waymo.com/open,
 v2.0.0 of the Perception Dataset
  - Introduced the dataset in modular format, enabling users to selectively download only the components they need.
  - Includes all features in v1.4.2 of the Perception Dataset except maps.
- - Added a [tutorial](waymo-open-dataset/tutorial/tutorial_v2.ipynb) and supporting code.
+ - Added a [tutorial](tutorial/tutorial_v2.ipynb) and supporting code.
 
 v1.4.2 of the Perception Dataset
  - For the 2D video panoptic segmentation labels, added a mask to indicate the number of cameras covering each pixel.
  - Added 3D map data as polylines or polygons.
 
 v1.2.0 of the Motion Dataset
- - Added Lidar data for the training set (first 1s of each 9s windows), and the corresponding [tutorial](waymo_open_dataset/tutorial/tutorial_womd_lidar.ipynb) and supporting code.
+ - Added Lidar data for the training set (first 1s of each 9s windows), and the corresponding [tutorial](tutorial/tutorial_womd_lidar.ipynb) and supporting code.
  - Added driveway entrances to the map data. Adjusted some road edge boundary height estimates.
  - Increased the max number of map points in tf_examples to 30k and reduced sampling to 1.0m to increase map coverage, so the coverage equalizes that of the dataset in scenario proto format. Added conversion code from scenario proto format to tf_examples format.
 
 Added supporting code for the four 2023 Waymo Open Dataset Challenges
- - Sim Agents Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_sim_agents.ipynb)
- - Pose Estimation Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_keypoints.ipynb)
- - 2D Video Panoptic Segmentation Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_2d_pvps.ipynb)
- - Motion Prediction Challenge, with a [tutorial](waymo_open_dataset/tutorial/tutorial_motion.ipynb)
+ - Sim Agents Challenge, with a [tutorial](tutorial/tutorial_sim_agents.ipynb)
+ - Pose Estimation Challenge, with a [tutorial](tutorial/tutorial_keypoints.ipynb)
+ - 2D Video Panoptic Segmentation Challenge, with a [tutorial](tutorial/tutorial_2d_pvps.ipynb)
+ - Motion Prediction Challenge, with a [tutorial](tutorial/tutorial_motion.ipynb)
 
 ## December 2022 Update
 We released v1.4.1 of the Perception dataset.
@@ -36,8 +36,8 @@ We released v1.4.0 of the Perception dataset.
  - Added 2D video panoptic segmentation labels and supporting code.
 
 ## May 2022 Update (part 2)
- - Released a [tutorial](waymo-open-dataset/tutorial/tutorial_camera_only.ipynb) for the 3D Camera-Only Detection Challenge.
- - Added support for computing 3D-LET-APL in Python metrics ops. See `Compute Metrics` in the [tutorial](waymo-open-dataset/tutorial/tutorial_camera_only.ipynb).
+ - Released a [tutorial](tutorial/tutorial_camera_only.ipynb) for the 3D Camera-Only Detection Challenge.
+ - Added support for computing 3D-LET-APL in Python metrics ops. See `Compute Metrics` in the [tutorial](tutorial/tutorial_camera_only.ipynb).
  - Fixed a bug in the metrics implementation for the Occupancy and Flow Challenge.
 
 ## May 2022 Update
@@ -53,7 +53,7 @@ We released v1.3.1 of the Perception dataset to support the 2022 Challenges and 
  - Added z-axis speed and acceleration in [lidar label metadata](waymo_open_dataset/label.proto#L53-L60).
  - Fixed some inconsistencies in `projected_lidar_labels` in [dataset.proto](waymo_open_dataset/dataset.proto).
  - Updated the default configuration for the Occupancy and Flow Challenge, switching from aggregate waypoints to [subsampled waypoints](waymo_open_dataset/protos/occupancy_flow_metrics.proto#L38-L55).
- - Updated the [tutorial](waymo-open-dataset/tutorial/tutorial_3d_semseg.ipynb) for 3D Semantic Segmentation Challenge with more detailed instructions.
+ - Updated the [tutorial](tutorial/tutorial_3d_semseg.ipynb) for 3D Semantic Segmentation Challenge with more detailed instructions.
 
 ## March 2022 Update
 

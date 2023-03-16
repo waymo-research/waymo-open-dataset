@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ namespace open_dataset {
 std::unique_ptr<Matcher> Matcher::Create(
     MatcherProto_Type matcher_type, const std::vector<float>& iou_thresholds,
     Label::Box::Type box_type) {
- /* CHECK_EQ(iou_thresholds.size(), Label::Type_MAX + 1)
-      << "Must specifiy IoU thresholds for every label type."; */
- /* CHECK_NE(box_type, Label::Box::TYPE_UNKNOWN); */
+  CHECK_EQ(iou_thresholds.size(), Label::Type_MAX + 1)
+      << "Must specifiy IoU thresholds for every label type.";
+  CHECK_NE(box_type, Label::Box::TYPE_UNKNOWN);
 
   switch (matcher_type) {
     case MatcherProto::TYPE_HUNGARIAN:
@@ -116,10 +116,10 @@ float Matcher::LongitudinalAffinity(int prediction_index,
       longitudinal_affinity = custom_longitudinal_affinity_func_(
           predictions()[prediction_index].object().box(),
           ground_truths()[ground_truth_index].object().box());
-     /* CHECK_GE(longitudinal_affinity, 0.0)
+      CHECK_GE(longitudinal_affinity, 0.0)
           << "prediction_index: " << prediction_index
-          << ", ground_truth_index: " << ground_truth_index; */
-     /* CHECK_LE(longitudinal_affinity, 1.0); */
+          << ", ground_truth_index: " << ground_truth_index;
+      CHECK_LE(longitudinal_affinity, 1.0);
     }
     // Store the result in the cache.
     longitudinal_affinity_caches_[prediction_index][ground_truth_index] =
@@ -155,9 +155,9 @@ float Matcher::IoU(int prediction_index, int ground_truth_index) const {
                       ground_truths()[ground_truth_index].object().box());
     }
 
-   /* CHECK_GE(iou, 0.0) << "prediction_index: " << prediction_index
-                       << ", ground_truth_index: " << ground_truth_index; */
-   /* CHECK_LE(iou, 1.0); */
+    CHECK_GE(iou, 0.0) << "prediction_index: " << prediction_index
+                       << ", ground_truth_index: " << ground_truth_index;
+    CHECK_LE(iou, 1.0);
     // Store the result in the cache.
     iou_caches_[prediction_index][ground_truth_index] = iou;
   }
@@ -167,7 +167,7 @@ float Matcher::IoU(int prediction_index, int ground_truth_index) const {
 bool Matcher::CanMatch(int prediction_index, int ground_truth_index) const {
   const Label::Type object_type =
       predictions()[prediction_index].object().type();
- /* CHECK_NE(object_type, Label::TYPE_UNKNOWN); */
+  CHECK_NE(object_type, Label::TYPE_UNKNOWN);
   // If custom CanMatch function is set, return the custom result.
   if (custom_can_match_func_ != nullptr)
     return custom_can_match_func_(*this, prediction_index, ground_truth_index);
@@ -227,8 +227,8 @@ void HungarianMatcher::Match(std::vector<int>* prediction_matches,
   for (int i = 0; i < prediction_subset_size; ++i) {
     const int prediction_subset_index = i;
     int ground_truth_subset_index = matching[i];
-   /* CHECK_GE(ground_truth_subset_index, 0); */
-   /* CHECK_LT(ground_truth_subset_index, num_vertices); */
+    CHECK_GE(ground_truth_subset_index, 0);
+    CHECK_LT(ground_truth_subset_index, num_vertices);
     bool can_match = false;
     if (ground_truth_subset_index >= ground_truth_subset_size) {
       ground_truth_subset_index = -1;
@@ -251,8 +251,8 @@ void HungarianMatcher::Match(std::vector<int>* prediction_matches,
 
 void ScoreFirstMatcher::Match(std::vector<int>* prediction_matches,
                               std::vector<int>* ground_truth_matches) {
- /* CHECK(prediction_matches); */
- /* CHECK(ground_truth_matches); */
+  CHECK(prediction_matches);
+  CHECK(ground_truth_matches);
 
   const int prediction_subset_size = prediction_subset().size();
   const int ground_truth_subset_size = ground_truth_subset().size();

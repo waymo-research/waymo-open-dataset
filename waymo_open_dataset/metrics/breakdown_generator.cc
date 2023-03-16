@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -138,8 +138,8 @@ class BreakdownGeneratorRange : public BreakdownGenerator {
 
   std::string ShardName(int shard) const override {
     const Label::Type object_type = static_cast<Label::Type>(shard / 3 + 1);
-   /* CHECK_LE(object_type, Label::Type_MAX) << shard; */
-   /* CHECK_GE(object_type, 1) << shard; */
+    CHECK_LE(object_type, Label::Type_MAX) << shard;
+    CHECK_GE(object_type, 1) << shard;
 
     const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
                                             "_", Label::Type_Name(object_type));
@@ -190,8 +190,8 @@ class BreakdownGeneratorSize : public BreakdownGenerator {
 
   std::string ShardName(int shard) const override {
     const Label::Type object_type = static_cast<Label::Type>(shard / 2 + 1);
-   /* CHECK_LE(object_type, Label::Type_MAX) << shard; */
-   /* CHECK_GE(object_type, 1) << shard; */
+    CHECK_LE(object_type, Label::Type_MAX) << shard;
+    CHECK_GE(object_type, 1) << shard;
 
     const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
                                             "_", Label::Type_Name(object_type));
@@ -268,8 +268,8 @@ class BreakdownGeneratorVelocity : public BreakdownGenerator {
 
   std::string ShardName(int shard) const override {
     const Label::Type object_type = static_cast<Label::Type>(shard / 5 + 1);
-   /* CHECK_LE(object_type, Label::Type_MAX) << shard; */
-   /* CHECK_GE(object_type, 1) << shard; */
+    CHECK_LE(object_type, Label::Type_MAX) << shard;
+    CHECK_GE(object_type, 1) << shard;
 
     const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
                                             "_", Label::Type_Name(object_type));
@@ -362,8 +362,8 @@ class BreakdownGeneratorCamera : public BreakdownGenerator {
   std::string ShardName(int shard) const override {
     const Label::Type object_type =
         static_cast<Label::Type>(shard / kNumCameras + 1);
-   /* CHECK_LE(object_type, Label::Type_MAX) << shard; */
-   /* CHECK_GE(object_type, 1) << shard; */
+    CHECK_LE(object_type, Label::Type_MAX) << shard;
+    CHECK_GE(object_type, 1) << shard;
 
     const std::string prefix = absl::StrCat(Breakdown::GeneratorId_Name(Id()),
                                             "_", Label::Type_Name(object_type));

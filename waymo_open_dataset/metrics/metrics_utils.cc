@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -61,14 +61,14 @@ inline T NormalizeAngle(T rad) {
 }
 
 bool IsTP(const std::vector<int>& pd_matches, int i) {
- /* CHECK_GE(i, 0); */
- /* CHECK_LE(i, pd_matches.size()); */
+  CHECK_GE(i, 0);
+  CHECK_LE(i, pd_matches.size());
   return pd_matches[i] >= 0;
 }
 
 bool IsFP(const Matcher& matcher, const std::vector<int>& pd_matches, int i) {
- /* CHECK_GE(i, 0); */
- /* CHECK_LE(i, pd_matches.size()); */
+  CHECK_GE(i, 0);
+  CHECK_LE(i, pd_matches.size());
   return pd_matches[i] < 0 &&
          !matcher.predictions()[matcher.prediction_subset()[i]]
               .overlap_with_nlz();
@@ -76,8 +76,8 @@ bool IsFP(const Matcher& matcher, const std::vector<int>& pd_matches, int i) {
 
 bool IsDetectionFN(const Matcher& matcher, const std::vector<int>& gt_matches,
                    int i, Label::DifficultyLevel level) {
- /* CHECK_GE(i, 0); */
- /* CHECK_LE(i, gt_matches.size()); */
+  CHECK_GE(i, 0);
+  CHECK_LE(i, gt_matches.size());
   if (gt_matches[i] >= 0) return false;
 
   const Object& object =
@@ -88,8 +88,8 @@ bool IsDetectionFN(const Matcher& matcher, const std::vector<int>& gt_matches,
 
 bool IsTrackingFN(const Matcher& matcher, const std::vector<int>& gt_matches,
                   int i, Label::DifficultyLevel level) {
- /* CHECK_GE(i, 0); */
- /* CHECK_LE(i, gt_matches.size()); */
+  CHECK_GE(i, 0);
+  CHECK_LE(i, gt_matches.size());
   if (gt_matches[i] >= 0) return false;
 
   const Object& object =
@@ -129,13 +129,13 @@ std::vector<BreakdownShardSubset> BuildSubsets(
         const std::vector<int> shards =
             breakdown_generator->ShardsForMatching(objects[i]);
         for (int s : shards) {
-         /* CHECK_GE(s, 0); */
-         /* CHECK_LT(s, num_shards); */
+          CHECK_GE(s, 0);
+          CHECK_LT(s, num_shards);
           breakdown_subsets[s].push_back(i);
         }
       } else {
         const int shard = breakdown_generator->Shard(objects[i]);
-       /* CHECK_LT(shard, num_shards); */
+        CHECK_LT(shard, num_shards);
         if (shard >= 0) {
           breakdown_subsets[shard].push_back(i);
         }
@@ -208,7 +208,7 @@ std::vector<float> Sequence(float start, float end, float delta) {
 
 std::vector<float> DecideScoreCutoffs(const std::vector<float>& scores,
                                       int num_desired_cutoffs) {
- /* CHECK_GT(num_desired_cutoffs, 0); */
+  CHECK_GT(num_desired_cutoffs, 0);
   if (num_desired_cutoffs == 1) {
     return {0.0};
   }
@@ -238,16 +238,16 @@ std::vector<float> DecideScoreCutoffs(const std::vector<float>& scores,
     last_idx = last_idx + bucket_sizes[i];
   }
   cutoffs.push_back(1.0);
- /* CHECK_EQ(cutoffs.size(), num_desired_cutoffs); */
+  CHECK_EQ(cutoffs.size(), num_desired_cutoffs);
   return cutoffs;
 }
 
 float ComputeMeanAveragePrecision(const std::vector<float>& precisions,
                                   const std::vector<float>& recalls,
                                   float max_recall_delta) {
- /* CHECK_EQ(precisions.size(), recalls.size()); */
- /* CHECK_GT(max_recall_delta, 0.0); */
- /* CHECK_LE(max_recall_delta, 1.0); */
+  CHECK_EQ(precisions.size(), recalls.size());
+  CHECK_GT(max_recall_delta, 0.0);
+  CHECK_LE(max_recall_delta, 1.0);
   if (precisions.empty()) return 0.0;
 
   // Recall to precision mapping.
@@ -305,7 +305,7 @@ namespace {
 inline float Sqr(float x) { return x * x; }
 
 int Argmin(const std::vector<float>& nums) {
- /* CHECK(!nums.empty()); */
+  CHECK(!nums.empty());
   int i = 0;
   for (int j = 1; j < nums.size(); ++j) {
     if (nums[j] < nums[i]) {
@@ -356,7 +356,7 @@ std::vector<Object> EstimateObjectSpeed(const std::vector<Object>& pds,
 std::vector<std::vector<Object>> EstimateObjectSpeed(
     const std::vector<std::vector<Object>>& pds,
     const std::vector<std::vector<Object>>& gts) {
- /* CHECK_EQ(pds.size(), gts.size()); */
+  CHECK_EQ(pds.size(), gts.size());
   std::vector<std::vector<Object>> pds_with_velocity(pds.size());
   for (int i = 0, sz = pds.size(); i < sz; ++i) {
     pds_with_velocity[i] = EstimateObjectSpeed(pds[i], gts[i]);

@@ -1,4 +1,4 @@
-# Copyright 2023 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2023 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from deeplab2.deeplab.deeplab2.data import dataset
-from deeplab2.deeplab.deeplab2.evaluation import segmentation_and_tracking_quality
+from deeplab2..data import dataset
+from deeplab2..evaluation import segmentation_and_tracking_quality
 from waymo_open_dataset.protos import camera_segmentation_metrics_pb2
 
 

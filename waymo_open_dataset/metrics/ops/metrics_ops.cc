@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -220,6 +220,32 @@ score_cutoff: [B]. score cutoff for TrackingMetrics.
 breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
   breakdown.
 config: a string serialized proto of metrics configuration protobuf.
+)doc");
+
+REGISTER_OP("Match")
+    .Input("prediction_boxes: float")
+    .Input("groundtruth_boxes: float")
+    .Attr("config: string")
+    .Output("prediction_ids: int32")
+    .Output("groundtruth_ids: int32")
+    .Output("ious: float")
+    .Output("longitudinal_affinities: float")
+    .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
+      for (int i = 0; i < 4; ++i) {
+        c->set_output(i, c->MakeShape({-1}));
+      }
+      return ::tensorflow::OkStatus();
+    }).Doc(R"doc(
+Computes bipartite matching between prediction and groundtruth objects.
+
+prediction_boxes: [B, N, D] tensor.
+groundtruth_boxes: [B, M, D] tensor.
+config: a string serialized proto of metrics configuration protobuf.
+
+prediction_ids: [B] the matched prediction ids.
+groundtruth_ids: [B] the matched groundtruth ids.
+ious: [B] the iou of all matched pairs.
+longitudinal_affinities: [B] the longitudinal affinities of all matched pairs.
 )doc");
 
 }  // namespace

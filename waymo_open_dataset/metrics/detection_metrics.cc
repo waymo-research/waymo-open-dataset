@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -151,9 +151,9 @@ std::vector<DetectionMeasurements>
 ComputeDetectionMeasurementsPerBreakdownShard(
     const Config& config, const internal::BreakdownShardSubset& pd_subset,
     const internal::BreakdownShardSubset& gt_subset, Matcher* matcher) {
- /* CHECK(matcher != nullptr); */
+  CHECK(matcher != nullptr);
   std::vector<DetectionMeasurements> measurements;
- /* CHECK(!gt_subset.indices.empty()); */
+  CHECK(!gt_subset.indices.empty());
   matcher->SetGroundTruthSubset(gt_subset.indices[0]);
   const std::vector<Label::DifficultyLevel> difficulty_levels =
       internal::GetDifficultyLevels(config,
@@ -196,7 +196,7 @@ DetectionMeasurement MergeDetectionMeasurement(const DetectionMeasurement& m1,
                                                const DetectionMeasurement& m2) {
   if (!m1.has_score_cutoff()) return m2;
   if (!m2.has_score_cutoff()) return m1;
- /* CHECK_EQ(m1.score_cutoff(), m2.score_cutoff()); */
+  CHECK_EQ(m1.score_cutoff(), m2.score_cutoff());
   DetectionMeasurement m;
 
 #define ADD_FIELD(FIELD_NAME) \
@@ -222,16 +222,16 @@ DetectionMeasurement MergeDetectionMeasurement(const DetectionMeasurement& m1,
 // Merges new_m to m.
 void MergeDetectionMeasurements(const DetectionMeasurements& new_m,
                                 DetectionMeasurements* m) {
- /* CHECK(m != nullptr); */
+  CHECK(m != nullptr);
   if (m->measurements_size() == 0) {
     *m = new_m;
     return;
   }
- /* CHECK_EQ(m->measurements_size(), new_m.measurements_size()); */
- /* CHECK_EQ(m->breakdown().generator_id(), new_m.breakdown().generator_id()); */
- /* CHECK_EQ(m->breakdown().shard(), new_m.breakdown().shard()); */
- /* CHECK_EQ(m->breakdown().difficulty_level(),
-           new_m.breakdown().difficulty_level()); */
+  CHECK_EQ(m->measurements_size(), new_m.measurements_size());
+  CHECK_EQ(m->breakdown().generator_id(), new_m.breakdown().generator_id());
+  CHECK_EQ(m->breakdown().shard(), new_m.breakdown().shard());
+  CHECK_EQ(m->breakdown().difficulty_level(),
+           new_m.breakdown().difficulty_level());
   for (int i = 0, sz = m->measurements_size(); i < sz; ++i) {
     *m->mutable_measurements(i) =
         MergeDetectionMeasurement(m->measurements(i), new_m.measurements(i));
@@ -242,13 +242,13 @@ void MergeDetectionMeasurements(const DetectionMeasurements& new_m,
 void MergeDetectionMeasurementsVector(
     const std::vector<DetectionMeasurements>& new_m,
     std::vector<DetectionMeasurements>* m) {
- /* CHECK(m != nullptr); */
+  CHECK(m != nullptr);
   if (m->empty()) {
     *m = new_m;
     return;
   }
 
- /* CHECK_EQ(new_m.size(), m->size()); */
+  CHECK_EQ(new_m.size(), m->size());
   for (int i = 0, sz = m->size(); i < sz; ++i) {
     MergeDetectionMeasurements(new_m[i], &(*m)[i]);
   }
@@ -355,8 +355,8 @@ DetectionMetrics ToDetectionMetrics(const Config& config,
 std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
     const Config& config, const std::vector<Object>& pds,
     const std::vector<Object>& gts, ComputeIoUFunc custom_iou_func) {
- /* CHECK_GT(config.score_cutoffs_size(), 0)
-      << "config.scores() must be populated: " << config.DebugString(); */
+  CHECK_GT(config.score_cutoffs_size(), 0)
+      << "config.scores() must be populated: " << config.DebugString();
   std::unique_ptr<Matcher> matcher = Matcher::Create(config);
   matcher->SetGroundTruths(gts);
   if (custom_iou_func != nullptr) {
@@ -377,7 +377,7 @@ std::vector<DetectionMeasurements> ComputeDetectionMeasurements(
   const std::vector<internal::BreakdownShardSubset> gt_subsets =
       internal::BuildSubsets(config, matcher->ground_truths(), /*is_gt=*/true,
                              /*is_detection=*/true);
- /* CHECK_EQ(pd_subsets.size(), gt_subsets.size()); */
+  CHECK_EQ(pd_subsets.size(), gt_subsets.size());
 
   for (int i = 0, sz = pd_subsets.size(); i < sz; ++i) {
     const internal::BreakdownShardSubset& pd_subset = pd_subsets[i];
@@ -400,7 +400,7 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
     const std::vector<std::vector<Object>>& gts,
     ComputeIoUFunc custom_iou_func) {
   std::vector<DetectionMeasurements> measurements;
- /* CHECK_EQ(pds.size(), gts.size()); */
+  CHECK_EQ(pds.size(), gts.size());
   const int num_frames = pds.size();
   const Config config_copy = config.score_cutoffs_size() > 0
                                  ? config
@@ -446,8 +446,8 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
 Config EstimateScoreCutoffs(const Config& config,
                             const std::vector<std::vector<Object>>& pds,
                             const std::vector<std::vector<Object>>& gts) {
- /* CHECK_EQ(pds.size(), gts.size()); */
- /* CHECK_EQ(config.score_cutoffs_size(), 0); */
+  CHECK_EQ(pds.size(), gts.size());
+  CHECK_EQ(config.score_cutoffs_size(), 0);
   std::vector<float> pd_scores;
   const int num_frames = pds.size();
   Config config_copy(config);

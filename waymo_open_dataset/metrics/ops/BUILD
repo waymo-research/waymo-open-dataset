@@ -39,6 +39,7 @@ cc_binary(
     name = "metrics_ops.so",
     srcs = [
         "detection_metrics_ops.cc",
+        "matcher_ops.cc",
         "metrics_ops.cc",
         "motion_metrics_ops.cc",
         "tracking_metrics_ops.cc",
@@ -52,6 +53,7 @@ cc_binary(
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/metrics:config_util",
         "//waymo_open_dataset/metrics:detection_metrics",
+        "//waymo_open_dataset/metrics:matcher",
         "//waymo_open_dataset/metrics:motion_metrics",
         "//waymo_open_dataset/metrics:tracking_metrics",
         "//waymo_open_dataset/protos:breakdown_cc_proto",

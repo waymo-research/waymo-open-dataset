@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -80,12 +80,12 @@ double ComputeIoU2dMin(const Label::Box& b1, const Label::Box& b2) {
   const double min_area = std::min(p1_area, p2_area);
   if (min_area <= kEpsilon) return 0.0;
   const double iom = intersection_area / min_area;
- /* CHECK(!std::isnan(iom)) << "b1: " << b1.DebugString()
-                          << "\nb2: " << b2.DebugString(); */
- /* CHECK_GE(iom, -kEpsilon) << "b1: " << b1.DebugString()
-                           << "\nb2: " << b2.DebugString(); */
- /* CHECK_LE(iom, 1.0 + kEpsilon)
-      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString(); */
+  CHECK(!std::isnan(iom)) << "b1: " << b1.DebugString()
+                          << "\nb2: " << b2.DebugString();
+  CHECK_GE(iom, -kEpsilon) << "b1: " << b1.DebugString()
+                           << "\nb2: " << b2.DebugString();
+  CHECK_LE(iom, 1.0 + kEpsilon)
+      << "b1: " << b1.DebugString() << "\nb2: " << b2.DebugString();
 
   return std::max(std::min(iom, 1.0), 0.0);
 }

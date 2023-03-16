@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+#include <glog/logging.h>
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/escaping.h"
 #include "absl/types/optional.h"
@@ -145,14 +146,14 @@ class DetectionMetricsOp final : public OpKernel {
         output.breakdown.matrix<uint8>()(i, 2) =
             metrics[i].breakdown().difficulty_level();
 
-       /* CHECK_EQ(metrics[i].precisions_size(), num_score_cutoffs); */
-       /* CHECK_EQ(metrics[i].recalls_size(), num_score_cutoffs); */
-       /* CHECK_EQ(metrics[i].precisions_ha_weighted_size(), num_score_cutoffs); */
-       /* CHECK_EQ(metrics[i].recalls_ha_weighted_size(), num_score_cutoffs); */
-       /* CHECK_EQ(metrics[i].precisions_longitudinal_affinity_weighted_size(),
-                 num_score_cutoffs); */
-       /* CHECK_EQ(metrics[i].recalls_longitudinal_affinity_weighted_size(),
-                 num_score_cutoffs); */
+        CHECK_EQ(metrics[i].precisions_size(), num_score_cutoffs);
+        CHECK_EQ(metrics[i].recalls_size(), num_score_cutoffs);
+        CHECK_EQ(metrics[i].precisions_ha_weighted_size(), num_score_cutoffs);
+        CHECK_EQ(metrics[i].recalls_ha_weighted_size(), num_score_cutoffs);
+        CHECK_EQ(metrics[i].precisions_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs);
+        CHECK_EQ(metrics[i].recalls_longitudinal_affinity_weighted_size(),
+                 num_score_cutoffs);
         for (int j = 0; j < num_score_cutoffs; ++j) {
           output.precision_recall.tensor<float, 3>()(i, j, 0) =
               metrics[i].precisions(j);

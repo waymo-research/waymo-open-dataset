@@ -1,4 +1,4 @@
-/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2021 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,12 +37,12 @@ namespace {
 ScenarioPredictions CreateTestSubmissionProto(
     const Scenario& scenario, std::vector<int> offsets = {1, 2, 3, 4},
     std::vector<float> confidences = {0.8f, 0.2f, 0.2f, 0.2f}) {
- /* CHECK_EQ(offsets.size(), confidences.size()); */
+  CHECK_EQ(offsets.size(), confidences.size());
   ScenarioPredictions submission;
   submission.set_scenario_id(scenario.scenario_id());
   for (const auto& required_track : scenario.tracks_to_predict()) {
     const int track_index = required_track.track_index();
-   /* CHECK_LT(track_index, scenario.tracks_size()); */
+    CHECK_LT(track_index, scenario.tracks_size());
     const Track& track = scenario.tracks(track_index);
     auto* prediction = submission.add_multi_modal_predictions();
 
@@ -98,7 +98,7 @@ ScenarioPredictions CreateTestPredictions() {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   return predictions;
 }
 
@@ -189,7 +189,7 @@ Scenario CreateTestScenario() {
     }
   )";
   Scenario scenario;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &scenario)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &scenario));
   return scenario;
 }
 
@@ -213,7 +213,7 @@ MotionMetricsConfig GetTestConfig() {
     max_predictions: 6
   )";
   MotionMetricsConfig config;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &config)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(scenario_str, &config));
   return config;
 }
 
@@ -265,7 +265,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeMissRateLateral_2) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -297,7 +297,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeMissRateLateral_1) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -329,7 +329,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeMissRateLongitudinal_2) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -361,7 +361,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeMissRateLongitudinal_1) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -393,7 +393,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeNoMissLongitudinal_1) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -430,7 +430,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeVelocityScalingLatitudinal) {
   config.set_speed_scale_upper(1.0);
   config.set_speed_lower_bound(1.0);
   config.set_speed_upper_bound(3.0);
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config, predictions, scenario_, &metrics_stats);
@@ -493,7 +493,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeVelocityScalingLongitudinal) {
   config.set_speed_scale_upper(1.0);
   config.set_speed_lower_bound(1.0);
   config.set_speed_upper_bound(3.0);
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
 
   BucketedMetricsStats metrics_stats;
   Status status =
@@ -553,7 +553,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeNoMissLateral_2) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -598,7 +598,7 @@ TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsNoMiss) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -643,7 +643,7 @@ TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsObjectAndTrajectoryTypes) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
 
   Scenario scenario = scenario_;
   // Change the first track to something boring (STATIC) so that the track_type
@@ -710,7 +710,7 @@ TEST_F(TestJointMetricsSynthetic, TwoJointPredictionsMiss) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -755,7 +755,7 @@ TEST_F(TestJointMetricsSynthetic, InvalidJointPredictions) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
 
   BucketedMetricsStats metrics_stats;
   Status status =
@@ -783,7 +783,7 @@ TEST_F(TestJointMetricsSynthetic, MissingObjectPredictions) {
      }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);
@@ -823,7 +823,7 @@ TEST_F(TestJointMetricsSynthetic, ComputeMinADE) {
     }
   )";
   ScenarioPredictions predictions;
- /* CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions)); */
+  CHECK(google::protobuf::TextFormat::ParseFromString(predictions_str, &predictions));
   BucketedMetricsStats metrics_stats;
   Status status =
       ComputeMetricsStats(config_, predictions, scenario_, &metrics_stats);

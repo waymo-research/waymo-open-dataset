@@ -1,4 +1,4 @@
-# Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2022 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 import json
 import math
 
+import numpy as np
 import tensorflow as tf
 
 # copybara removed file resource import
@@ -601,44 +602,6 @@ class AllMetricsTest(tf.test.TestCase):
     self.assertCountEqual(result.keys(), _ALL_METRIC_NAMES)
 
 
-class HungarianAssignmentTest(tf.test.TestCase):
-
-  def test_returns_continious_range_for_eye(self):
-    iou = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=tf.float32)
-
-    lhs, rhs = _lib.hungarian_assignment(iou)
-
-    self.assertAllEqual(lhs, [0, 1, 2])
-    self.assertAllEqual(rhs, [0, 1, 2])
-
-  def test_reorders_shuffled_elements(self):
-    iou = tf.constant([[0, 1, 0], [0, 0, 1], [1, 0, 0]], dtype=tf.float32)
-
-    lhs, rhs = _lib.hungarian_assignment(iou)
-
-    self.assertAllEqual(lhs, [0, 1, 2])
-    self.assertAllEqual(rhs, [1, 2, 0])
-
-  def test_sets_mask_to_false_for_unmatched(self):
-    # iou[2, :] = iou[:,2] = 0 - there is no match for both of them.
-    iou = tf.constant([[1, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=tf.float32)
-
-    lhs, rhs = _lib.hungarian_assignment(iou)
-
-    # We don't care about the last element, because it is not matched.
-    self.assertAllEqual(lhs, [0, 1])
-    self.assertAllEqual(rhs, [0, 1])
-
-  def test_supports_different_number_of_elements(self):
-    # 2 ground truth, 3 predictions
-    iou = tf.constant([[1, 0, 0], [0, 1, 0]], dtype=tf.float32)
-
-    lhs, rhs = _lib.hungarian_assignment(iou)
-
-    self.assertAllEqual(lhs, [0, 1])
-    self.assertAllEqual(rhs, [0, 1])
-
-
 class MissingIdsTest(tf.test.TestCase):
 
   def test_missing_ids_empty_if_nothing_is_missing(self):
@@ -716,11 +679,23 @@ class MatchPoseEstimationsTest(tf.test.TestCase):
 
     gtm, prm = _lib.match_pose_estimations(gt, pr)
 
-    self.assertAllClose(gtm.keypoints.location, gt.keypoints.location)
-    self.assertAllClose(gtm.keypoints.visibility, gt.keypoints.visibility)
-    self.assertAllClose(gtm.box.center, gt.box.center)
-    self.assertAllClose(gtm.box.size, gt.box.size)
-    self.assertAllClose(gtm.box.heading, gt.box.heading)
+    self.assertCountEqual(
+        gtm.keypoints.location.numpy().flatten(),
+        gt.keypoints.location.numpy().flatten(),
+    )
+    self.assertCountEqual(
+        gtm.keypoints.visibility.numpy().flatten(),
+        gt.keypoints.visibility.numpy().flatten(),
+    )
+    self.assertCountEqual(
+        gtm.box.center.numpy().flatten(), gt.box.center.numpy().flatten()
+    )
+    self.assertCountEqual(
+        gtm.box.size.numpy().flatten(), gt.box.size.numpy().flatten()
+    )
+    self.assertCountEqual(
+        gtm.box.heading.numpy().flatten(), gt.box.heading.numpy().flatten()
+    )
     self.assertAllClose(gtm.keypoints.location, prm.keypoints.location)
     self.assertAllClose(gtm.keypoints.visibility, prm.keypoints.visibility)
     self.assertAllClose(gtm.box.center, prm.box.center)
@@ -751,7 +726,7 @@ class MatchPoseEstimationsTest(tf.test.TestCase):
         visibility=tf.constant([[2], [2], [2]]),
     )
     pr_box = _data.BoundingBoxTensors(
-        center=tf.constant([[7.1, 7.1, 7.1], [0.9, 1.1, 1.2], [3.9, 4, 4.1]]),
+        center=tf.constant([[7.1, 7.1, 7.1], [0.9, 1.1, 1.1], [3.9, 4, 4.1]]),
         size=tf.constant([[1.2] * 3, [1.2] * 3, [1.2] * 3], dtype=tf.float32),
         heading=tf.constant([0.1, 0.1, 0.1], dtype=tf.float32),
     )
@@ -760,10 +735,13 @@ class MatchPoseEstimationsTest(tf.test.TestCase):
     gt_m, pr_m = _lib.match_pose_estimations(gt, pr)
 
     # Spot checking coordinates to assert the order of objects.
-    self.assertAllClose(gt_m.keypoints.location[:, 0, 0], [1, 4, 7])
-    self.assertAllClose(gt_m.box.center[:, 0], [1, 4, 7])
-    self.assertAllClose(pr_m.keypoints.location[:, 0, 0], [1, 4, 7])
-    self.assertAllClose(pr_m.box.center[:, 0], [0.9, 3.9, 7.1])
+    self.assertCountEqual(gt_m.keypoints.location[:, 0, 0].numpy(), [1, 4, 7])
+    self.assertCountEqual(gt_m.box.center[:, 0].numpy(), [1, 4, 7])
+    self.assertCountEqual(pr_m.keypoints.location[:, 0, 0].numpy(), [1, 4, 7])
+    self.assertCountEqual(
+        pr_m.box.center[:, 0].numpy(), np.asarray([0.9, 3.9, 7.1], np.float32)
+    )
+    self.assertAllClose(gt_m.keypoints.location, pr_m.keypoints.location)
 
   def test_appends_false_negatives_and_false_positives(self):
     # 2 object with 1 keypoint each:

@@ -1,4 +1,4 @@
-/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2022 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ limitations under the License.
 #include <vector>
 
 
+#include <glog/logging.h>
 #include "google/protobuf/repeated_field.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
@@ -369,10 +370,10 @@ void AddRoadgraphData(
     const std::vector<Vec3d>& direction_vectors, const int valid,
     const std::string& prefix,
     absl::flat_hash_map<std::string, tensorflow::Feature>* features) {
- /* CHECK(prefix == "roadgraph_samples/" || prefix == "roadgraph_segments/"); */
+  CHECK(prefix == "roadgraph_samples/" || prefix == "roadgraph_segments/");
 
   const int num_points = points.size();
- /* CHECK_EQ(direction_vectors.size(), num_points); */
+  CHECK_EQ(direction_vectors.size(), num_points);
 
   // Add each point and direction vector to the features.
   for (int i = 0; i < num_points; ++i) {
@@ -601,7 +602,7 @@ absl::flat_hash_set<const Track*> GetModeledAgents(
     // be included in the modeled agents.
     for (const auto& required_tracks : scenario.tracks_to_predict()) {
       const int track_to_predict = required_tracks.track_index();
-     /* CHECK_LT(track_to_predict, scenario.tracks_size()); */
+      CHECK_LT(track_to_predict, scenario.tracks_size());
       const Track* track = &(scenario.tracks()[track_to_predict]);
 
       if (track->states()[current_timestamp_steps].valid() &&
@@ -621,7 +622,7 @@ void AddStateFeatures(
     int difficulty_level,
     absl::flat_hash_map<std::string, tensorflow::Feature>* features,
     std::map<std::string, int>* counters) {
- /* CHECK(prefix == "sdc/" || prefix == "state/"); */
+  CHECK(prefix == "sdc/" || prefix == "state/");
 
   const bool padded_feature = (track == nullptr);
   const bool is_sdc_state = prefix == "sdc/";
@@ -766,7 +767,7 @@ void AddSinglePointFeature(
     const int64_t id, const int64_t type, const MapPoint& map_point,
     const MapPoint& next_map_point, const int valid, const std::string& prefix,
     absl::flat_hash_map<std::string, tensorflow::Feature>* features) {
- /* CHECK(prefix == "roadgraph_samples/" || prefix == "roadgraph_segments/"); */
+  CHECK(prefix == "roadgraph_samples/" || prefix == "roadgraph_segments/");
 
   AddInt64Feature(absl::StrCat(prefix, "id"), id, features);
   AddInt64Feature(absl::StrCat(prefix, "type"), type, features);

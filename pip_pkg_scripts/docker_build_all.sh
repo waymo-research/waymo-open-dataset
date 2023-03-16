@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+# Copyright 2021 The Waymo Open Dataset Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

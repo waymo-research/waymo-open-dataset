@@ -1,4 +1,4 @@
-/* Copyright 2022 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2022 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ SegmentationMetricsIOU::SegmentationMetricsIOU(
     auto index = segmentation_type_mapper_.find(static_cast<Segmentation::Type>(
         segmentation_metrics_config_.segmentation_types()[i]));
     // Input list of segmentation typs should not have duplicates.
-   /* CHECK(index == segmentation_type_mapper_.end()); */
+    CHECK(index == segmentation_type_mapper_.end());
     segmentation_type_mapper_.insert(
         {static_cast<Segmentation::Type>(
              segmentation_metrics_config_.segmentation_types()[i]),
@@ -116,8 +116,8 @@ SegmentationMetrics SegmentationMetricsIOU::MergeResults(
   std::vector<int64_t> num_intersections(num_classes_, 0);
   std::vector<int64_t> num_unions(num_classes_, 0);
   for (const auto& result : results) {
-   /* CHECK(result.unions_size() == num_classes_); */
-   /* CHECK(result.intersections_size() == num_classes_); */
+    CHECK(result.unions_size() == num_classes_);
+    CHECK(result.intersections_size() == num_classes_);
     for (int i = 0; i < num_classes_; ++i) {
       num_intersections[i] += result.intersections()[i];
       num_unions[i] += result.unions()[i];

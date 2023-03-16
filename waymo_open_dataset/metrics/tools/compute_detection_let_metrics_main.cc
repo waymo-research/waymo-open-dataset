@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -195,10 +195,10 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
       continue;
     }
     CameraName::Name camera_name;
-   /* CHECK(CameraName::Name_Parse(o.object().most_visible_camera_name(),
+    CHECK(CameraName::Name_Parse(o.object().most_visible_camera_name(),
                                  &camera_name))
         << "Object has invalid `most_visible_camera_name` "
-        << o.object().most_visible_camera_name(); */
+        << o.object().most_visible_camera_name();
     // Replace the label box with the camera-synced box. In the 3D Camera-Only
     // Detection Challenge, we use camera-synced boxes as the ground truth boxes
     // as well as the evaluation target boxes.

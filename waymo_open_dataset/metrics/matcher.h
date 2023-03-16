@@ -1,4 +1,4 @@
-/* Copyright 2019 The Waymo Open Dataset Authors. All Rights Reserved.
+/* Copyright 2019 The Waymo Open Dataset Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -156,11 +156,11 @@ class Matcher {
 
   // Accessors.
   const std::vector<Object>& predictions() const {
-   /* CHECK(predictions_ != nullptr); */
+    CHECK(predictions_ != nullptr);
     return *predictions_;
   }
   const std::vector<Object>& ground_truths() const {
-   /* CHECK(ground_truths_ != nullptr); */
+    CHECK(ground_truths_ != nullptr);
     return *ground_truths_;
   }
   const std::vector<int>& prediction_subset() const {
@@ -172,14 +172,14 @@ class Matcher {
 
   // Validates the prediction_index.
   void ValidPredictionIndex(int prediction_index) const {
-   /* CHECK_GE(prediction_index, 0); */
-   /* CHECK_LT(prediction_index, predictions().size()); */
+    CHECK_GE(prediction_index, 0);
+    CHECK_LT(prediction_index, predictions().size());
   }
 
   // Validates the ground_truth_index.
   void ValidGroundTruthIndex(int ground_truth_index) const {
-   /* CHECK_GE(ground_truth_index, 0); */
-   /* CHECK_LT(ground_truth_index, ground_truths().size()); */
+    CHECK_GE(ground_truth_index, 0);
+    CHECK_LT(ground_truth_index, ground_truths().size());
   }
 
   // Performs the match operation.
