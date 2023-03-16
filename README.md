@@ -10,7 +10,7 @@ This major update includes supporting code to four challenges at waymo.com/open,
 v2.0.0 of the Perception Dataset
  - Introduced the dataset in modular format, enabling users to selectively download only the components they need.
  - Includes all features in v1.4.2 of the Perception Dataset except maps.
- - Added a [tutorial](waymo-open-dataset/tutorial/tutorial_v2.ipynb) and supporting code.
+ - Added a [tutorial](tutorial/tutorial_v2.ipynb) and supporting code.
 
 v1.4.2 of the Perception Dataset
  - For the 2D video panoptic segmentation labels, added a mask to indicate the number of cameras covering each pixel.
