@@ -1,0 +1,191 @@
+workspace(name = "waymo_open_dataset_rules")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rules_python",
+    sha256 = "ffc7b877c95413c82bfd5482c017edcf759a6250d8b24e82f41f3c8b8d9e287e",
+    strip_prefix = "rules_python-0.19.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.19.0/rules_python-0.19.0.tar.gz",
+)
+
+http_archive(
+    name = "rules_license",
+    sha256 = "6157e1e68378532d0241ecd15d3c45f6e5cfd98fc10846045509fb2a7cc9e381",
+    urls = [
+        "https://github.com/bazelbuild/rules_license/releases/download/0.0.4/rules_license-0.0.4.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_license/releases/download/0.0.4/rules_license-0.0.4.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "com_google_googletest",
+    sha256 = "ff7a82736e158c077e76188232eac77913a15dac0b22508c390ab3f88e6d6d86",
+    strip_prefix = "googletest-b6cd405286ed8635ece71c72f118e659f4ade3fb",
+    urls = [
+        "http://mirror.tensorflow.org/github.com/google/googletest/archive/b6cd405286ed8635ece71c72f118e659f4ade3fb.zip",
+        "https://github.com/google/googletest/archive/b6cd405286ed8635ece71c72f118e659f4ade3fb.zip",
+    ],
+)
+
+http_archive(
+    name = "com_github_gflags_gflags",
+    sha256 = "ae27cdbcd6a2f935baa78e4f21f675649271634c092b1be01469440495609d0e",
+    strip_prefix = "gflags-2.2.1",
+    urls = [
+        "http://mirror.tensorflow.org/github.com/gflags/gflags/archive/v2.2.1.tar.gz",
+        "https://github.com/gflags/gflags/archive/v2.2.1.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "com_google_glog",
+    build_file = "//waymo_open_dataset:bazel/glog.BUILD",
+    sha256 = "f28359aeba12f30d73d9e4711ef356dc842886968112162bc73002645139c39c",
+    strip_prefix = "glog-0.4.0",
+    urls = [
+        "https://github.com/google/glog/archive/v0.4.0.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "boringssl",
+    sha256 = "542dd328952cea08785b58990b12e0832c49123807c8854e136136830c8b115c",
+    strip_prefix = "boringssl-da7997d97fa17f22cc3eb9c681c8494af7a98eef",
+    urls = [
+        "http://mirror.tensorflow.org/github.com/google/boringssl/archive/da7997d97fa17f22cc3eb9c681c8494af7a98eef.tar.gz",
+        "https://github.com/google/boringssl/archive/da7997d97fa17f22cc3eb9c681c8494af7a98eef.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "com_google_absl",
+    sha256 = "94aef187f688665dc299d09286bfa0d22c4ecb86a80b156dff6aabadc5a5c26d",
+    strip_prefix = "abseil-cpp-273292d1cfc0a94a65082ee350509af1d113344d",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/abseil/abseil-cpp/archive/273292d1cfc0a94a65082ee350509af1d113344d.tar.gz",
+        "https://github.com/abseil/abseil-cpp/archive/273292d1cfc0a94a65082ee350509af1d113344d.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "zlib",
+    build_file = "//waymo_open_dataset:bazel/zlib.BUILD",
+    sha256 = "91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9",
+    strip_prefix = "zlib-1.2.12",
+    urls = [
+        "http://mirror.tensorflow.org/zlib.net/zlib-1.2.12.tar.gz",
+        "https://zlib.net/zlib-1.2.12.tar.gz",
+    ],
+)
+
+http_archive(
+    name = "six_archive",
+    build_file = "//waymo_open_dataset:bazel/six.BUILD",
+    sha256 = "30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259",
+    strip_prefix = "six-1.15.0",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
+        "https://pypi.python.org/packages/source/s/six/six-1.15.0.tar.gz",
+    ],
+)
+
+bind(
+    name = "six",
+    actual = "@six_archive//:six",
+)
+
+http_archive(
+    name = "rules_python",
+    sha256 = "ffc7b877c95413c82bfd5482c017edcf759a6250d8b24e82f41f3c8b8d9e287e",
+    strip_prefix = "rules_python-0.19.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.19.0/rules_python-0.19.0.tar.gz",
+)
+
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz",
+    ],
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+
+bazel_skylib_workspace()
+
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "cfcba2df10feec52a84208693937c17a4b5df7775e1635c1e3baffc487b24c9b",
+    strip_prefix = "protobuf-3.9.2",
+    urls = [
+        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
+        "https://github.com/protocolbuffers/protobuf/archive/v3.9.2.zip",
+    ],
+)
+
+http_archive(
+    name = "deeplab2",
+    build_file = "//waymo_open_dataset:bazel/deeplab2.BUILD",
+    sha256 = "d5ce468a0ddb40cc7b22c71a82c26b506c95d55905a1c44ce1c87208f3a76b61",
+    strip_prefix = "deeplab2-17c7ff3cadf4ee56b27b1cb73f1e15b69c5bd8a9",
+    urls = [
+        "https://github.com/google-research/deeplab2/archive/17c7ff3cadf4ee56b27b1cb73f1e15b69c5bd8a9.zip",
+    ],
+)
+
+http_archive(
+    name = "tflite_micro",
+    sha256 = "d6aba330e299f1add8efc6b2bb53806fac82afb84a4f48f7bbe154e087adbe50",
+    strip_prefix = "tflite-micro-380a6c125c4d699fa3f434e1429802ee825e739d",
+    urls = [
+        "https://github.com/tensorflow/tflite-micro/archive/380a6c125c4d699fa3f434e1429802ee825e739d.zip",
+    ],
+)
+
+# We TensorFlow from the pip package via pip_parse belo, this repo is only
+# needed for bzl scripts (ex. tf_gen_op_wrapper_py), which are not in the pip
+# package.
+http_archive(
+    name = "org_tensorflow",
+    sha256 = "e52cda3bae45f0ae0fccd4055e9fa29892b414f70e2df94df9a3a10319c75fff",
+    strip_prefix = "tensorflow-2.11.0",
+    urls = ["https://github.com/tensorflow/tensorflow/archive/v2.11.0.zip"],
+)
+
+###########################################
+# Custom configuration of the workspace.
+###########################################
+
+load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
+
+py_repositories()
+
+python_register_toolchains(
+    name = "python3_10",
+    python_version = "3.10",
+)
+
+load("@python3_10//:defs.bzl", "interpreter")
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+    name = "wod_deps",
+    python_interpreter_target = interpreter,
+    quiet = False,
+    requirements_lock = "//waymo_open_dataset:requirements.txt",
+)
+
+load("@wod_deps//:requirements.bzl", "install_deps", "requirement")
+
+install_deps()
+
+load("@tflite_micro//python:py_pkg_cc_deps.bzl", "py_pkg_cc_deps")
+
+py_pkg_cc_deps(
+    name = "tensorflow_cc_deps",
+    includes = ["tensorflow/include"],
+    libs = ["tensorflow/libtensorflow_framework.so.2"],
+    pkg = requirement("tensorflow"),
+)

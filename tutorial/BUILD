@@ -1,3 +1,5 @@
+load("@wod_deps//:requirements.bzl", "requirement")
+
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
@@ -31,7 +33,10 @@ py_binary(
     main = "jupyter_kernel.py",
     python_version = "PY3",
     deps = [
-        # Implicit tensorflow_graphics/image:transformer dependency.
+        requirement("matplotlib"),
+        requirement("numpy"),
+        requirement("tensorflow"),
+        requirement("tensorflow_graphics"),
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
@@ -49,7 +54,6 @@ py_binary(
         "//waymo_open_dataset/protos:occupancy_flow_submission_proto_py_pb2",
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
         "//waymo_open_dataset/protos:submission_proto_py_pb2",
-        "//third_party/camera_segmentation:camera_segmentation_metrics",
         "//waymo_open_dataset/utils:box_utils",
         "//waymo_open_dataset/utils:camera_segmentation_utils",
         "//waymo_open_dataset/utils:frame_utils",
@@ -65,6 +69,7 @@ py_binary(
         "//waymo_open_dataset/utils:transform_utils",
         "//waymo_open_dataset/utils:womd_lidar_utils",
         "//waymo_open_dataset/utils/compression:delta_encoder",
+        "//waymo_open_dataset/wdl_limited/camera_segmentation:camera_segmentation_metrics",
     ],
 )
 
@@ -74,7 +79,10 @@ py_binary(
     main = "jupyter_kernel.py",
     python_version = "PY3",
     deps = [
-        # Implicit tensorflow_graphics/image:transformer dependency.
+        requirement("matplotlib"),
+        requirement("numpy"),
+        requirement("tensorflow"),
+        requirement("tensorflow_graphics"),
         "//waymo_open_dataset/v2",
     ],
 )

@@ -1,7 +1,7 @@
 Copyright © 2023 Waymo LLC
-This code repository (excluding src/waymo_open_dataset/wdl_limited folder) is
+This code repository (excluding wdl_limited folder) is
 licensed under the Apache License, Version 2.0. The code appearing in
-src/waymo_open_dataset/wdl_limited folder is licensed under terms appearing
+wdl_limited folder is licensed under terms appearing
 therein.
 
                                  Apache License
@@ -208,7 +208,7 @@ therein.
 
 ------------------------------------------------------------------------------
 
-Files: src/waymo_open_dataset/wdl_limited/camera/*
+Files: wdl_limited/camera/*
 
 Copyright (c) 2019 Waymo LLC.
 
@@ -240,7 +240,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 
-Files: src/waymo_open_dataset/wdl_limited/camera_segmentation/*
+Files: wdl_limited/camera_segmentation/*
 
 Copyright (c) 2023 Waymo LLC.
 
@@ -272,7 +272,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 
-Files: src/waymo_open_dataset/wdl_limited/sim_agents_metrics/*
+Files: wdl_limited/sim_agents_metrics/*
 
 Copyright (c) 2023 Waymo LLC.
 

@@ -1,0 +1,72 @@
+/* Copyright 2022 The Waymo Open Dataset Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto defines a configuration for converting Scenario protos to tensors
+// in the tf.Example format.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+// A configuration for converting Scenario protos to tf.Example protos.
+message MotionExampleConversionConfig {
+  // The maximum number of agents to populate in the tf.Example.
+  optional int32 max_num_agents = 1 [default = 128];
+
+  // The maximum number of modeled agents to populate in the tf.Example. This
+  // field should not be changed from 8 for open dataset motion challenge uses.
+  optional int32 max_num_modeled_agents = 10 [default = 8];
+
+  // The number of past steps (including the current step) in each trajectory.
+  // The defaults correspond to the open motion dataset data - 11 past steps
+  // (includes the current step), and 80 future steps). Changing these values
+  // will make the data incompatible with the open dataset motion challenges.
+  optional int32 num_past_steps = 2 [default = 11];
+
+  // The number of future steps in each trajectory.
+  optional int32 num_future_steps = 3 [default = 80];
+
+  // The maximum number of map points to store in each example. This defines
+  // the sizes of the roadgraph_samples/* tensors. Any additional samples
+  // in the source Scenario protos will be truncated. Lane centers and
+  // lane boundaries are prioritized over other types. This parameter along with
+  // the polyline_sample_spacing and polygon_sample_spacing fields will
+  // determine if points are truncated. For reference, in the current waymo open
+  // motion dataset the vast majority of Scenarios have less than 60,000 samples
+  // at 0.5m spacing (not including polygon samples). Only a few outliers exceed
+  // this where the largest has approximately 75,000 samples at 0.5m.
+  optional int32 max_roadgraph_samples = 5 [default = 30000];
+
+  // The input source polyline sample spacing. Do not change this from the
+  // default when using open dataset input data.
+  optional double source_polyline_spacing = 6 [default = 0.5];
+
+  // The roadgraph points will be re-sampled with this spacing. Note that
+  // decreasing this parameter may require an increase in the
+  // max_roadgraph_samples parameter to avoid truncating roadgraph data.
+  // If this is set to <= 0, the value in source_polyline_spacing will be used.
+  optional double polyline_sample_spacing = 7 [default = 1.0];
+
+  // Features like speed bumps and crosswalks are defined only by polygon
+  // corner points. If this value is > 0, samples along the sides of the
+  // polygons will be added, spaced apart by this value. If this value is <= 0,
+  // only the polygon vertices will be added as sample points. Note that
+  // decreasing this parameter may require an increase in the
+  // max_roadgraph_samples parameter to avoid truncating roadgraph data.
+  optional double polygon_sample_spacing = 8 [default = 1.0];
+
+  // The maximum number of traffic light points per time step.
+  optional int32 max_traffic_light_control_points_per_step = 9 [default = 16];
+}

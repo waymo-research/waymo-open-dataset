@@ -1,0 +1,9 @@
+build -c opt
+build --cxxopt="-std=c++17" --cxxopt=-Wno-unused-variable
+build --auto_output_filter=subpackages
+build --copt="-Wall" --copt="-Wno-sign-compare"
+build --linkopt="-lrt -lm -lpthread"
+
+# Output from the following python command.
+# import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))
+build --copt="-D_GLIBCXX_USE_CXX11_ABI=1" --copt="-DEIGEN_MAX_ALIGN_BYTES=64"

@@ -1,3 +1,24 @@
+## License
+This code repository (excluding
+[`src/waymo_open_dataset/wdl_limited`](src/waymo_open_dataset/wdl_limited)
+folder) is licensed under the Apache License, Version 2.0. The code appearing in
+[`src/waymo_open_dataset/wdl_limited`](src/waymo_open_dataset/wdl_limited) is
+licensed under terms appearing therein.  The Waymo Open Dataset itself is
+licensed under separate terms. Please
+visit [https://waymo.com/open/terms/](https://waymo.com/open/terms/) for
+details.  Code located in each of the subfolders located at
+[`src/waymo_open_dataset/wdl_limited`](src/waymo_open_dataset/wdl_limited) is
+licensed under (a) a BSD 3-clause copyright license and (b) an additional
+limited patent license. Each limited
+patent license is applicable only to code under the respective `wdl_limited`
+subfolder, and is licensed for use only with the use case laid out in such
+license in connection with the Waymo Open Dataset, as authorized by and in
+compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
+[wdl_limited/camera/](src/waymo_open_dataset/wdl_limited/camera),
+[wdl_limited/camera_segmentation/](src/waymo_open_dataset/wdl_limited/camera_segmentation),
+[wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
+respectively, for details.
+
 # Waymo Open Dataset
 
 We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
@@ -92,11 +113,6 @@ This code repository contains:
 * Helper functions in TensorFlow to help with building models
 
 Please refer to the [Quick Start](docs/quick_start.md).
-
-## License
-This code repository (excluding third_party) is licensed under the Apache License, Version 2.0.  Code appearing in third_party is licensed under terms appearing therein.
-
-The Waymo Open Dataset itself is licensed under separate terms. Please visit [https://waymo.com/open/terms/](https://waymo.com/open/terms/) for details.  Code located at third_party/camera is licensed under a BSD 3-clause copyright license + an additional limited patent license applicable only when the code is used to process data from the Waymo Open Dataset as authorized by and in compliance with the Waymo Dataset License Agreement for Non-Commercial Use.  See third_party/camera for details.
 
 ## Citation
 ### for Perception dataset
