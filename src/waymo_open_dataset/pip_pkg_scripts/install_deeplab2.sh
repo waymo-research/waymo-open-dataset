@@ -15,9 +15,12 @@
 # ==============================================================================
 
 srcs=(
-  'data/dataset.py',
-  'data/ade20k_constants.py',
-  'data/waymo_constants.py',
+  '__init__.py'
+  'data/dataset.py'
+  'data/__init__.py'
+  'data/ade20k_constants.py'
+  'data/waymo_constants.py'
+  'evaluation/__init__.py'
   'evaluation/segmentation_and_tracking_quality.py'
 )
 base_url='https://raw.githubusercontent.com/google-research/deeplab2/main'
@@ -27,11 +30,11 @@ set -x -e
 
 mkdir -p "${src_dir}/deeplab2/data" "${src_dir}/deeplab2/evaluation"
 for path in "${srcs[@]}"; do
-  wget "${base_url}/${path}" -o "${src_dir}/deeplab2/${path}"
+  wget "${base_url}/${path}" -O "${src_dir}/deeplab2/${path}"
 done
 
 cat << EOF > "${src_dir}/setup.py"
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='deeplab2-for-wod',
       version='0.0.1',
@@ -40,7 +43,7 @@ setup(name='deeplab2-for-wod',
       author='Waymo Open Dataset Authors',
       author_email='open-dataset@waymo.com',
       license='Apache License 2.0',
-      packages=['deeplab2'],
+      packages=find_packages(),
       zip_safe=False
 )
 EOF
