@@ -16,7 +16,6 @@ cc_library(
     hdrs = [
         "aabox2d.h",
     ],
-
 )
 
 cc_library(
@@ -27,7 +26,6 @@ cc_library(
     hdrs = [
         "box2d.h",
     ],
-
     deps = [
         ":segment2d",
         ":vec2d",
@@ -38,7 +36,6 @@ cc_library(
     name = "exactfloat",
     srcs = ["exactfloat.cc"],
     hdrs = ["exactfloat.h"],
-
     deps = [
         "@boringssl//:crypto",
         "@com_google_absl//absl/base:core_headers",
@@ -55,7 +52,6 @@ cc_library(
     hdrs = [
         "math_util.h",
     ],
-
 )
 
 cc_library(
@@ -66,7 +62,6 @@ cc_library(
     hdrs = [
         "polygon2d.h",
     ],
-
     deps = [
         ":box2d",
         ":exactfloat",
@@ -85,7 +80,6 @@ cc_library(
     hdrs = [
         "segment2d.h",
     ],
-
     deps = [
         ":math_util",
         ":vec2d",
@@ -100,7 +94,6 @@ cc_library(
     hdrs = [
         "vec3d.h",
     ],
-
 )
 
 cc_library(
@@ -111,7 +104,6 @@ cc_library(
     hdrs = [
         "vec2d.h",
     ],
-
     deps = [
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings",

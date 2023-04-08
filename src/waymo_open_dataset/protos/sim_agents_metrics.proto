@@ -126,3 +126,26 @@ message SimAgentMetrics {
   optional float distance_to_road_edge_likelihood = 11;
   optional float offroad_indication_likelihood = 12;
 }
+
+// Bucketed version of the sim agent metrics. This aggregated message is used
+// in the challenge leaderboard to provide an easy to read but still informative
+// metric output format.
+// All the bucketed metrics are rescaled to be in the range [0, 1], but still
+// according to the meta-metric weights defined in the metrics config.
+message SimAgentsBucketedMetrics {
+  // Realism meta-metric.
+  optional float realism_meta_metric = 1;
+  // Kinematic metrics: a linear combination of the kinematic-related
+  // likelihoods, namely `linear_speed`, `linear_acceleration`, `angular_speed`
+  // and `angular_acceleration`.
+  optional float kinematic_metrics = 2;
+  // Interactive metrics: a linear combination of the object-interaction
+  // likelihoods, namely `distance_to_nearest_object`, `collision_indication`
+  // and `time_to_collision`.
+  optional float interactive_metrics = 5;
+  // Map-based metrics: a linear combination of the map-related likelihoods,
+  // namely `distance_to_road_edge` and `offroad_indication`.
+  optional float map_based_metrics = 6;
+  // MinADE.
+  optional float min_ade = 7;
+}

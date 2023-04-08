@@ -63,10 +63,23 @@ def load_test_submission(
 
 
 def load_test_metrics_config() -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
-  """Loads the test `SimAgentMetricsConfig` inside the testdata directory."""
+  """Loads a test `SimAgentMetricsConfig` inside the testdata directory."""
   # pylint: disable=line-too-long
   # pyformat: disable
   test_config_path = '{pyglib_resource}waymo_open_dataset/utils/sim_agents/testdata/test_config.textproto'.format(pyglib_resource='')
+  with open(test_config_path, 'r') as f:
+    config = sim_agents_metrics_pb2.SimAgentMetricsConfig()
+    text_format.Parse(f.read(), config)
+  return config
+
+
+def load_identity_function_test_metrics_config() -> (
+    sim_agents_metrics_pb2.SimAgentMetricsConfig
+):
+  """Loads config producing likelihoods of 1 for logged v. logged comparison."""
+  # pylint: disable=line-too-long
+  # pyformat: disable
+  test_config_path = '{pyglib_resource}waymo_open_dataset/utils/sim_agents/testdata/test_config_dependent_timesteps.textproto'.format(pyglib_resource='')
   with open(test_config_path, 'r') as f:
     config = sim_agents_metrics_pb2.SimAgentMetricsConfig()
     text_format.Parse(f.read(), config)

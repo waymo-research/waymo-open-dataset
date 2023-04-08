@@ -28,6 +28,25 @@ from waymo_open_dataset.protos import sim_agents_submission_pb2
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import estimators
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import metric_features
 
+_METRIC_FIELD_NAMES_BY_BUCKET = {
+    'kinematic': [
+        'linear_speed', 'linear_acceleration',
+        'angular_speed', 'angular_acceleration',
+    ],
+    'interactive': [
+        'distance_to_nearest_object', 'collision_indication',
+        'time_to_collision',
+    ],
+    'map_based': [
+        'distance_to_road_edge', 'offroad_indication'
+    ]
+}
+_METRIC_FIELD_NAMES = (
+    _METRIC_FIELD_NAMES_BY_BUCKET['kinematic'] +
+    _METRIC_FIELD_NAMES_BY_BUCKET['interactive'] +
+    _METRIC_FIELD_NAMES_BY_BUCKET['map_based']
+)
+
 
 def load_metrics_config() -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
   """Loads the `SimAgentMetricsConfig` used for the challenge."""
@@ -158,33 +177,31 @@ def compute_scenario_metrics_for_bundle(
   )
 
   # ==== Meta-metric ====
+  likelihood_metrics = {
+      'linear_speed_likelihood': linear_speed_likelihood.numpy(),
+      'linear_acceleration_likelihood': linear_accel_likelihood.numpy(),
+      'angular_speed_likelihood': angular_speed_likelihood.numpy(),
+      'angular_acceleration_likelihood': angular_accel_likelihood.numpy(),
+      'distance_to_nearest_object_likelihood': (
+          distance_to_obj_likelihood.numpy()
+      ),
+      'collision_indication_likelihood': collision_likelihood.numpy(),
+      'time_to_collision_likelihood': ttc_likelihood.numpy(),
+      'distance_to_road_edge_likelihood': (
+          distance_to_road_edge_likelihood.numpy()
+      ),
+      'offroad_indication_likelihood': offroad_likelihood.numpy(),
+  }
+
   metametric = _compute_metametric(
-      config,
-      linear_speed_likelihood=linear_speed_likelihood,
-      linear_accel_likelihood=linear_accel_likelihood,
-      angular_speed_likelihood=angular_speed_likelihood,
-      angular_accel_likelihood=angular_accel_likelihood,
-      distance_to_nearest_object_likelihood=distance_to_obj_likelihood,
-      collision_indication_likelihood=collision_likelihood,
-      time_to_collision_likelihood=ttc_likelihood,
-      distance_to_road_edge_likelihood=distance_to_road_edge_likelihood,
-      offroad_indication_likelihood=offroad_likelihood,
-  )
+      config, sim_agents_metrics_pb2.SimAgentMetrics(**likelihood_metrics))
 
   return sim_agents_metrics_pb2.SimAgentMetrics(
       scenario_id=scenario.scenario_id,
       metametric=metametric,
       average_displacement_error=average_displacement_error,
       min_average_displacement_error=min_average_displacement_error,
-      linear_speed_likelihood=linear_speed_likelihood.numpy(),
-      linear_acceleration_likelihood=linear_accel_likelihood.numpy(),
-      angular_speed_likelihood=angular_speed_likelihood.numpy(),
-      angular_acceleration_likelihood=angular_accel_likelihood.numpy(),
-      distance_to_nearest_object_likelihood=distance_to_obj_likelihood.numpy(),
-      collision_indication_likelihood=collision_likelihood.numpy(),
-      time_to_collision_likelihood=ttc_likelihood.numpy(),
-      distance_to_road_edge_likelihood=distance_to_road_edge_likelihood.numpy(),
-      offroad_indication_likelihood=offroad_likelihood.numpy(),
+      **likelihood_metrics
   )
 
 
@@ -204,6 +221,34 @@ def aggregate_scenario_metrics(
       name: np.mean(values) for (name, values) in field_values.items()}
   return sim_agents_metrics_pb2.SimAgentMetrics(
       **field_values)
+
+
+def aggregate_metrics_to_buckets(
+    config: sim_agents_metrics_pb2.SimAgentMetricsConfig,
+    metrics: sim_agents_metrics_pb2.SimAgentMetrics
+) -> sim_agents_metrics_pb2.SimAgentsBucketedMetrics:
+  """Aggregates metrics into buckets for better readability."""
+  bucketed_metrics = {}
+  for bucket_name, fields_in_bucket in _METRIC_FIELD_NAMES_BY_BUCKET.items():
+    weighted_metric, weights_sum = 0.0, 0.0
+    for field_name in fields_in_bucket:
+      likelihood_field_name = field_name + '_likelihood'
+      weight = getattr(config, field_name).metametric_weight
+      metric_score = getattr(metrics, likelihood_field_name)
+      weighted_metric += weight * metric_score
+      weights_sum += weight
+    if weights_sum == 0:
+      raise ValueError('The bucket\'s weight sum is zero. Check your metrics'
+                       ' config.')
+    bucketed_metrics[bucket_name] = weighted_metric / weights_sum
+
+  return sim_agents_metrics_pb2.SimAgentsBucketedMetrics(
+      realism_meta_metric=metrics.metametric,
+      kinematic_metrics=bucketed_metrics['kinematic'],
+      interactive_metrics=bucketed_metrics['interactive'],
+      map_based_metrics=bucketed_metrics['map_based'],
+      min_ade=metrics.min_average_displacement_error
+  )
 
 
 def _logical_and_diff(
@@ -256,40 +301,13 @@ def _reduce_average_with_validity(
 
 def _compute_metametric(
     config: sim_agents_metrics_pb2.SimAgentMetricsConfig,
-    linear_speed_likelihood: tf.Tensor,
-    linear_accel_likelihood: tf.Tensor,
-    angular_speed_likelihood: tf.Tensor,
-    angular_accel_likelihood: tf.Tensor,
-    distance_to_nearest_object_likelihood: tf.Tensor,
-    collision_indication_likelihood: tf.Tensor,
-    time_to_collision_likelihood: tf.Tensor,
-    distance_to_road_edge_likelihood: tf.Tensor,
-    offroad_indication_likelihood: tf.Tensor,
+    metrics: sim_agents_metrics_pb2.SimAgentMetrics,
 ):
   """Computes the meta-metric aggregation."""
-  return (
-      # Dynamics features.
-      config.linear_speed.metametric_weight * linear_speed_likelihood
-      + config.linear_acceleration.metametric_weight * linear_accel_likelihood
-      + config.angular_speed.metametric_weight * angular_speed_likelihood
-      + config.angular_acceleration.metametric_weight * angular_accel_likelihood
-      +
-      # Distance to nearest object.
-      config.distance_to_nearest_object.metametric_weight
-      * distance_to_nearest_object_likelihood
-      +
-      # Collision indication.
-      config.collision_indication.metametric_weight
-      * collision_indication_likelihood
-      +
-      # Time-to-collision.
-      config.time_to_collision.metametric_weight * time_to_collision_likelihood
-      +
-      # Distance to road edge.
-      config.distance_to_road_edge.metametric_weight
-      * distance_to_road_edge_likelihood
-      +
-      # Off-road indication.
-      config.offroad_indication.metametric_weight
-      * offroad_indication_likelihood
-  )
+  metametric = 0.0
+  for field_name in _METRIC_FIELD_NAMES:
+    likelihood_field_name = field_name + '_likelihood'
+    weight = getattr(config, field_name).metametric_weight
+    metric_score = getattr(metrics, likelihood_field_name)
+    metametric += weight * metric_score
+  return metametric

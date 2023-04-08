@@ -1,7 +1,5 @@
 load(":defs.bzl", "all_proto_library")
 
-
-
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
@@ -154,5 +152,3 @@ all_proto_library(
         "//waymo_open_dataset:dataset_proto",
     ],
 )
-
-

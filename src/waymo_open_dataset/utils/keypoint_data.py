@@ -15,7 +15,7 @@
 """Data structures to represent and tools to parse human keypoint data."""
 import dataclasses
 import enum
-from typing import Collection, Dict, List, Mapping, Optional
+from typing import Collection, Dict, Iterable, List, Mapping, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -182,7 +182,8 @@ def point_from_camera(k: keypoint_pb2.CameraKeypoint) -> Point:
 
 
 def camera_keypoint_coordinates(
-    keypoints: Collection[keypoint_pb2.CameraKeypoint]) -> PointByType:
+    keypoints: Iterable[keypoint_pb2.CameraKeypoint],
+) -> PointByType:
   return {k.type: point_from_camera(k) for k in keypoints}
 
 
@@ -193,7 +194,8 @@ def point_from_laser(k: keypoint_pb2.LaserKeypoint) -> Point:
 
 
 def laser_keypoint_coordinates(
-    keypoints: Collection[keypoint_pb2.LaserKeypoint]) -> PointByType:
+    keypoints: Iterable[keypoint_pb2.LaserKeypoint],
+) -> PointByType:
   return {k.type: point_from_laser(k) for k in keypoints}
 
 
@@ -350,10 +352,11 @@ def stack_keypoints(values: List[KeypointsTensors],
 
 
 def create_laser_keypoints_tensors(
-    protos: Collection[keypoint_pb2.LaserKeypoint],
+    protos: Iterable[keypoint_pb2.LaserKeypoint],
     default_location: np.ndarray,
     order: Collection['KeypointType'],
-    dtype: tf.DType = tf.float32) -> KeypointsTensors:
+    dtype: tf.DType = tf.float32,
+) -> KeypointsTensors:
   """Creates tensors for laser keypoints.
 
   Args:
@@ -370,10 +373,11 @@ def create_laser_keypoints_tensors(
 
 
 def create_camera_keypoints_tensors(
-    protos: Collection[keypoint_pb2.CameraKeypoint],
+    protos: Iterable[keypoint_pb2.CameraKeypoint],
     default_location: np.ndarray,
     order: Collection['KeypointType'],
-    dtype: tf.DType = tf.float32) -> KeypointsTensors:
+    dtype: tf.DType = tf.float32,
+) -> KeypointsTensors:
   """Creates tensors for camera keypoints in all samples.
 
   Args:
@@ -526,7 +530,7 @@ def label_box_from_box_proto(box: box_pb2.Box3d) -> label_pb2.Label.Box:
 
 
 def create_pose_estimation_tensors(
-    labels: Collection[LaserLabel],
+    labels: Iterable[LaserLabel],
     default_location: np.ndarray,
     order: Collection['KeypointType'],
     dtype: tf.DType = tf.float32,

@@ -51,6 +51,7 @@ py_package(
         "//waymo_open_dataset/metrics/python:matcher",
         "//waymo_open_dataset/metrics/python:motion_metrics",
         "//waymo_open_dataset/metrics/python:tracking_metrics",
+        "//waymo_open_dataset/metrics/python:wod_detection_evaluator",
         "//waymo_open_dataset/protos:box_cc_proto",
         "//waymo_open_dataset/protos:box_proto_py_pb2",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
@@ -171,12 +172,13 @@ py_wheel(
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    distribution = "waymo-open-dataset-tf-2.11.0",
+    description_file = "pypi_description.md",
+    distribution = "waymo-open-dataset-tf-2-11-0",
+    homepage = "https://github.com/waymo-research/waymo-open-dataset",
     python_tag = "py3",
     # Should be in-sync with //requirements.in
     requires = [
         "absl-py==1.4.0",
-        "auditwheel==5.3.0",
         "dask[dataframe]==2023.3.1",
         "einsum==0.3.0",
         "google-auth==2.16.2",
@@ -195,9 +197,25 @@ py_wheel(
         "tensorflow_graphics==2021.12.3",
         "tensorflow_probability==0.19.0",
     ],
-    version = "1.5.0",
+    version = "1.5.1",
     deps = [
         ":all_python_modules",
+    ],
+)
+
+py_wheel(
+    name = "deeplab2_wheel",
+    distribution = "deeplab2-for-wod",
+    homepage = "https://github.com/google-research/deeplab2",
+    python_tag = "py3",
+    requires = [
+        "immutabledict==2.2.0",
+        "numpy==1.21.5",
+        "tensorflow==2.11",
+    ],
+    version = "1.5.1",
+    deps = [
+        "@deeplab2",
     ],
 )
 
@@ -206,6 +224,7 @@ py_binary(
     srcs = ["auditwheel_wrapper.py"],
     deps = [
         requirement("auditwheel"),
+        requirement("patchelf"),
         requirement("tensorflow"),
     ],
 )

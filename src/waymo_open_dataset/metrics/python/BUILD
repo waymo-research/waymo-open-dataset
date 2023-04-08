@@ -23,9 +23,8 @@ py_library(
     name = "detection_metrics",
     srcs = ["detection_metrics.py"],
     deps = [
-        ":config_util_py",
         requirement("tensorflow"),
-
+        ":config_util_py",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -45,15 +44,12 @@ py_test(
     ],
 )
 
-
-
 py_library(
     name = "motion_metrics",
     srcs = ["motion_metrics.py"],
     deps = [
-        ":config_util_py",
         requirement("tensorflow"),
-
+        ":config_util_py",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -75,9 +71,8 @@ py_library(
     name = "tracking_metrics",
     srcs = ["tracking_metrics.py"],
     deps = [
-        ":config_util_py",
         requirement("tensorflow"),
-
+        ":config_util_py",
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
     ],
 )
@@ -96,8 +91,6 @@ py_test(
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],
 )
-
-
 
 py_library(
     name = "keypoint_metrics",
@@ -127,7 +120,28 @@ py_test(
     ],
 )
 
+py_library(
+    name = "wod_detection_evaluator",
+    srcs = ["wod_detection_evaluator.py"],
+    deps = [
+        requirement("numpy"),
+        requirement("tensorflow"),
+        ":config_util_py",
+        "//waymo_open_dataset/metrics/ops:py_metrics_ops",
+    ],
+)
 
+py_test(
+    name = "wod_detection_evaluator_test",
+    srcs = ["wod_detection_evaluator_test.py"],
+    python_version = "PY3",
+    deps = [
+        requirement("numpy"),
+        requirement("tensorflow"),
+        ":wod_detection_evaluator",
+        "//waymo_open_dataset/protos:metrics_proto_py_pb2",
+    ],
+)
 
 py_library(
     name = "matcher",
@@ -135,7 +149,6 @@ py_library(
     deps = [
         requirement("tensorflow"),
         "//waymo_open_dataset:label_proto_py_pb2",
-
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",

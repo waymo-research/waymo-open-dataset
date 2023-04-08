@@ -192,6 +192,7 @@ py_library(
         requirement("tensorflow"),
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
+        "//waymo_open_dataset/v2/perception:segmentation",
     ],
 )
 
@@ -384,11 +385,14 @@ py_test(
         "//waymo_open_dataset/utils/testdata:pvps_test_data",
     ],
     deps = [
+        requirement("absl-py"),
         requirement("numpy"),
         requirement("tensorflow"),
         ":camera_segmentation_utils",
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
+        "//waymo_open_dataset/v2/perception/compat_v1:interfaces",
+        "//waymo_open_dataset/v2/perception/compat_v1:segmentation",
     ],
 )
 

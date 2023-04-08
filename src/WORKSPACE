@@ -164,6 +164,19 @@ py_repositories()
 
 python_register_toolchains(
     name = "python3_10",
+    # Bazel's rules_python marks the python installation's lib directory as
+    # read-only. This prevents python interpretor from generating .pyc files.
+    # rules_python intend for that behavior because the content of .pyc files
+    # are platform dependent. If .pyc files were included in a bazel action
+    # inputs, then there would be erroneous cache misses. The problem is that
+    # in linux docker containers root users can still write to read-only
+    # directories, resulting in .pyc files, resulting in erroneous cache misses.
+    # By default rules_python errors when running as a root user because people
+    # don't want cache misses. But Colab runs as the root user.  So we need to
+    # overide the check preventing root user. See
+    # https://github.com/bazelbuild/rules_python/pull/713 for more details on
+    # the root problem and this work around.
+    ignore_root_user_error = True,
     python_version = "3.10",
 )
 

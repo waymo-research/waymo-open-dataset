@@ -361,7 +361,7 @@ def _get_object_following_mask(
   # Check object is ahead of the ego box's front.
   valid_mask = longitudinal_distance > 0.0
 
-  # Check alignement.
+  # Check alignment.
   valid_mask = tf.logical_and(valid_mask, yaw_diff <= MAX_HEADING_DIFF)
 
   # Check object is directly ahead of the ego box.

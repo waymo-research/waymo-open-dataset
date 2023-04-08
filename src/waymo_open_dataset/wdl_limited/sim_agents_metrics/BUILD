@@ -149,11 +149,14 @@ py_test(
 py_test(
     name = "metrics_test",
     srcs = ["metrics_test.py"],
+    shard_count = 2,
     deps = [
         requirement("tensorflow"),
         ":metrics",
         "//waymo_open_dataset/protos:sim_agents_metrics_proto_py_pb2",
+        "//waymo_open_dataset/protos:sim_agents_submission_proto_py_pb2",
         "//waymo_open_dataset/utils:test_utils",
+        "//waymo_open_dataset/utils/sim_agents:converters",
         "//waymo_open_dataset/utils/sim_agents:test_utils",
     ],
 )

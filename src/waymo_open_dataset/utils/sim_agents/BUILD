@@ -65,6 +65,7 @@ filegroup(
     name = "sim_agents_test_data",
     srcs = [
         "testdata/test_config.textproto",
+        "testdata/test_config_dependent_timesteps.textproto",
         "testdata/test_submission.binproto",
     ],
 )

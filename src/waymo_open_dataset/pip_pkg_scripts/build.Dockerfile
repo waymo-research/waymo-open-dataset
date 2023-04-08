@@ -5,7 +5,7 @@ FROM quay.io/pypa/manylinux_2_28_x86_64
 # go is required to use bazelisk
 RUN yum -y install sudo golang python3 clang
 
-# Almost all dependensies are defined via `requirements.in`.
+# Almost all dependencies are defined via `requirements.in`.
 # Dependencies which can't be installed via pip.
 RUN yum -y install OpenEXR-devel.x86_64
 

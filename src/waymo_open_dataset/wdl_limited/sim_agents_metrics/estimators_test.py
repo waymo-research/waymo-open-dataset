@@ -32,6 +32,28 @@ TEST_HISTOGRAM = _HistogramEstimate(
 
 class EstimatorsTest(parameterized.TestCase, tf.test.TestCase):
 
+  @parameterized.parameters(0.0, 0.0001)
+  def test_histogram_estimate_likelihood_equals_one_with_batchsize3_1sample(
+      self, additive_smoothing_pseudocount: float
+  ):
+    log_samples = tf.constant([[0.05], [0.15], [0.25]], dtype=tf.float32)
+    sim_samples = tf.convert_to_tensor(
+        np.array([[0.05], [0.15], [0.25]]), dtype=tf.float32
+    )
+    histogram_config = _HistogramEstimate(
+        min_val=0.0,
+        max_val=1.0,
+        num_bins=10,
+        additive_smoothing_pseudocount=additive_smoothing_pseudocount,
+    )
+    log_likelihood = estimators.histogram_estimate(
+        histogram_config, log_samples, sim_samples
+    )
+    expected_likelihoods = np.array([[1.0], [1.0], [1.0]], dtype=np.float32)
+    self.assertAllClose(
+        tf.exp(log_likelihood), expected_likelihoods, atol=0.001
+    )
+
   @parameterized.named_parameters(
       {'testcase_name': 'no_time_collapse', 'independent_timesteps': False},
       {'testcase_name': 'time_collapse', 'independent_timesteps': True},

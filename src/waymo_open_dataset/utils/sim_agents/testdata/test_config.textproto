@@ -1,6 +1,8 @@
 # proto-file: protos/sim_agents_metrics.proto
 # proto-message: car.open_dataset.SimAgentMetricsConfig
 
+# Test config with independent timesteps.
+
 linear_speed: {
   histogram: {
     min_val: 0.0

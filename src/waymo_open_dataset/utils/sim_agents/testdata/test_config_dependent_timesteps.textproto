@@ -1,0 +1,93 @@
+# proto-file: protos/sim_agents_metrics.proto
+# proto-message: car.open_dataset.SimAgentMetricsConfig
+
+# Test config *without* independent timesteps and w/ minimal Laplace smoothing.
+# Logged vs. logged scoring should yield likelihoods close to 1 w/ this config.
+
+linear_speed: {
+  histogram: {
+    min_val: 0.0
+    max_val: 30.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+linear_acceleration: {
+  histogram: {
+    min_val: 0.0
+    max_val: 5.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+angular_speed: {
+  histogram: {
+    min_val: 0.0
+    max_val: 1.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+angular_acceleration: {
+  histogram: {
+    min_val: 0.0
+    max_val: 0.3
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+distance_to_nearest_object: {
+  histogram: {
+    min_val: -5.0
+    max_val: 100.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+collision_indication: {
+  bernoulli: {}
+  metametric_weight: 0.12
+}
+
+distance_to_road_edge: {
+  histogram: {
+    min_val: -5.0
+    max_val: 15.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+
+offroad_indication: {
+  bernoulli: {}
+  metametric_weight: 0.11
+}
+
+time_to_collision: {
+  histogram: {
+    min_val: 0.0
+    max_val: 5.0
+    num_bins: 10
+    additive_smoothing_pseudocount: 0.00001
+  }
+  independent_timesteps: false
+  metametric_weight: 0.11
+}
+

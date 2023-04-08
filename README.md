@@ -1,4 +1,11 @@
+# Waymo Open Dataset
+
+We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
+
+The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 2,030 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
+
 ## License
+
 This code repository (excluding
 [`src/waymo_open_dataset/wdl_limited`](src/waymo_open_dataset/wdl_limited)
 folder) is licensed under the Apache License, Version 2.0. The code appearing in
@@ -18,12 +25,6 @@ compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
 [wdl_limited/camera_segmentation/](src/waymo_open_dataset/wdl_limited/camera_segmentation),
 [wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
 respectively, for details.
-
-# Waymo Open Dataset
-
-We have released the Waymo Open Dataset publicly to aid the research community in making advancements in machine perception and autonomous driving technology.
-
-The Waymo Open Dataset is composed of two datasets - the Perception dataset with high resolution sensor data and labels for 2,030 scenes, and the Motion dataset with object trajectories and corresponding 3D maps for 103,354 scenes.
 
 ## March 2023 Update
 This major update includes supporting code to four challenges at waymo.com/open, and dataset updates to both the Perception and Motion Datasets.
@@ -96,7 +97,7 @@ We released v1.1 of the Motion dataset to include lane connectivity information.
 
 ## March 2021 Update
 
-We expanded the Waymo Open Dataset to also include a Motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset. Please refer to the [Quick Start](docs/quick_start.md).
+We expanded the Waymo Open Dataset to also include a Motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset.
 
 Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](waymo_open_dataset/latency/README.md).
 
@@ -111,8 +112,6 @@ This code repository contains:
 * Definition of the dataset format
 * Evaluation metrics
 * Helper functions in TensorFlow to help with building models
-
-Please refer to the [Quick Start](docs/quick_start.md).
 
 ## Citation
 ### for Perception dataset

@@ -13,7 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 """Utilities for camera panoptic segmentation labels."""
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Union
+import warnings
 
 import immutabledict
 import numpy as np
@@ -22,6 +23,15 @@ import tensorflow as tf
 
 from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset.protos import camera_segmentation_pb2 as cs_pb2
+from waymo_open_dataset.v2.perception import segmentation as v2
+
+LabelProtoOrComponent = Union[
+    dataset_pb2.CameraSegmentationLabel, v2.CameraSegmentationLabelComponent
+]
+InstanceIDToGlobalIDMapping = (
+    dataset_pb2.CameraSegmentationLabel.InstanceIDToGlobalIDMapping
+)
+
 
 # RGB colors used to visualize each semantic segmentation class.
 SEGMENTATION_COLOR_MAP = immutabledict.immutabledict({
@@ -101,8 +111,30 @@ def encode_semantic_and_instance_labels_to_panoptic_label(
       np.array(instance_label).astype(np.uint32))
 
 
+def _iterate_over_mapping(
+    label: LabelProtoOrComponent,
+) -> Iterator[InstanceIDToGlobalIDMapping]:
+  """Helper function to replicate v1 iteration over id mappings in v2."""
+  if isinstance(label, v2.CameraSegmentationLabelComponent):
+    mapping = label.instance_id_to_global_id_mapping
+    for local_id, global_id, is_tracked in zip(
+        mapping.local_instance_ids,
+        mapping.global_instance_ids,
+        mapping.is_tracked,
+    ):
+      yield InstanceIDToGlobalIDMapping(
+          local_instance_id=local_id,
+          global_instance_id=global_id,
+          is_tracked=is_tracked,
+      )
+  elif isinstance(label, dataset_pb2.CameraSegmentationLabel):
+    yield from label.instance_id_to_global_id_mapping
+  else:
+    raise ValueError('Input label format not supported.')
+
+
 def _remap_global_ids(
-    segmentation_proto_list: Sequence[dataset_pb2.CameraSegmentationLabel],
+    segmentation_proto_list: Sequence[LabelProtoOrComponent],
     remap_to_sequential: bool = False,
 ) -> Dict[str, Dict[int, int]]:
   """Remaps the global ids in segmentation_proto_list to consecutive values.
@@ -130,8 +162,7 @@ def _remap_global_ids(
       global_instance_ids[label.sequence_id] = set()
 
     frame_global_instance_ids = [
-        mapping.global_instance_id
-        for mapping in label.instance_id_to_global_id_mapping
+        mapping.global_instance_id for mapping in _iterate_over_mapping(label)
     ]
     global_instance_ids[label.sequence_id].update(frame_global_instance_ids)
 
@@ -175,11 +206,12 @@ def _remap_global_ids(
 
 
 def decode_single_panoptic_label_from_proto(
-    segmentation_proto: dataset_pb2.CameraSegmentationLabel) -> np.ndarray:
-  """Decodes a panoptic label from a CameraSegmentationLabel proto.
+    segmentation_proto: LabelProtoOrComponent,
+) -> np.ndarray:
+  """Decodes a panoptic label from a CameraSegmentationLabel.
 
   Args:
-    segmentation_proto: a CameraSegmentationLabel proto to be decoded.
+    segmentation_proto: a CameraSegmentationLabel to be decoded.
 
   Returns:
     A 2D numpy array containing the per-pixel panoptic segmentation label.
@@ -192,12 +224,33 @@ def decode_multi_frame_panoptic_labels_from_protos(
     segmentation_proto_list: Sequence[dataset_pb2.CameraSegmentationLabel],
     remap_to_global: bool = True,
     remap_to_sequential: bool = False,
-    new_panoptic_label_divisor: Optional[int] = None
+    new_panoptic_label_divisor: Optional[int] = None,
 ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], int]:
-  """Parses a set of panoptic labels with consistent instance ids from protos.
+  warnings.warn(
+      'This function is deprecated, please call '
+      'decode_multi_frame_panoptic_labels_from_segmentation_labels '
+      'instead.'
+  )
+  return decode_multi_frame_panoptic_labels_from_segmentation_labels(
+      segmentation_proto_list,
+      remap_to_global,
+      remap_to_sequential,
+      new_panoptic_label_divisor,
+  )
 
-  This functions supports an arbitrary number of CameraSegmentationLabel protos,
+
+def decode_multi_frame_panoptic_labels_from_segmentation_labels(
+    segmentation_proto_list: Sequence[LabelProtoOrComponent],
+    remap_to_global: bool = True,
+    remap_to_sequential: bool = False,
+    new_panoptic_label_divisor: Optional[int] = None,
+) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], int]:
+  """Parses a set of panoptic labels with consistent instance ids from labels.
+
+  This functions supports an arbitrary number of CameraSegmentationLabels,
   and can remap values both within the same and between different sequences.
+
+  Both protos and components are supported by this function.
 
   Args:
     segmentation_proto_list: a sequence of CameraSegmentationLabel protos.
@@ -259,7 +312,14 @@ def decode_multi_frame_panoptic_labels_from_protos(
 
     instance_label_copy = np.copy(instance_label)
     if remap_to_global:
-      for mapping in label.instance_id_to_global_id_mapping:
+      if isinstance(label, v2.CameraSegmentationLabelComponent):
+        mapping_iter = _iterate_over_mapping(label)
+      elif isinstance(label, dataset_pb2.CameraSegmentationLabel):
+        mapping_iter = label.instance_id_to_global_id_mapping
+      else:
+        raise ValueError('Input label format not supported.')
+
+      for mapping in mapping_iter:
         instance_mask = (instance_label == mapping.local_instance_id)
         is_tracked_mask[instance_mask] = mapping.is_tracked
         instance_label_copy[instance_mask] = global_id_mapping[sequence][

@@ -112,7 +112,7 @@ def compute_metric_features(
   """
   # Extract `ObjectTrajectories` object from the joint scene, prepending the
   # history from the original scenario. These composite trajectories are used to
-  # compute dynamics features, which require a few step of context.
+  # compute dynamics features, which require a few steps of context.
   simulated_trajectories = converters.joint_scene_to_trajectories(
       joint_scene, scenario)
   # Extract `ObjectTrajectories` from the original scenario, used for
@@ -124,12 +124,27 @@ def compute_metric_features(
       simulated_trajectories.object_id)
   # From the simulated trajectories, just select the subset of objects that
   # needs evaluation.
-  evaluated_sim_agents = tf.convert_to_tensor(
-      submission_specs.get_evaluation_sim_agent_ids(scenario))
+  evaluated_sim_agent_ids = tf.convert_to_tensor(
+      submission_specs.get_evaluation_sim_agent_ids(scenario)
+  )
   evaluated_trajectories = simulated_trajectories.gather_objects_by_id(
-      evaluated_sim_agents)
+      evaluated_sim_agent_ids
+  )
+  # Re-order simulated trajectories, so that evaluated objects appear first,
+  # in a particular order.
+  non_evaluated_sim_agent_ids = set(
+      simulated_trajectories.object_id.numpy()
+  ) - set(evaluated_sim_agent_ids.numpy())
+  reordered_all_simulated_agent_ids = tf.constant(
+      list(evaluated_sim_agent_ids.numpy()) + list(non_evaluated_sim_agent_ids)
+  )
+  simulated_trajectories = simulated_trajectories.gather_objects_by_id(
+      reordered_all_simulated_agent_ids
+  )
+  # Prune logged trajectories to those that will be evaluated.
   evaluated_logged_trajectories = logged_trajectories.gather_objects_by_id(
-      evaluated_sim_agents)
+      evaluated_sim_agent_ids
+  )
 
   # Validity bit mask.
   if use_log_validity:
@@ -172,8 +187,12 @@ def compute_metric_features(
   evaluated_object_mask = tf.reduce_any(
       # `evaluated_sim_agents` shape: (n_evaluated_objects,).
       # `simulated_trajectories.object_id` shape: (n_objects,).
-      evaluated_sim_agents[:, tf.newaxis] == simulated_trajectories.object_id,
-      axis=0)
+      evaluated_sim_agent_ids[:, tf.newaxis]
+      == simulated_trajectories.object_id,
+      axis=0,
+  )
+  # Interactive features are computed between all simulated objects, but only
+  # scored for evaluated objects.
   distances_to_objects = (
       interaction_features.compute_distance_to_nearest_object(
           center_x=simulated_trajectories.x,
