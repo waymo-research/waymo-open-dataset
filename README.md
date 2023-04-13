@@ -133,6 +133,14 @@ This code repository contains:
   pages={9710-9719}
 }
 
+@article{Kan_2023_arxiv,
+  author={Chen, Kan and Ge, Runzhou and Qiu, Hang and Ai-Rfou, Rami and Qi, Charles R. and Zhou, Xuanyu and Yang, Zoey and Ettinger, Scott and Sun, Pei and Leng, Zhaoqi and Mustafa, Mustafa and Bogun, Ivan and Wang, Weiyue and Tan, Mingxing and Anguelov, Dragomir},
+  title={WOMD-LiDAR: Raw Sensor Dataset Benchmark for Motion Forecasting},
+  month={April},
+  journal={arXiv preprint arXiv:2304.03834},
+  year={2023}
+}
+
 ## Dataset Metadata
 The following table is necessary for this dataset to be indexed by search
 engines such as <a href="https://g.co/datasetsearch">Google Dataset Search</a>.
