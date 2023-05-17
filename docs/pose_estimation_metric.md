@@ -78,10 +78,12 @@ $$\textbf{PEM}(Y,\hat{Y}) = \frac{\sum_{i\in M}\left\|y_{i} -
 
 where $M$ - a set of indices of matched keypoints, $U$ - a set of indices of
 unmatched keypoints (ground truth keypoints without matching predicted keypoints
-or predicted keypoints for unmatched objects); Sets $$Y= \left\{y_i\right\}_{i
-\in M}$ and $\hat{Y} = \left\{\hat{y}_i\right\}_{i \in M}$$ are ground truth
-and predicted 3D coordinates of keypoints; $C=0.25$ - a constant penalty for
-an unmatched keypoint.
+or predicted keypoints for unmatched objects); Sets 
+$`Y = \left\lbrace y_i\right\rbrace_{i \in M}`$
+and
+$`\hat{Y} = \left\lbrace\hat{y}_i\right\rbrace_{i \in M}`$
+are ground truth and predicted 3D coordinates of keypoints; $C=0.25$ - a
+constant penalty for an unmatched keypoint.
 
 
 ## Object Matching Algorithm
