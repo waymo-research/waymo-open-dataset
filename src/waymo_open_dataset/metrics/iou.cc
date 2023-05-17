@@ -256,9 +256,9 @@ double ComputeLongitudinalAffinity(
       std::max(CenterVectorLength(calibrated_prediction_box), kEpsilon);
 
   // Compute the cos(theta), where theta is the angle between the center vectors
-  // of prediction and ground truth.
-  const double cos_of_gt_pd_angle =
-      Clamp(gt_dot_pd / gt_range / pd_range, 0.0, 1.0);
+  // of prediction and ground truth. Note, this value can be negative, meaning
+  // the angle between the prediction and ground truth is larger than 90 degree.
+  const double cos_of_gt_pd_angle = gt_dot_pd / gt_range / pd_range;
 
   // Compute the error terms as a percentage of the max tolerance.
   const float max_range_tolerance_meter =
@@ -302,6 +302,9 @@ Label::Box AlignedPredictionBox(
       //   P' = |G|* cos(theta) * P/|P| = dot(G, P)/|P|^2 * P,
       // where G = [gt_x, gt_y, gt_z] and P = [pd_x, pd_y, pd_z] are the vectors
       // that describe the centers of a ground truth box and a prediction box.
+      // Note this still applies in the case where dot(G, P) < 0, when the
+      // multiplier is negative, i.e. P and G are at different side of the
+      // sensor.
       const double gt_dot_pd =
           CenterDotProduct(prediction_box, ground_truth_box);
       const double pd_range_sq =

@@ -17,6 +17,7 @@ limitations under the License.
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/shape_inference.h"
 #include "waymo_open_dataset/metrics/config_util.h"
+#include "waymo_open_dataset/metrics/metrics_utils.h"
 #include "waymo_open_dataset/metrics/ops/utils.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 #include "waymo_open_dataset/protos/motion_metrics.pb.h"
@@ -71,6 +72,86 @@ ground_truth_difficulty: [M] Difficulty level (1 or 2) for each ground truth
   box.
 ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
   label to use for VELOCITY breakdown.
+average_precision: [B]. average precision for each breakdown.
+average_precision_ha_weighted: [B]. average precision with heading accuracy
+  weighted for each breakdown.
+average_precision_longitudinal_affinity_weighted: [B]. average precision with
+  longitudinal affinity weighted for each breakdown.
+precision_recall: [B, S, 5]. precision, recall, TP, FP, FN for each breakdown.
+  S is the number of score cutoffs.
+precision_recall_ha_weighted: [B, S, 2]. precision and recall with heading
+  accuracy weighted pairs for each breakdown.
+precision_recall_longitudinal_affinity_weighted: [B, S, 2]. precision and recall
+  with longitudinal affinity weighted pairs for each breakdown.
+breakdown: [B, 3]. [generator_id, shard, difficulty] uint8 tuple for each
+  breakdown.
+config: a string serialized proto of metrics configuration protobuf.
+)doc");
+
+REGISTER_OP("DetectionMetricsState")
+    .Input("prediction_bbox: float")
+    .Input("prediction_type: uint8")
+    .Input("prediction_score: float")
+    .Input("prediction_frame_id: int64")
+    .Input("prediction_overlap_nlz: bool")
+    .Input("ground_truth_bbox: float")
+    .Input("ground_truth_type: uint8")
+    .Input("ground_truth_frame_id: int64")
+    .Input("ground_truth_difficulty: uint8")
+    .Input("ground_truth_speed: float")
+    .Output("state: float")
+    .Attr("config: string")
+    .SetShapeFn([](shape_inference::InferenceContext* c) {
+
+      return ::tensorflow::Status();
+    })
+    .Doc(R"doc(
+Computes accumulable state for detection metrics.
+
+prediction_bbox: [N, D]. N predicted bounding boxes of D (4, 5 or 7)
+  dimensions. It is OK to pass boxes with higher D than necessary. For example,
+  you can pass boxes with D = 7 while evaluating BEV metrics by setting
+  box_type in the config as TYPE_2D.
+prediction_type: [N]. Predicted object type of each bounding box.
+prediction_score: [N]. N prediction scores for each predicted box.
+prediction_frame_id: [N]. N frame IDs for each predicted box.
+prediction_overlap_nlz: [N]. Whether each predicted box overlaps with any no
+  label zone.
+ground_truth_bbox: [M, D]. M ground truth bounding boxes of D (4, 5 or 7)
+  dimensions. It is OK to pass boxes with higher D than necessary. For example,
+  you can pass boxes with D = 7 while evaluating BEV metrics by setting
+  box_type in the config as TYPE_2D.
+ground_truth_type: [M]. ground truth object type of each bounding box.
+ground_truth_frame_id: [M]. M frame IDs for each ground truth box.
+ground_truth_difficulty: [M] Difficulty level (1 or 2) for each ground truth
+  box.
+ground_truth_speed: [M, 2] M ground truth objects and their corresponding speed
+  label to use for VELOCITY breakdown.
+state: [] A serialized DetectionMeasurementsList.
+config: a string serialized proto of metrics configuration protobuf.
+)doc");
+
+REGISTER_OP("DetectionMetricsResult")
+    .Input("state: float")
+    .Output("average_precision: float")
+    .Output("average_precision_ha_weighted: float")
+    .Output("average_precision_longitudinal_affinity_weighted: float")
+    .Output("precision_recall: float")
+    .Output("precision_recall_ha_weighted: float")
+    .Output("precision_recall_longitudinal_affinity_weighted: float")
+    .Output("breakdown: uint8")
+    .Attr("config: string")
+    .SetShapeFn([](shape_inference::InferenceContext* c) {
+
+      return ::tensorflow::Status();
+    })
+    .Doc(R"doc(
+Computes detection metrics result.
+
+state: [N, S, 5]. accumulable state for computing detection metrics. N is the
+total number of shards across [num breakdown generators, num shards in i-th
+breakdown generator, num difficulty levels for each shard in the i-th breakdown
+generator].
 average_precision: [B]. average precision for each breakdown.
 average_precision_ha_weighted: [B]. average precision with heading accuracy
   weighted for each breakdown.

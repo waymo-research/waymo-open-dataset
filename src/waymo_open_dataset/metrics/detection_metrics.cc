@@ -443,6 +443,18 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
   return metrics;
 }
 
+std::vector<DetectionMeasurements> MergeDetectionMeasurements(
+    const Config& config,
+    const std::vector<std::vector<DetectionMeasurements>>& measurements) {
+  const int num_frames = measurements.size();
+  if (measurements.empty()) return {};
+  std::vector<DetectionMeasurements> measurements_merged = measurements[0];
+  for (int i = 1; i < num_frames; ++i) {
+    MergeDetectionMeasurementsVector(measurements[i], &measurements_merged);
+  }
+  return measurements_merged;
+}
+
 Config EstimateScoreCutoffs(const Config& config,
                             const std::vector<std::vector<Object>>& pds,
                             const std::vector<std::vector<Object>>& gts) {

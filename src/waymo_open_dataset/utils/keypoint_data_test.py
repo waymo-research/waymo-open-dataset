@@ -281,12 +281,12 @@ class CreatePoseEstimationTensorsTest(tf.test.TestCase):
     lshoulder = _util.laser_keypoint(_LEFT_SHOULDER, location_m=(4, 5, 6))
     rshoulder = _util.laser_keypoint(_RIGHT_SHOULDER, location_m=(6, 5, 4))
     labels = [
-        _lib.LaserLabel(
+        _lib.PoseLabel(
             object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
             box=_util.laser_box((1, 2, 3), (4, 5, 6), 7),
             keypoints=keypoint_pb2.LaserKeypoints(keypoint=[nose, lshoulder]),
         ),
-        _lib.LaserLabel(
+        _lib.PoseLabel(
             object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
             box=_util.laser_box((6, 6, 5), (4, 3, 2), 1),
             keypoints=keypoint_pb2.LaserKeypoints(keypoint=[rshoulder]),
@@ -304,6 +304,44 @@ class CreatePoseEstimationTensorsTest(tf.test.TestCase):
     self.assertEqual(tensors.box.center.shape, [2, 3])
     self.assertEqual(tensors.box.size.shape, [2, 3])
     self.assertEqual(tensors.box.heading.shape, [2])
+
+  def test_returns_tensors_with_dim0_eq_0_if_called_without_keypoints(self):
+    labels = [
+        _lib.PoseLabel(
+            object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
+            box=_util.laser_box((1, 2, 3), (4, 5, 6), 7),
+        ),
+    ]
+
+    tensors = _lib.create_pose_estimation_tensors(
+        labels,
+        default_location=tf.zeros(3, dtype=tf.float32),
+        order=[_NOSE, _LEFT_SHOULDER, _RIGHT_SHOULDER],
+    )
+
+    self.assertEqual(tensors.keypoints.location.shape, [0, 3, 3])
+    self.assertEqual(tensors.keypoints.visibility.shape, [0, 3])
+    self.assertEqual(tensors.box.center.shape, [0, 3])
+    self.assertEqual(tensors.box.size.shape, [0, 3])
+    self.assertEqual(tensors.box.heading.shape, [0])
+
+  def test_returns_none_box_for_pose_prediction_without_box(self):
+    kp1 = _util.laser_keypoint(_LEFT_SHOULDER, location_m=(4, 5, 6))
+    kp2 = _util.laser_keypoint(_RIGHT_SHOULDER, location_m=(6, 5, 4))
+    labels = [
+        _lib.PosePrediction(
+            object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
+            keypoints=keypoint_pb2.LaserKeypoints(keypoint=[kp1, kp2]),
+        ),
+    ]
+
+    tensors = _lib.create_pose_estimation_tensors(
+        labels,
+        default_location=tf.zeros(3, dtype=tf.float32),
+        order=[_NOSE, _LEFT_SHOULDER, _RIGHT_SHOULDER],
+    )
+
+    self.assertIsNone(tensors.box)
 
 
 if __name__ == '__main__':

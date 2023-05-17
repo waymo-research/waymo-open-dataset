@@ -89,7 +89,7 @@ def convert_range_image_to_cartesian(
   )
 
   # Compute inclinations mapping range image rows to circles in the 3D worlds.
-  if calibration.beam_inclination.values:
+  if calibration.beam_inclination.values is not None:
     inclination = tf.convert_to_tensor(calibration.beam_inclination.values)
   else:
     inclination = range_image_utils.compute_inclination(

@@ -57,7 +57,17 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     """Builds a metrics config."""
     config = metrics_pb2.Config()
     config_text = """
-    num_desired_score_cutoffs: 11
+    score_cutoffs: 0
+    score_cutoffs: 0.1
+    score_cutoffs: 0.2
+    score_cutoffs: 0.3
+    score_cutoffs: 0.4
+    score_cutoffs: 0.5
+    score_cutoffs: 0.6
+    score_cutoffs: 0.7
+    score_cutoffs: 0.8
+    score_cutoffs: 0.9
+    score_cutoffs: 1
     breakdown_generator_ids: ONE_SHARD
     difficulties {
     }
@@ -79,7 +89,17 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
             longitudinal_tolerance_percentage=0.1,
             enabled=True))
     config_text = """
-    num_desired_score_cutoffs: 11
+    score_cutoffs: 0
+    score_cutoffs: 0.1
+    score_cutoffs: 0.2
+    score_cutoffs: 0.3
+    score_cutoffs: 0.4
+    score_cutoffs: 0.5
+    score_cutoffs: 0.6
+    score_cutoffs: 0.7
+    score_cutoffs: 0.8
+    score_cutoffs: 0.9
+    score_cutoffs: 1
     breakdown_generator_ids: ONE_SHARD
     difficulties {
     }
@@ -94,9 +114,20 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     text_format.Parse(config_text, config)
     return config
 
-  def _GetAP(self, pd_bbox, pd_types, pd_frameid, pd_score, gt_bbox, gt_types,
-             gt_frameid, gt_speed, additional_config_str=''):
+  def _GetAP(
+      self,
+      pd_bbox,
+      pd_types,
+      pd_frameid,
+      pd_score,
+      gt_bbox,
+      gt_types,
+      gt_frameid,
+      gt_speed,
+      config,
+  ):
     """Calls detection metrics op to compute detection metrics."""
+    serialized_config = config.SerializeToString()
     g = tf.Graph()
     with g.as_default():
       ap, aph, apl, pr, prh, prl, breakdown = py_metrics_ops.detection_metrics(
@@ -110,25 +141,10 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
           ground_truth_frame_id=gt_frameid,
           ground_truth_difficulty=tf.ones_like(gt_frameid, dtype=tf.uint8),
           ground_truth_speed=gt_speed,
-          config=self._BuildConfig(additional_config_str).SerializeToString())
-    with self.test_session(graph=g) as sess:
-      val = sess.run([ap, aph, apl, pr, prh, prl, breakdown])
-    return val
-
-  def _GetLetAP(self,
-                pd_bbox,
-                pd_types,
-                pd_frameid,
-                pd_score,
-                gt_bbox,
-                gt_types,
-                gt_frameid,
-                gt_speed,
-                additional_config_str=''):
-    """Calls detection metrics op to compute detection metrics."""
-    g = tf.Graph()
-    with g.as_default():
-      ap, aph, apl, pr, prh, prl, breakdown = py_metrics_ops.detection_metrics(
+          config=serialized_config,
+      )
+      # Run the same metric again using the accumulated state approach.
+      state = py_metrics_ops.detection_metrics_state(
           prediction_bbox=pd_bbox,
           prediction_type=pd_types,
           prediction_score=pd_score,
@@ -139,10 +155,18 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
           ground_truth_frame_id=gt_frameid,
           ground_truth_difficulty=tf.ones_like(gt_frameid, dtype=tf.uint8),
           ground_truth_speed=gt_speed,
-          config=self._BuildLetConfig(
-              additional_config_str).SerializeToString())
+          config=serialized_config,
+      )
+      ap2, aph2, apl2, pr2, prh2, prl2, breakdown2 = (
+          py_metrics_ops.detection_metrics_result(
+              state=state, config=serialized_config
+          )
+      )
     with self.test_session(graph=g) as sess:
       val = sess.run([ap, aph, apl, pr, prh, prl, breakdown])
+      val2 = sess.run([ap2, aph2, apl2, pr2, prh2, prl2, breakdown2])
+    # The results of the two different implementations should be identical.
+    self.assertAllClose(val, val2)
     return val
 
   def testAPBasic(self):
@@ -150,6 +174,8 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
     gt_bbox, gt_type, gt_frameid, _, _ = self._GenerateRandomBBoxes(k, n)
 
+    config = self._BuildConfig()
+    gt_speed = None
     ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(
         pd_bbox,
         pd_type,
@@ -158,7 +184,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertEqual(pr.shape, (1, 11, 5))
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertEqual(prl.shape, (1, 11, 2))
@@ -177,7 +205,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertAlmostEqual(ap[0], 1.0, places=5)
     self.assertAlmostEqual(aph[0], 1.0, places=5)
     self.assertAlmostEqual(apl[0], 1.0, places=5)
@@ -196,7 +226,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid + n,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertAlmostEqual(ap, 0.0, places=5)
     self.assertAlmostEqual(aph, 0.0, places=5)
     self.assertAlmostEqual(apl, 0.0, places=5)
@@ -213,7 +245,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         k, m)
     gt_bbox, gt_type, gt_frameid, _, _ = self._GenerateRandomLetBBoxes(k, n)
 
-    ap, aph, apl, pr, prh, prl, breakdown = self._GetLetAP(
+    config = self._BuildLetConfig()
+    gt_speed = None
+    ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(
         pd_bbox,
         pd_type,
         pd_frameid,
@@ -221,7 +255,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertEqual(pr.shape, (1, 11, 5))
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertEqual(prl.shape, (1, 11, 2))
@@ -232,7 +268,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     self.assertTrue(-EPSILON <= aph and aph <= 1.0 + EPSILON)
     self.assertTrue(-EPSILON <= apl and apl <= 1.0 + EPSILON)
 
-    ap, aph, apl, pr, prh, prl, breakdown = self._GetLetAP(
+    ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(
         gt_bbox,
         gt_type,
         gt_frameid,
@@ -240,7 +276,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertAlmostEqual(ap[0], 1.0, places=5)
     self.assertAlmostEqual(aph[0], 1.0, places=5)
     self.assertAlmostEqual(apl[0], 1.0, places=5)
@@ -251,7 +289,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         breakdown[0, :],
         [breakdown_pb2.Breakdown.GeneratorId.Value('ONE_SHARD'), 0, 2])
 
-    ap, aph, apl, pr, prh, prl, breakdown = self._GetLetAP(
+    ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(
         gt_bbox,
         gt_type,
         gt_frameid,
@@ -259,7 +297,9 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
         gt_bbox,
         gt_type,
         gt_frameid + n,
-        gt_speed=None)
+        gt_speed,
+        config,
+    )
     self.assertAlmostEqual(ap, 0.0, places=5)
     self.assertAlmostEqual(aph, 0.0, places=5)
     self.assertAlmostEqual(apl, 0.0, places=5)
@@ -274,9 +314,18 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     k, n, m = 10, 100, 20
     pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
     gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
+    config = self._BuildConfig()
     ap, aph, apl, pr, prh, prl, _ = self._GetAP(
-        pd_bbox * 0, pd_type, pd_frameid, pd_score * 0, gt_bbox * 0, gt_type,
-        gt_frameid * 0, gt_speed * 0)
+        pd_bbox * 0,
+        pd_type,
+        pd_frameid,
+        pd_score * 0,
+        gt_bbox * 0,
+        gt_type,
+        gt_frameid * 0,
+        gt_speed * 0,
+        config,
+    )
 
     self.assertEqual(0, ap)
     self.assertEqual(0, aph)
@@ -284,7 +333,7 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     self.assertAllEqual(pr.shape, (1, 11, 5))
     # IoU for 2 boxes with all zeros params is 0.0.
     self.assertAllEqual(pr[0, 0], [1.0, 0.0, 0.0, 20.0, 100.0])
-    self.assertAllEqual(pr[0, 1], [1.0, 0.0, 0.0, 20.0, 100.0])
+    self.assertAllEqual(pr[0, 1], [1.0, 0.0, 0.0, 0.0, 100.0])
     self.assertEqual(prh.shape, (1, 11, 2))
     self.assertEqual(prl.shape, (1, 11, 2))
 
@@ -293,10 +342,18 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     k, n, m = 10, 0, 0
     pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
     gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
-    ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(pd_bbox, pd_type,
-                                                        pd_frameid, pd_score,
-                                                        gt_bbox, gt_type,
-                                                        gt_frameid, gt_speed)
+    config = self._BuildConfig()
+    ap, aph, apl, pr, prh, prl, breakdown = self._GetAP(
+        pd_bbox,
+        pd_type,
+        pd_frameid,
+        pd_score,
+        gt_bbox,
+        gt_type,
+        gt_frameid,
+        gt_speed,
+        config,
+    )
 
     self.assertEqual(0, ap)
     self.assertEqual(0, aph)
@@ -310,16 +367,22 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     k, n, m = 10, 100, 200
     pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
     gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
-    additional_config_str = """
+    config = self._BuildConfig(additional_config_str="""
     breakdown_generator_ids: VELOCITY
     difficulties {
     }
-    """
-    ap, aph, _, pr, prh, prl, breakdown = self._GetAP(pd_bbox, pd_type,
-                                                      pd_frameid, pd_score,
-                                                      gt_bbox, gt_type,
-                                                      gt_frameid, gt_speed,
-                                                      additional_config_str)
+    """)
+    ap, aph, _, pr, prh, prl, breakdown = self._GetAP(
+        pd_bbox,
+        pd_type,
+        pd_frameid,
+        pd_score,
+        gt_bbox,
+        gt_type,
+        gt_frameid,
+        gt_speed,
+        config,
+    )
     self.assertEqual(pr.shape, (21, 11, 5))
     self.assertEqual(prh.shape, (21, 11, 2))
     self.assertEqual(prl.shape, (21, 11, 2))
@@ -334,6 +397,41 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     self.assertTrue(np.all(ap <= 1.0 + EPSILON))
     self.assertTrue(np.all(aph >= -EPSILON))
     self.assertTrue(np.all(aph <= 1.0 + EPSILON))
+
+  def testStateBasedRequiresScoreCutoffs(self):
+    config = metrics_pb2.Config()
+    config_text = """
+    num_desired_score_cutoffs: 11
+    breakdown_generator_ids: ONE_SHARD
+    difficulties {
+    }
+    matcher_type: TYPE_HUNGARIAN
+    iou_thresholds: 0.5
+    iou_thresholds: 0.5
+    iou_thresholds: 0.5
+    iou_thresholds: 0.5
+    iou_thresholds: 0.5
+    box_type: TYPE_3D
+    """
+    text_format.Parse(config_text, config)
+    k, n, m = 10, 0, 0
+    pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
+    gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
+    with self.assertRaisesRegex(
+        ValueError, 'requires that score cutoffs are set explicitly'
+    ):
+      self._GetAP(
+          pd_bbox,
+          pd_type,
+          pd_frameid,
+          pd_score,
+          gt_bbox,
+          gt_type,
+          gt_frameid,
+          gt_speed,
+          config,
+      )
+
 
 if __name__ == '__main__':
   tf.compat.v1.disable_eager_execution()

@@ -66,15 +66,15 @@ We released v1.4.0 of the Perception dataset.
 We released v1.3.2 of the Perception dataset to improve the quality and accuracy of the labels.
  - Updated 3D semantic segmentation labels, for better temporal consistency and to fix mislabeled points.
  - Updated 2D key point labels to fix image cropping issues.
- - Added `num_top_lidar_points_in_box` in [dataset.proto](waymo_open_dataset/dataset.proto) for the 3D Camera-Only Detection Challenge.
+ - Added `num_top_lidar_points_in_box` in [dataset.proto](src/waymo_open_dataset/dataset.proto) for the 3D Camera-Only Detection Challenge.
 
 ## April 2022 Update
 We released v1.3.1 of the Perception dataset to support the 2022 Challenges and have updated this repository accordingly.
  - Added metrics (LET-3D-APL and LET-3D-AP) for the 3D Camera-Only Detection Challenge.
  - Added 80 segments of 20-second camera imagery, as a test set for the 3D Camera-Only Detection Challenge.
- - Added z-axis speed and acceleration in [lidar label metadata](waymo_open_dataset/label.proto#L53-L60).
- - Fixed some inconsistencies in `projected_lidar_labels` in [dataset.proto](waymo_open_dataset/dataset.proto).
- - Updated the default configuration for the Occupancy and Flow Challenge, switching from aggregate waypoints to [subsampled waypoints](waymo_open_dataset/protos/occupancy_flow_metrics.proto#L38-L55).
+ - Added z-axis speed and acceleration in [lidar label metadata](src/waymo_open_dataset/label.proto#L53-L60).
+ - Fixed some inconsistencies in `projected_lidar_labels` in [dataset.proto](src/waymo_open_dataset/dataset.proto).
+ - Updated the default configuration for the Occupancy and Flow Challenge, switching from aggregate waypoints to [subsampled waypoints](src/waymo_open_dataset/protos/occupancy_flow_metrics.proto#L38-L55).
  - Updated the [tutorial](tutorial/tutorial_3d_semseg.ipynb) for 3D Semantic Segmentation Challenge with more detailed instructions.
 
 ## March 2022 Update
@@ -99,7 +99,7 @@ We released v1.1 of the Motion dataset to include lane connectivity information.
 
 We expanded the Waymo Open Dataset to also include a Motion dataset comprising object trajectories and corresponding 3D maps for over 100,000 segments. We have updated this repository to add support for this new dataset.
 
-Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](waymo_open_dataset/latency/README.md).
+Additionally, we added instructions and examples for the real-time detection challenges. Please follow these [Instructions](src/waymo_open_dataset/latency/README.md).
 
 ## Website
 

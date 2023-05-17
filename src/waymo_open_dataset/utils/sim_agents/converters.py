@@ -79,22 +79,25 @@ def joint_scene_to_trajectories(
   """Converts a JointScene and the relative Scenario into `ObjectTrajectories`.
 
   Args:
-    joint_scene: A JointScene generated from the same Scenario as above.
-    scenario: The original scenario proto, used to infer static attributes
-      (i.e. object types and box dimensions) from the last step of history
+    joint_scene: A JointScene representing either logged or simulated data,
+      corresponding to the same scenario ID as the provided logged `scenario`.
+    scenario: The original scenario proto, used to infer static attributes (i.e.
+      object types and box dimensions) from the last step of history
       (`CURRENT_TIME_INDEX` when 0-indexed). The history steps from this
-      scenario are also prepended to the returned `Trajectories`, resulting in
-      a total length of `submission_specs.N_FULL_SCENARIO_STEPS`.
+      scenario are also prepended to the returned `Trajectories`, resulting in a
+      total length of `submission_specs.N_FULL_SCENARIO_STEPS`.
 
   Returns:
     An `ObjectTrajectories` containing the trajectories of all simulated objects
     in a scenario, with prepended history steps and inferred static dimensions
     and object types.
   """
-  original_trajectories = trajectory_utils.ObjectTrajectories.from_scenario(
-      scenario)
-  original_trajectories = original_trajectories.slice_time(
-      start_index=0, end_index=submission_specs.CURRENT_TIME_INDEX+1)
+  logged_trajectories = trajectory_utils.ObjectTrajectories.from_scenario(
+      scenario
+  )
+  logged_trajectories = logged_trajectories.slice_time(
+      start_index=0, end_index=submission_specs.CURRENT_TIME_INDEX + 1
+  )
   # Extract states and object IDs from the simulated scene.
   sim_ids, sim_x, sim_y, sim_z, sim_heading = [], [], [], [], []
   for simulated_trajectory in joint_scene.simulated_trajectories:
@@ -106,24 +109,29 @@ def joint_scene_to_trajectories(
   # Convert to tensors.
   sim_x, sim_y, sim_z, sim_heading, sim_ids = map(
       tf.convert_to_tensor, [sim_x, sim_y, sim_z, sim_heading, sim_ids])
-  # Align object from the original scenario to the simulated one.
-  original_trajectories = original_trajectories.gather_objects_by_id(sim_ids)
-  # Prepare the missing tensors: valid and box sizes.
+  # Align objects from the logged scenario to the simulated one.
+  logged_trajectories = logged_trajectories.gather_objects_by_id(sim_ids)
+  # Prepare the missing tensors: validity and box sizes.
   sim_valid = tf.fill(sim_x.shape, True)
   sim_length = tf.repeat(
-      original_trajectories.length[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1)
+      logged_trajectories.length[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1
+  )
   sim_width = tf.repeat(
-      original_trajectories.width[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1)
+      logged_trajectories.width[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1
+  )
   sim_height = tf.repeat(
-      original_trajectories.height[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1)
+      logged_trajectories.height[:, -1, tf.newaxis], sim_x.shape[-1], axis=-1
+  )
   # Concatenate and return.
   return trajectory_utils.ObjectTrajectories(
-      x=tf.concat([original_trajectories.x, sim_x], axis=-1),
-      y=tf.concat([original_trajectories.y, sim_y], axis=-1),
-      z=tf.concat([original_trajectories.z, sim_z], axis=-1),
-      heading=tf.concat([original_trajectories.heading, sim_heading], axis=-1),
-      length=tf.concat([original_trajectories.length, sim_length], axis=-1),
-      width=tf.concat([original_trajectories.width, sim_width], axis=-1),
-      height=tf.concat([original_trajectories.height, sim_height], axis=-1),
-      valid=tf.concat([original_trajectories.valid, sim_valid], axis=-1),
-      object_id=sim_ids, object_type=original_trajectories.object_type)
+      x=tf.concat([logged_trajectories.x, sim_x], axis=-1),
+      y=tf.concat([logged_trajectories.y, sim_y], axis=-1),
+      z=tf.concat([logged_trajectories.z, sim_z], axis=-1),
+      heading=tf.concat([logged_trajectories.heading, sim_heading], axis=-1),
+      length=tf.concat([logged_trajectories.length, sim_length], axis=-1),
+      width=tf.concat([logged_trajectories.width, sim_width], axis=-1),
+      height=tf.concat([logged_trajectories.height, sim_height], axis=-1),
+      valid=tf.concat([logged_trajectories.valid, sim_valid], axis=-1),
+      object_id=sim_ids,
+      object_type=logged_trajectories.object_type,
+  )

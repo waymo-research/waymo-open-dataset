@@ -72,6 +72,21 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
     const std::vector<std::vector<Object>>& gts,
     ComputeIoUFunc custom_iou_func = nullptr);
 
+// Merges detection measurements for multiple frames.
+// Each element of `measurements` is an output of ComputeDetectionMeasurements.
+// The output vector is ordered as:
+// [{generator_i_shard_j_difficulty_level_k}].
+// i \in [0, num_breakdown_generators).
+// j \in [0, num_shards for the i-th breakdown generator).
+// k \in [0, num_difficulty_levels for each shard in the  i-th breakdown
+//   generator).
+//
+// Requires: Every element of `measurements` is computed with the same
+// configuration.
+std::vector<DetectionMeasurements> MergeDetectionMeasurements(
+    const Config& config,
+    const std::vector<std::vector<DetectionMeasurements>>& measurements);
+
 // Estimates the score cutoffs that evenly sample the P/R curve.
 // pds: the predicted objects.
 // gts: the ground truths.

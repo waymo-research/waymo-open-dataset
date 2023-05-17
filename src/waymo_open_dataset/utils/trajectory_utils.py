@@ -180,10 +180,10 @@ class ObjectTrajectories:
 
 def _arg_gather(
     tensor: tf.Tensor, reference_tensor: tf.Tensor) -> tf.Tensor:
-  """Return indices on `tensor` such that tf.gather maps to `reference_tensor`.
+  """Finds corresponding idxs in `tensor` for each element in `reference_tensor.
 
   This function returns the arguments for a gather op such that:
-    tf.gather(tensor, find_matching_element_indices(tensor, reference_tensor))
+    tf.gather(tensor, indices=_arg_gather(tensor, reference_tensor))
     == reference_tensor.
 
   Note: All the items in `tensor` must be present in `reference_tensor`,
@@ -192,14 +192,14 @@ def _arg_gather(
     repetitions to guarantee the correct result.
 
   Args:
-    tensor: The tensor to map. Must be a 1D tensor because the logic used
-      here does not apply to multi-dimensional gather ops.
-    reference_tensor: A 1D tensor containing items from `tensor`, which will be
-      searched in `tensor`.
+    tensor: The tensor to map. Must be a 1D tensor because the logic used here
+      does not apply to multi-dimensional gather ops.
+    reference_tensor: A 1D tensor containing items from `tensor`, each of which
+      will be searched for in `tensor`.
 
   Returns:
     The list of indices on `tensor` which, if taken, maps directly to
-    `reference_tensor`. Specifically, if we apply tf.gather(tensor, mask) we
+    `reference_tensor`. Specifically, if we apply tf.gather(tensor, indices) we
     obtain the reference tensor back.
   """
   tf.assert_rank(tensor, 1)
@@ -209,7 +209,9 @@ def _arg_gather(
   bit_mask_sum = tf.reduce_sum(tf.cast(bit_mask, tf.int32), axis=1)
   if tf.reduce_any(bit_mask_sum < 1):
     raise ValueError(
-        'Some items in `reference_tensor` are missing from `tensor`.')
+        'Some items in `reference_tensor` are missing from `tensor`:'
+        f' \n{reference_tensor} \nvs. \n{tensor}.'
+    )
   if tf.reduce_any(bit_mask_sum > 1):
     raise ValueError('Some items in `tensor` are repeated.')
   return tf.matmul(

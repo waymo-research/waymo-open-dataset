@@ -73,16 +73,39 @@ PointByType = Mapping['KeypointType', Point]
 
 
 @dataclasses.dataclass(frozen=True)
-class LaserLabel:
-  """A dataclass to store laser labels for keypoint visualization.
+class PoseLabel:
+  """A dataclass to store ground truth labels for keypoint visualization.
+
+  NOTE: The `keypoints` field is optional because there are objects in the
+  database without labeled keypoints, while the `box` field is required because
+  there are no objects without a bounding box.
 
   Attributes:
     object_type: type of the object.
     box: 3D bounding box.
     keypoints: an optional list of labeled 3D keypoints.
   """
+
   object_type: 'ObjectType'
   box: label_pb2.Label.Box
+  keypoints: Optional[keypoint_pb2.LaserKeypoints] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class PosePrediction:
+  """A dataclass to store predicted 3D pose.
+
+  NOTE: Both `keypoints` and `box` fields are optional because a prediction may
+  not have a box or keypoints.
+
+  Attributes:
+    object_type: type of the object.
+    box: 3D bounding box.
+    keypoints: an optional list of labeled 3D keypoints.
+  """
+
+  object_type: 'ObjectType'
+  box: Optional[label_pb2.Label.Box] = None
   keypoints: Optional[keypoint_pb2.LaserKeypoints] = None
 
 
@@ -111,7 +134,7 @@ class ObjectLabel:
     camera: camera labels.
     object_type: type of the object.
   """
-  laser: LaserLabel
+  laser: PoseLabel
   camera: CameraLabelByType = dataclasses.field(default_factory=dict)
 
   @property
@@ -119,13 +142,14 @@ class ObjectLabel:
     return self.laser.object_type
 
 
-def _index_laser_labels(frame: dataset_pb2.Frame) -> Dict[str, LaserLabel]:
+def _index_laser_labels(frame: dataset_pb2.Frame) -> Dict[str, PoseLabel]:
   labels = {}
   for ll in frame.laser_labels:
-    labels[ll.id] = LaserLabel(
+    labels[ll.id] = PoseLabel(
         object_type=ll.type,
         box=ll.box,
-        keypoints=getattr(ll, 'laser_keypoints', None))
+        keypoints=getattr(ll, 'laser_keypoints', None),
+    )
   return labels
 
 
@@ -265,9 +289,11 @@ class KeypointsTensors:
 
   Attributes:
     location: a float tensor with shape [B, N, D] or [N, D].
-    visibility: a int32 tensor with shape [B, N] or [N], with values: 0 -
-      the corresponding point is missing (not labeled or not detected), 1 -
+    visibility: a int32 tensor with shape [B, N] or [N], with values: 0 - the
+      corresponding point is missing (not labeled or not detected), 1 -
       occluded, 2 - fully visible.
+    has_visible: a boolean tensor with shape [B] or [], True - if an object has
+      any visible (not occluded) keypoints.
     is_fully_visible: a bool tensor with shape [B, N], with values: True - if
       the corresponding point is missing.
     mask: a float tensor with shape [B, N], with values: 0 - if corresponding
@@ -277,6 +303,7 @@ class KeypointsTensors:
   """
   location: tf.Tensor
   visibility: tf.Tensor
+  has_visible: tf.Tensor | None = None
 
   def __post_init__(self):
     if self.location.shape.rank == 2:
@@ -291,6 +318,8 @@ class KeypointsTensors:
     if self.location.shape[-1] not in (2, 3):
       raise ValueError(
           f'Support only 2 or 3 dimensions: got {self.location.shape[-1]}')
+    if self.has_visible is None:
+      self.has_visible = tf.reduce_any(self.is_fully_visible, axis=-1)
 
   @property
   def is_fully_visible(self) -> tf.Tensor:
@@ -314,6 +343,7 @@ class KeypointsTensors:
     return KeypointsTensors(
         location=select_subset(self.location, src_order, dst_order),
         visibility=select_subset(self.visibility, src_order, dst_order),
+        has_visible=self.has_visible,
     )
 
 
@@ -407,8 +437,8 @@ class BoundingBoxTensors:
     heading: The heading of the bounding box (in radians). It is a float tensor
       with shape [B]. Boxes are axis aligned in 2D, so it is None for camera
       bounding boxes. For 3D boxes the heading is the angle required to rotate
-      +x to the surface normal of the box front face. It is normalized to [-pi,
-      pi).
+      +x clockwise around +z to the surface normal of the box front face. It is
+      normalized to [-pi, pi).
     scale: a float tensor with shape [B] or [], which means square root of the
       box's area in 2D and cubic root the volume in 3D.
     min_corner: corner with smallest coordinates, e.g. top left corner for a 2D
@@ -505,15 +535,21 @@ class PoseEstimationTensors:
     B - number of objects.
     N - number of keypoints
 
+  NOTE: The `keypoints` field is required because all metrics require keypoint
+  tensors. Use zeros as a placeholder value for both `location_m` and
+  `visibility` fields of `KeypointsTensors` if keypoints are missing for a
+  predicted or a ground truth object. A metric will properly account for that by
+  using the `visibility` field. The `box` field is optional and not used by any
+  of metrics. It is only required if the `CppMatcher` is used to match predicted
+  and ground truth objects.
+
   Attributes:
-    keypoints: keypoints for B objects
-    box: boxes for B objects
-    object_mask: a tensor with shape [B]. With values 1 - valid object and 0 -
-      otherwise.
+    keypoints: keypoints for B objects.
+    box: boxes for B objects.
   """
 
   keypoints: KeypointsTensors
-  box: BoundingBoxTensors
+  box: Optional[BoundingBoxTensors] = None
 
 
 def label_box_from_box_proto(box: box_pb2.Box3d) -> label_pb2.Label.Box:
@@ -530,7 +566,7 @@ def label_box_from_box_proto(box: box_pb2.Box3d) -> label_pb2.Label.Box:
 
 
 def create_pose_estimation_tensors(
-    labels: Iterable[LaserLabel],
+    poses: Iterable[PoseLabel | PosePrediction],
     default_location: np.ndarray,
     order: Collection['KeypointType'],
     dtype: tf.DType = tf.float32,
@@ -538,7 +574,7 @@ def create_pose_estimation_tensors(
   """Creates pose estimation tensors for labels in a single frame.
 
   Args:
-    labels: a list of labels to convert into tensors. Can be created using
+    poses: a list of labels to convert into tensors. Can be created using
       `group_object_labels(frame)`.
     default_location: coordinates used for missing keypoints.
     order: a 1-to-1 mapping of keypoint types to output keypoints - the type of
@@ -547,21 +583,46 @@ def create_pose_estimation_tensors(
     dtype: type of output tensors.
 
   Returns:
-    an object with all pose estimation tensors.
+    an object with all pose estimation tensors. If input PosePredictions have no
+    boxes (PosePrediction.box=None) output dataclass will also have no boxes
+    (PoseEstimationTensors.box=None).
+    NOTE: If input list is empty (or there is no keypoints) first dimension of
+    the output tensors for keypoints and boxes will be zero
+    (PoseEstimationTensors.box!=None)
   """
   keypoints = []
   boxes = []
-  for label in labels:
+  for pose in poses:
+    if pose.keypoints is None:
+      continue
     keypoints.append(
         create_laser_keypoints_tensors(
-            label.keypoints.keypoint,
+            pose.keypoints.keypoint,
             default_location=default_location,
             order=order,
             dtype=dtype,
         )
     )
-    boxes.append(create_laser_box_tensors(label.box, dtype=dtype))
-  return PoseEstimationTensors(
-      keypoints=stack_keypoints(keypoints, axis=0),
-      box=stack_boxes(boxes, axis=0),
-  )
+    if pose.box:
+      boxes.append(create_laser_box_tensors(pose.box, dtype=dtype))
+
+  if keypoints:
+    keypoints_tensors = stack_keypoints(keypoints, axis=0)
+  else:
+    keypoints_tensors = KeypointsTensors(
+        location=tf.zeros([0, len(order), 3], dtype=dtype),
+        visibility=tf.zeros([0, len(order)], dtype=tf.int32),
+    )
+
+  if boxes:
+    box_tensors = stack_boxes(boxes, axis=0)
+  else:
+    if keypoints:
+      box_tensors = None
+    else:
+      box_tensors = BoundingBoxTensors(
+          center=tf.zeros([0, 3], dtype=dtype),
+          size=tf.zeros([0, 3], dtype=dtype),
+          heading=tf.zeros([0], dtype=dtype),
+      )
+  return PoseEstimationTensors(keypoints=keypoints_tensors, box=box_tensors)

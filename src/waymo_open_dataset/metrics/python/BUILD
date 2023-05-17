@@ -97,6 +97,7 @@ py_library(
     srcs = ["keypoint_metrics.py"],
     deps = [
         requirement("immutabledict"),
+        requirement("scipy"),
         requirement("tensorflow"),
         ":matcher",
         "//waymo_open_dataset:label_proto_py_pb2",
@@ -113,6 +114,7 @@ py_test(
         ":testdata/oks_testdata.json",
     ],
     deps = [
+        requirement("absl-py"),
         requirement("numpy"),
         requirement("tensorflow"),
         ":keypoint_metrics",
