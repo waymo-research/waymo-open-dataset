@@ -47,7 +47,6 @@ REGISTER_OP("DetectionMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
-
       return ::tensorflow::Status();
     })
     .Doc(R"doc(

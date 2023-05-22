@@ -197,7 +197,7 @@ py_wheel(
         "tensorflow_graphics==2021.12.3",
         "tensorflow_probability==0.19.0",
     ],
-    version = "1.5.1",
+    version = "1.5.2",
     deps = [
         ":all_python_modules",
     ],
@@ -213,7 +213,7 @@ py_wheel(
         "numpy==1.21.5",
         "tensorflow==2.11",
     ],
-    version = "1.5.1",
+    version = "1.5.2",
     deps = [
         "@deeplab2",
     ],
