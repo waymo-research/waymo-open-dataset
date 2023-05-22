@@ -202,7 +202,6 @@ py_library(
     deps = [
         requirement("tensorflow"),
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
-        "//waymo_open_dataset/protos:sim_agents_submission_proto_py_pb2",
     ],
 )
 

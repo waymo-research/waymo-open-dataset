@@ -343,6 +343,30 @@ class CreatePoseEstimationTensorsTest(tf.test.TestCase):
 
     self.assertIsNone(tensors.box)
 
+  def test_populates_heading_for_a_box_with_zero_heading(self):
+    # A special case to verify there is no implicit boolean conversion for
+    # heading = tf.constant(0), e.g. we are not using `if heading:` anywhere.
+    heading = 0
+    kp1 = _util.laser_keypoint(_LEFT_SHOULDER, location_m=(4, 5, 6))
+    kp2 = _util.laser_keypoint(_RIGHT_SHOULDER, location_m=(6, 5, 4))
+
+    poses = [
+        _lib.PoseLabel(
+            object_type=_lib.ObjectType.TYPE_PEDESTRIAN,
+            box=_util.laser_box((1, 2, 3), (4, 5, 6), heading),
+            keypoints=keypoint_pb2.LaserKeypoints(keypoint=[kp1, kp2]),
+        )
+    ]
+
+    tensors = _lib.create_pose_estimation_tensors(
+        poses,
+        default_location=tf.zeros(3, dtype=tf.float32),
+        order=[_LEFT_SHOULDER, _RIGHT_SHOULDER],
+    )
+
+    self.assertIsNotNone(tensors.box)
+    self.assertIsNotNone(tensors.box.heading)  # pylint: disable=attribute-error
+
 
 if __name__ == '__main__':
   tf.test.main()

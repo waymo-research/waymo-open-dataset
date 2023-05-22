@@ -30,14 +30,9 @@
 # ==============================================================================
 """Camera model tensorflow ops python interface."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
+gen_camera_model_ops = tf.load_op_library(
+   tf.compat.v1.resource_loader.get_path_to_datafile('camera_model_ops.so'))
 
-camera_model_module = tf.load_op_library(
-    tf.compat.v1.resource_loader.get_path_to_datafile('camera_model_ops.so'))
-
-world_to_image = camera_model_module.world_to_image
-image_to_world = camera_model_module.image_to_world
+world_to_image = gen_camera_model_ops.world_to_image
+image_to_world = gen_camera_model_ops.image_to_world

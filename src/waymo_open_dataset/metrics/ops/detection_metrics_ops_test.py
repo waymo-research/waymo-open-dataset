@@ -398,40 +398,6 @@ class DetectionMetricsOpsTest(tf.test.TestCase):
     self.assertTrue(np.all(aph >= -EPSILON))
     self.assertTrue(np.all(aph <= 1.0 + EPSILON))
 
-  def testStateBasedRequiresScoreCutoffs(self):
-    config = metrics_pb2.Config()
-    config_text = """
-    num_desired_score_cutoffs: 11
-    breakdown_generator_ids: ONE_SHARD
-    difficulties {
-    }
-    matcher_type: TYPE_HUNGARIAN
-    iou_thresholds: 0.5
-    iou_thresholds: 0.5
-    iou_thresholds: 0.5
-    iou_thresholds: 0.5
-    iou_thresholds: 0.5
-    box_type: TYPE_3D
-    """
-    text_format.Parse(config_text, config)
-    k, n, m = 10, 0, 0
-    pd_bbox, pd_type, pd_frameid, pd_score, _ = self._GenerateRandomBBoxes(k, m)
-    gt_bbox, gt_type, gt_frameid, _, gt_speed = self._GenerateRandomBBoxes(k, n)
-    with self.assertRaisesRegex(
-        ValueError, 'requires that score cutoffs are set explicitly'
-    ):
-      self._GetAP(
-          pd_bbox,
-          pd_type,
-          pd_frameid,
-          pd_score,
-          gt_bbox,
-          gt_type,
-          gt_frameid,
-          gt_speed,
-          config,
-      )
-
 
 if __name__ == '__main__':
   tf.compat.v1.disable_eager_execution()

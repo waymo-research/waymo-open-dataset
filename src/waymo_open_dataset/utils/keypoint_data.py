@@ -505,15 +505,15 @@ def create_laser_box_tensors(
 def _stack_optional_headings(
     values: List[BoundingBoxTensors], axis: int = 0
 ) -> Optional[tf.Tensor]:
-  no_heading = sum([1 if v.heading else 0 for v in values])
-  if no_heading == 0:
+  num_have_heading = sum([v.heading is not None for v in values])
+  if not num_have_heading:
     return None
-  elif no_heading == len(values):
+  elif num_have_heading == len(values):
     return tf.stack([v.heading for v in values], axis)
   else:
     raise AssertionError(
         'Either all or none of the boxes need to have heading, got'
-        f' {no_heading} without heading out of {len(values)}'
+        f' {num_have_heading} with heading out of {len(values)}'
     )
 
 

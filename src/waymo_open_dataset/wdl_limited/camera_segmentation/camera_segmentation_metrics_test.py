@@ -24,12 +24,13 @@ class CameraSegmentationMetricsTest(tf.test.TestCase):
 
   def setUp(self):
     super().setUp()
+    self._panoptic_label_divisor = 100000
     self._true_panoptic_labels = [
-        np.array([[1, 2, 3, 4]], dtype=np.int32),
-        np.array([[2, 3, 4, 5]], dtype=np.int32)]
+        np.array([[1, 2, 3, 4]], dtype=np.int32) * self._panoptic_label_divisor,
+        np.array([[2, 3, 4, 5]], dtype=np.int32) * self._panoptic_label_divisor]
     self._pred_panoptic_labels = [
-        np.array([[4, 2, 3, 1]], dtype=np.int32),
-        np.array([[0, 0, 0, 0]], dtype=np.int32)]
+        np.array([[4, 2, 3, 1]], dtype=np.int32) * self._panoptic_label_divisor,
+        np.array([[0, 0, 0, 0]], dtype=np.int32) * self._panoptic_label_divisor]
     self._num_cameras_covered = [
         np.array([[1, 1, 1, 1]], dtype=np.int32),
         np.array([[2, 2, 2, 2]], dtype=np.int32),
@@ -42,7 +43,8 @@ class CameraSegmentationMetricsTest(tf.test.TestCase):
   def test_get_eval_config(self):
     eval_config = camera_segmentation_metrics.get_eval_config()
     self.assertIsNotNone(eval_config)
-    self.assertEqual(eval_config.panoptic_label_divisor, 100000)
+    self.assertEqual(eval_config.panoptic_label_divisor,
+                     self._panoptic_label_divisor)
 
   def test_get_metric_object_by_sequence_basic(self):
     metric_obj = camera_segmentation_metrics.get_metric_object_by_sequence(

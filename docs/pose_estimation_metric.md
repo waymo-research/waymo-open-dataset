@@ -16,7 +16,7 @@ subsets of them by selecting a group of keypoints and thresholds.
   number of keypoints close to ground truth to the total number of keypoints. We
   use thresholds `(0.05, 0.1, 0.2, 0.3, 0.4, 0.5)` relative to bounding
   box scales, for example for a human-like 1x1x2m box, the box's scale will be
-  $(1 \cdot 1 \cdot 2)^\frac{1}{3} = 1.26$, so the $0.20$ threshold of this
+  $`(1 \cdot 1 \cdot 2)^\frac{1}{3} = 1.26`$, so the $`0.20`$ threshold of this
   scale will be 25cm and keypoints with errors less than 25cm will be considered
   correct. The metric takes values in the `[0, 1]` range (higher is better).
   Useful to understand the distribution of errors.
@@ -70,17 +70,18 @@ unmatched keypoints (aka `mismatch_penalty`), expressed in meters.
 
 We compute the PEM on a set of candidate pairs of predicted and ground truth
 objects, for which at least one predicted keypoint is within a distance
-threshold constant $C$ from the ground truth box. The final object assignment
+threshold constant $`C`$ from the ground truth box. The final object assignment
 is selected using the Hungarian method to minimize:
 
 $$\textbf{PEM}(Y,\hat{Y}) = \frac{\sum_{i\in M}\left\|y_{i} -
 \hat{y}_{i}\right\|_2 + C|U|}{|M| + |U|}$$
 
-where $M$ - a set of indices of matched keypoints, $U$ - a set of indices of
+where $`M`$ - a set of indices of matched keypoints, $`U`$ - a set of indices of
 unmatched keypoints (ground truth keypoints without matching predicted keypoints
-or predicted keypoints for unmatched objects); Sets $$Y= \left\{y_i\right\}_{i
-\in M}$ and $\hat{Y} = \left\{\hat{y}_i\right\}_{i \in M}$$ are ground truth
-and predicted 3D coordinates of keypoints; $C=0.25$ - a constant penalty for
+or predicted keypoints for unmatched objects); Sets
+$`Y= \left\{y_i\right\}_{i \in M}`$ and
+$`\hat{Y} = \left\{\hat{y}_i\right\}_{i \in M}`$ are ground truth
+and predicted 3D coordinates of keypoints; $`C=0.25`$ - a constant penalty for
 an unmatched keypoint.
 
 
@@ -102,25 +103,25 @@ outputs three sets of objects:
 However, matching is complicated by the fact that not all GT objects in WOD have
 visible keypoints. To address this, two kinds of GT objects are distinguished:
 
-  - $GT_i$ - GT objects without any visible keypoints, which includes unlabeled
+  - $`GT_i`$ - GT objects without any visible keypoints, which includes unlabeled
   or heavily occluded human objects.
-  - $GT_v$ - GT boxes with at least one
+  - $`GT_v`$ - GT boxes with at least one
   visible keypoint.
 
-| ![a toy example to illustrate $GT_v$ and $GT_i$](images/pem_matching_fig.png) |
+| ![a toy example to illustrate $`GT_v`$ and $`GT_i`$](images/pem_matching_fig.png) |
 | :-: |
 | Fig 1. A toy scene |
 
 On the Fig. 1 you can see:
 
 - Ground truth objects:
-  - $GT_i$: $G_0$, $G_1$, $G_3$, $G_5$, $G_7$
-  - $GT_v$: $G_2$, $G_4$, $G_6$, $G_8$, $G_9$
+  - $`GT_i`$: $`G_0`$, $`G_1`$, $`G_3`$, $`G_5`$, $`G_7`$
+  - $`GT_v`$: $`G_2`$, $`G_4`$, $`G_6`$, $`G_8`$, $`G_9`$
 - Predicted objects:
-  $P_0$, $P_1$, $P_2$, $P_3$, $P_4$, $P_5$, $P_6$, $P_7$
+  $`P_0`$, $`P_1`$, $`P_2`$, $`P_3`$, $`P_4`$, $`P_5`$, $`P_6`$, $`P_7`$
 
-If a PR object corresponds to a $GT_i$ object, no penalty is assigned since the
-MPJPE cannot be computed for such matches. Only matches between $GT_v$ objects and
+If a PR object corresponds to a $`GT_i`$ object, no penalty is assigned since the
+MPJPE cannot be computed for such matches. Only matches between $`GT_v`$ objects and
 PR objects are considered for the computation of the PEM metric.
 
 Since computing the PEM metric for all possible matches between GT and PR is not
@@ -130,7 +131,7 @@ challenge is the
 [`MeanErrorMatcher`](src/waymo_open_dataset/metrics/python/keypoint_metrics.py),
 which computes keypoint errors for each pair of candidate matches. It has two stages:
 
-  1. When keypoints clearly fall in $GT_i$ objects (see criterion in
+  1. When keypoints clearly fall in $`GT_i`$ objects (see criterion in
     [keypoint_metrics.py](src/waymo_open_dataset/metrics/python/keypoint_metrics.py)),
     remove them from considerations, without any penalties.
   2. For all remaining candidate GTv ground truth boxes and detections pairs,
@@ -141,22 +142,22 @@ this:
 - stage #1:
     - Select pairs of GT and PR objects for which at least one PR keypoint is
       inside GT box enlarged by 25cm.
-    - assume $PEM(G_4, P_5) > C$ and $PEM(G_6, P_6) < C$
-    - should exclude: $(G_0, P_0)$, $(G_1, P_1)$, $(G_3, P_3)$,
-      $(G_5, P_5)$ pairs.
+    - assume $`PEM(G_4, P_5) > C`$ and $`PEM(G_6, P_6) < C`$
+    - should exclude: $`(G_0, P_0)`$, $`(G_1, P_1)`$, $`(G_3, P_3)`$,
+      $`(G_5, P_5)`$ pairs.
 - stage #2:
     - consider only GTv objects
-    - compute errors for candidate pairs and populate the assignment error $A$
-     (aka cost matrix): $A_{k,j}=PEM(G_k, P_j)$ for
-     $(G_2, P_2)$, $(G_4, P_5)$, $(G_6, P_6)$, $(G_8, P_7)$,
-     $(G_9, P_7)$ and set the rest of the 8x7 matrix $A=\infty$.
-    - assuming $PEM(G_9, P_7) < PEM(G_8, P_7)$, the matching assignment should
+    - compute errors for candidate pairs and populate the assignment error $`A`$
+     (aka cost matrix): $`A_{k,j}=PEM(G_k, P_j)`$ for
+     $`(G_2, P_2)`$, $`(G_4, P_5)`$, $`(G_6, P_6)`$, $`(G_8, P_7)`$,
+     $`(G_9, P_7)`$ and set the rest of the 8x7 matrix $`A=\infty`$.
+    - assuming $`PEM(G_9, P_7) < PEM(G_8, P_7)`$, the matching assignment should
      output the following pairs:
-      $(G_1, P_1)$, $(G_2, P_2)$, $(G_6, P_6)$, $(G_9, P_7)$
+      $`(G_1, P_1)`$, $`(G_2, P_2)`$, $`(G_6, P_6)`$, $`(G_9, P_7)`$
 - the final output of the matcher should be:
-      $(G_2, P_2)$, $(G_6, P_6)$, $(G_9, P_7)$,
-      $(G_4, \emptyset)$, $(G_8, \emptyset)$,
-      $(\emptyset, P_4)$
+      $`(G_2, P_2)`$, $`(G_6, P_6)`$, $`(G_9, P_7)`$,
+      $`(G_4, \emptyset)`$, $`(G_8, \emptyset)`$,
+      $`(\emptyset, P_4)`$
 
 For the PEM metric, each ground-truth box – GTV and GTi – can only be
 associated with a maximum of 1 detection. To maximize your PEM scores, you are
