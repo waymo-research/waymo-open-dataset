@@ -81,8 +81,11 @@ py_binary(
     deps = [
         requirement("matplotlib"),
         requirement("numpy"),
+        requirement("plotly"),
         requirement("tensorflow"),
         requirement("tensorflow_graphics"),
+        requirement("visu3d"),  # TODO(b/284405255): add copybara rules
+        "//waymo_open_dataset/utils:camera_segmentation_utils",
         "//waymo_open_dataset/v2",
     ],
 )

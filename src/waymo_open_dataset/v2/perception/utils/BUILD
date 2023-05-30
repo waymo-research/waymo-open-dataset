@@ -22,6 +22,14 @@ py_library(
     ],
 )
 
+py_library(
+    name = "object_asset_utils",
+    srcs = ["object_asset_utils.py"],
+    deps = [
+        requirement("numpy"),
+    ],
+)
+
 py_test(
     name = "lidar_utils_test",
     srcs = ["lidar_utils_test.py"],

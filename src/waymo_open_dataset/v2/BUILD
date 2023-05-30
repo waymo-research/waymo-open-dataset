@@ -17,9 +17,11 @@ py_library(
         "//waymo_open_dataset/v2/perception:context",
         "//waymo_open_dataset/v2/perception:keypoints",
         "//waymo_open_dataset/v2/perception:lidar",
+        "//waymo_open_dataset/v2/perception:object_asset",
         "//waymo_open_dataset/v2/perception:pose",
         "//waymo_open_dataset/v2/perception:segmentation",
         "//waymo_open_dataset/v2/perception/utils:lidar_utils",
+        "//waymo_open_dataset/v2/perception/utils:object_asset_utils",
     ],
 )
 

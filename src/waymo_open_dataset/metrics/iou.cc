@@ -94,6 +94,10 @@ double CenterVectorLength(const Label::Box& box) {
   return sqrt(CenterVectorLengthSquare(box));
 }
 
+}  // namespace
+
+Polygon2d ToPolygon2d(const Label::Box& box) { return Polygon2d(ToBox2d(box)); }
+
 // Apply translation to a 3D box proto.
 Label::Box TranslateBox(const Label::Box& box, const double& t_x,
                         const double& t_y, const double& t_z) {
@@ -103,9 +107,6 @@ Label::Box TranslateBox(const Label::Box& box, const double& t_x,
   translated_box.set_center_z(box.center_z() + t_z);
   return translated_box;
 }
-}  // namespace
-
-Polygon2d ToPolygon2d(const Label::Box& box) { return Polygon2d(ToBox2d(box)); }
 
 namespace {
 double ComputeIoU2d(const Label::Box& b1, const Label::Box& b2) {

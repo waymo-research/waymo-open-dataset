@@ -9,6 +9,7 @@ absl-py==1.4.0 \
     --hash=sha256:d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d
     # via
     #   -r waymo_open_dataset/requirements.in
+    #   etils
     #   tensorboard
     #   tensorflow
     #   tensorflow-datasets
@@ -185,6 +186,10 @@ dask[dataframe]==2023.3.1 \
     --hash=sha256:4a83c05760aedb7deeee8c16d24479292635a1ded6c3f803bf6c3d94ec9e7d20 \
     --hash=sha256:62d334012d7cd814186931ea83ebf1a6231c2af4260ad204dc78080a55947c17
     # via -r waymo_open_dataset/requirements.in
+dataclass-array==1.4.1 \
+    --hash=sha256:06400440f5a903f26946952279a10014dfe2eceea8d7149940a363ec4c824d9a \
+    --hash=sha256:b9e654dfb2bd2dc6412bd5b7c66ed3c04fb3e13821fc40a61188128801f00919
+    # via visu3d
 decorator==5.1.1 \
     --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
     --hash=sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186
@@ -232,14 +237,23 @@ dm-tree==0.1.8 \
     # via
     #   tensorflow-datasets
     #   tensorflow-probability
+einops==0.6.1 \
+    --hash=sha256:99149e46cc808956b174932fe563d920db4d6e5dadb8c6ecdaa7483b7ef7cfc3 \
+    --hash=sha256:f95f8d00f4ded90dbc4b19b6f98b177332614b0357dde66997f3ae5d474dc8c8
+    # via
+    #   dataclass-array
+    #   visu3d
 einsum==0.3.0 \
     --hash=sha256:6d2b1f7932879d630969bfb599e09f8448dcbc38a2be6cee192b8a1ae02c52dc \
     --hash=sha256:e19db2c02ad5ea8acf2926a9eab995ec1802a9db0bb39646d71e96f7cec14e31
     # via -r waymo_open_dataset/requirements.in
-etils[enp,epath,epy]==1.1.0 \
+etils[array-types,edc,enp,epath,epy,etqdm,etree]==1.1.0 \
     --hash=sha256:7a2a4950779a281ef4c7e595ae215990b15c1d8c6f8b0a27850092af5ad2c641 \
     --hash=sha256:b994873778574aa803ffe6e84aaa2a3880f44f776a2bd542a28c62bf4ffa0db5
-    # via tensorflow-datasets
+    # via
+    #   dataclass-array
+    #   tensorflow-datasets
+    #   visu3d
 flatbuffers==23.3.3 \
     --hash=sha256:5ad36d376240090757e8f0a2cfaf6abcc81c6536c0dc988060375fd0899121f8 \
     --hash=sha256:cabd87c4882f37840f6081f094b2c5bc28cefc2a6357732746936d055ab45c3d
@@ -449,6 +463,10 @@ kiwisolver==1.4.4 \
     --hash=sha256:f8ad8285b01b0d4695102546b342b493b3ccc6781fc28c8c6a1bb63e95d22f09 \
     --hash=sha256:f9f39e2f049db33a908319cf46624a569b36983c7c78318e9726a4cb8923b26c
     # via matplotlib
+lark==1.1.5 \
+    --hash=sha256:4b534eae1f9af5b4ea000bea95776350befe1981658eea3820a01c37e504bb4d \
+    --hash=sha256:8476f9903e93fbde4f6c327f74d79e9b4bd0ed9294c5dfa3164ab8c581b5de2a
+    # via dataclass-array
 lazy-loader==0.1 \
     --hash=sha256:623bd4831a40ce659d74472af40a58d016f2a5a047685409affbc2ba5c044641 \
     --hash=sha256:77ce7f2737ebabf9c0ff73b4a99c947876d74d24c2f026544e32246ecca5feca
@@ -609,6 +627,7 @@ numpy==1.21.5 \
     #   -r waymo_open_dataset/requirements.in
     #   contourpy
     #   dask
+    #   dataclass-array
     #   etils
     #   h5py
     #   imageio
@@ -627,6 +646,7 @@ numpy==1.21.5 \
     #   tensorflow-probability
     #   tifffile
     #   trimesh
+    #   visu3d
 oauthlib==3.2.2 \
     --hash=sha256:8139f29aac13e25d502680e9e19963e83f16838d48a0d71c287fe40e7067fbca \
     --hash=sha256:9859c40929662bec5d64f34d01c99e093149682a3f38915dc0655d5a633dd918
@@ -1159,6 +1179,7 @@ tqdm==4.65.0 \
     --hash=sha256:1871fb68a86b8fb3b59ca4cdd3dcccbc7e6d613eeed31f4c332531977b89beb5 \
     --hash=sha256:c4f53a17fe37e132815abceec022631be8ffe1b9381c2e6e30aa70edc99e9671
     # via
+    #   etils
     #   tensorflow-datasets
     #   tensorflow-graphics
 trimesh==3.20.2 \
@@ -1173,13 +1194,19 @@ typing-extensions==4.5.0 \
     --hash=sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb \
     --hash=sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4
     # via
+    #   dataclass-array
     #   etils
     #   tensorflow
     #   typeguard
+    #   visu3d
 urllib3==1.26.15 \
     --hash=sha256:8a388717b9476f934a21484e8c8e61875ab60644d29b9b39e11e4b9dc1c6b305 \
     --hash=sha256:aa751d169e23c7479ce47a0cb0da579e3ede798f994f5816a74e4f4500dcea42
     # via requests
+visu3d==1.5.1 \
+    --hash=sha256:5fb2c2dd5cc07fad27865ffb35f54ac8bff99894277217327c2bca7c96ca65cf \
+    --hash=sha256:76e5de14dd3170fb5bf75987b0eda6ba1689125ce06ef2169ffeb085264bed4c
+    # via -r waymo_open_dataset/requirements.in
 werkzeug==2.2.3 \
     --hash=sha256:2e1ccc9417d4da358b9de6f174e3ac094391ea1d4fbef2d667865d819dfd0afe \
     --hash=sha256:56433961bc1f12533306c624f3be5e744389ac61d722175d543e1751285da612
