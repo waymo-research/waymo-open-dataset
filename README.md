@@ -115,6 +115,8 @@ This code repository contains:
 
 ## Citation
 ### for Perception dataset
+
+```bib
 @InProceedings{Sun_2020_CVPR,
   author = {Sun, Pei and Kretzschmar, Henrik and Dotiwalla, Xerxes and Chouard, Aurelien and Patnaik, Vijaysai and Tsui, Paul and Guo, James and Zhou, Yin and Chai, Yuning and Caine, Benjamin and Vasudevan, Vijay and Han, Wei and Ngiam, Jiquan and Zhao, Hang and Timofeev, Aleksei and Ettinger, Scott and Krivokon, Maxim and Gao, Amy and Joshi, Aditya and Zhang, Yu and Shlens, Jonathon and Chen, Zhifeng and Anguelov, Dragomir},
   title = {Scalability in Perception for Autonomous Driving: Waymo Open Dataset},
@@ -122,17 +124,22 @@ This code repository contains:
   month = {June},
   year = {2020}
 }
+```
 
 ### for Motion dataset
+
+```bib
 @InProceedings{Ettinger_2021_ICCV,
   author={Ettinger, Scott and Cheng, Shuyang and Caine, Benjamin and Liu, Chenxi and Zhao, Hang and Pradhan, Sabeek and Chai, Yuning and Sapp, Ben and Qi, Charles R. and Zhou, Yin and Yang, Zoey and Chouard, Aur\'elien and Sun, Pei and Ngiam, Jiquan and Vasudevan, Vijay and McCauley, Alexander and Shlens, Jonathon and Anguelov, Dragomir},
   title={Large Scale Interactive Motion Forecasting for Autonomous Driving: The Waymo Open Motion Dataset},
-  booktitle= Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
   month={October},
   year={2021},
   pages={9710-9719}
 }
+```
 
+```bib
 @article{Kan_2023_arxiv,
   author={Chen, Kan and Ge, Runzhou and Qiu, Hang and Ai-Rfou, Rami and Qi, Charles R. and Zhou, Xuanyu and Yang, Zoey and Ettinger, Scott and Sun, Pei and Leng, Zhaoqi and Mustafa, Mustafa and Bogun, Ivan and Wang, Weiyue and Tan, Mingxing and Anguelov, Dragomir},
   title={WOMD-LiDAR: Raw Sensor Dataset Benchmark for Motion Forecasting},
@@ -140,6 +147,7 @@ This code repository contains:
   journal={arXiv preprint arXiv:2304.03834},
   year={2023}
 }
+```
 
 ## Dataset Metadata
 The following table is necessary for this dataset to be indexed by search
