@@ -213,3 +213,25 @@ def transform_directions_to_box_coord(
   heading = box_3d[-1]
   output_dir = rotate_points_along_z(output_dir, -1 * heading)
   return output_dir.astype(dtype)
+
+
+def transform_points_to_box_coord_reverse(
+    point_cloud: np.ndarray, box_3d: np.ndarray) -> np.ndarray:
+  """Transform a point cloud to the 3D box coordinate.
+
+  The input point cloud and box are in the same coordinate system.
+  The box coordinate means that the box center is the origin, the box
+  heading direction is the +X. The +Z stays the same as the original coord.
+
+  Args:
+    point_cloud: (N, 3) numpy array with XYZ in the 3 channels.
+    box_3d: A (7,) shape numpy array with cx,cy,cz,l,w,h,heading.
+
+  Returns:
+    output_pc: (N, 3) numpy array with transformed XYZ.
+  """
+  dtype = point_cloud.dtype
+  heading = box_3d[-1]
+  output_pc = rotate_points_along_z(point_cloud.astype(np.float64), heading)
+  output_pc = output_pc + box_3d[None, 0:3]
+  return output_pc.astype(dtype)

@@ -28,7 +28,8 @@ from waymo_open_dataset.v2.perception import object_asset
 from waymo_open_dataset.v2.perception import pose as _pose
 from waymo_open_dataset.v2.perception import segmentation as _segmentation
 from waymo_open_dataset.v2.perception.utils import lidar_utils as _lidar_utils
-from waymo_open_dataset.v2.perception.utils import object_asset_utils as _object_asset_utils
+from waymo_open_dataset.v2.perception.utils import object_asset_codec as _object_asset_codec
+from waymo_open_dataset.v2.perception.utils import object_asset_utils
 
 
 # Supported components.
@@ -54,7 +55,13 @@ VehiclePoseComponent = _pose.VehiclePoseComponent
 ObjectAssetAutoLabelComponent = object_asset.ObjectAssetAutoLabelComponent
 ObjectAssetCameraSensorComponent = object_asset.ObjectAssetCameraSensorComponent
 ObjectAssetLiDARSensorComponent = object_asset.ObjectAssetLiDARSensorComponent
+ObjectAssetRefinedPoseComponent = object_asset.ObjectAssetRefinedPoseComponent
 ObjectAssetRayComponent = object_asset.ObjectAssetRayComponent
+ObjectAssetRayCompressedComponent = (
+    object_asset.ObjectAssetRayCompressedComponent
+)
+ObjectAssetRayCodec = _object_asset_codec.ObjectAssetRayCodec
+ObjectAssetRayCodecConfig = _object_asset_codec.ObjectAssetRayCodecConfig
 
 
 # Types and classes
@@ -95,6 +102,7 @@ TAG_BY_COMPONENT = {
     ObjectAssetAutoLabelComponent: 'object_asset_auto_label',
     ObjectAssetCameraSensorComponent: 'object_asset_camera_sensor',
     ObjectAssetLiDARSensorComponent: 'object_asset_lidar_sensor',
+    ObjectAssetRefinedPoseComponent: 'object_asset_refined_pose',
     ObjectAssetRayComponent: 'object_asset_ray',
 }
 

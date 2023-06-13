@@ -84,7 +84,7 @@ py_binary(
         requirement("plotly"),
         requirement("tensorflow"),
         requirement("tensorflow_graphics"),
-        requirement("visu3d"),  # TODO(b/284405255): add copybara rules
+        requirement("visu3d"),
         "//waymo_open_dataset/utils:camera_segmentation_utils",
         "//waymo_open_dataset/v2",
     ],

@@ -21,6 +21,7 @@ py_library(
         "//waymo_open_dataset/v2/perception:pose",
         "//waymo_open_dataset/v2/perception:segmentation",
         "//waymo_open_dataset/v2/perception/utils:lidar_utils",
+        "//waymo_open_dataset/v2/perception/utils:object_asset_codec",
         "//waymo_open_dataset/v2/perception/utils:object_asset_utils",
     ],
 )
@@ -29,8 +30,19 @@ py_library(
     name = "column_types",
     srcs = ["column_types.py"],
     deps = [
+        requirement("numpy"),
         requirement("pyarrow"),
         ":component",
+    ],
+)
+
+py_test(
+    name = "column_types_test",
+    srcs = ["column_types_test.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        ":column_types",
     ],
 )
 

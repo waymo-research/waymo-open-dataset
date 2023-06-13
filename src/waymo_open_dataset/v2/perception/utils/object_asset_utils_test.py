@@ -48,6 +48,21 @@ class ObjectAssetUtilsTest(absltest.TestCase):
     )
     np.testing.assert_allclose(points_xyz_new, points_xyz, rtol=1e-6)
 
+  def test_transform_points_to_box_coord_round_trip(self):
+    points_xyz = np.array(
+        [[0.1, 0.3, 0.2], [10.5, -0.9, 4.3], [0.5, -0.7, 1.5]]
+    )
+    box_3d = np.asarray(
+        [2.0, 2.0, 0.5, 4.2, 1.8, 1.6, np.pi / 4.0], dtype=np.float32
+    )
+    points_xyz_tfm = object_asset_utils.transform_points_to_box_coord(
+        points_xyz, box_3d
+    )
+    points_xyz_final = object_asset_utils.transform_points_to_box_coord_reverse(
+        points_xyz_tfm, box_3d
+    )
+    np.testing.assert_almost_equal(points_xyz_final, points_xyz, decimal=6)
+
   def test_transform_directions_to_frame_identity_transform(self):
     directions = np.array(
         [[0.7071, -0.7071, 0.0], [0, -1.0, 0.0], [0.0, -0.7071, -0.7071]]

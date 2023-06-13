@@ -105,6 +105,7 @@ py_library(
     name = "object_asset",
     srcs = ["object_asset.py"],
     deps = [
+        requirement("numpy"),
         requirement("pyarrow"),
         requirement("tensorflow"),
         ":base",
@@ -118,7 +119,9 @@ py_test(
     srcs = ["object_asset_test.py"],
     deps = [
         requirement("absl-py"),
+        requirement("numpy"),
         requirement("pyarrow"),
+        requirement("tensorflow"),
         ":base",
         ":camera_image",
         ":object_asset",
