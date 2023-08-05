@@ -28,10 +28,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # ==============================================================================
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 
 from google.protobuf import text_format
@@ -41,7 +37,37 @@ from waymo_open_dataset.wdl_limited.camera.ops import py_camera_model_ops
 
 class CameraModelOpsTest(tf.test.TestCase):
 
-  def _BuildInput(self):
+  def setUp(self):
+    super().setUp()
+    calibration, image = self._build_input()
+    extrinsic = tf.reshape(
+        tf.constant(list(calibration.extrinsic.transform), dtype=tf.float32),
+        [4, 4],
+    )
+    intrinsic = tf.constant(list(calibration.intrinsic), dtype=tf.float32)
+    metadata = tf.constant(
+        [
+            calibration.width,
+            calibration.height,
+            calibration.rolling_shutter_direction,
+        ],
+        dtype=tf.int32,
+    )
+    camera_image_metadata = list(image.pose.transform) + [
+        image.velocity.v_x,
+        image.velocity.v_y,
+        image.velocity.v_z,
+        image.velocity.w_x,
+        image.velocity.w_y,
+        image.velocity.w_z,
+        image.pose_timestamp,
+        image.shutter,
+        image.camera_trigger_time,
+        image.camera_readout_done_time,
+    ]
+    self.params = [extrinsic, intrinsic, metadata, camera_image_metadata]
+
+  def _build_input(self):
     """Builds input."""
     calibration = dataset_pb2.CameraCalibration()
     image = dataset_pb2.CameraImage()
@@ -116,43 +142,19 @@ class CameraModelOpsTest(tf.test.TestCase):
     text_format.Merge(image_text, image)
     return calibration, image
 
-  def testCameraModel(self):
-    calibration, image = self._BuildInput()
-    g = tf.Graph()
-    with g.as_default():
-      extrinsic = tf.reshape(
-          tf.constant(list(calibration.extrinsic.transform), dtype=tf.float32),
-          [4, 4])
-      intrinsic = tf.constant(list(calibration.intrinsic), dtype=tf.float32)
-      metadata = tf.constant([
-          calibration.width, calibration.height,
-          calibration.rolling_shutter_direction
-      ],
-                             dtype=tf.int32)
-      camera_image_metadata = list(image.pose.transform)
-      camera_image_metadata.append(image.velocity.v_x)
-      camera_image_metadata.append(image.velocity.v_y)
-      camera_image_metadata.append(image.velocity.v_z)
-      camera_image_metadata.append(image.velocity.w_x)
-      camera_image_metadata.append(image.velocity.w_y)
-      camera_image_metadata.append(image.velocity.w_z)
-      camera_image_metadata.append(image.pose_timestamp)
-      camera_image_metadata.append(image.shutter)
-      camera_image_metadata.append(image.camera_trigger_time)
-      camera_image_metadata.append(image.camera_readout_done_time)
-      image_points = tf.constant([[100, 1000, 20], [150, 1000, 20]],
-                                 dtype=tf.float32)
+  def test_camera_model(self):
+    image_points = tf.constant(
+        [[100, 1000, 20], [150, 1000, 20]], dtype=tf.float32
+    )
 
-      global_points = py_camera_model_ops.image_to_world(
-          extrinsic, intrinsic, metadata, camera_image_metadata, image_points)
-      image_points_t = py_camera_model_ops.world_to_image(
-          extrinsic, intrinsic, metadata, camera_image_metadata, global_points)
+    global_points = py_camera_model_ops.image_to_world(
+        *self.params, image_points
+    )
+    image_points_t = py_camera_model_ops.world_to_image(
+        *self.params, global_points
+    )
 
     self.assertEqual(image_points_t.shape[-1], 3)
-
-    with self.test_session(graph=g) as sess:
-      image_points, image_points_t, global_points = sess.run(
-          [image_points, image_points_t, global_points])
 
     self.assertAllClose(
         global_points, [[-4091.97180, 11527.48092, 84.46586],
@@ -161,79 +163,33 @@ class CameraModelOpsTest(tf.test.TestCase):
     self.assertAllClose(image_points_t[:, 0:2], image_points[:, 0:2], atol=0.1)
     self.assertAllClose(image_points_t[:, 2], [1.0, 1.0])
 
-  def testWorldToImageMovingPoint(self):
-    calibration, image = self._BuildInput()
-    g = tf.Graph()
-    with g.as_default():
-      extrinsic = tf.reshape(
-          tf.constant(list(calibration.extrinsic.transform), dtype=tf.float32),
-          [4, 4],
-      )
-      intrinsic = tf.constant(list(calibration.intrinsic), dtype=tf.float32)
-      metadata = tf.constant(
-          [
-              calibration.width,
-              calibration.height,
-              calibration.rolling_shutter_direction,
-          ],
-          dtype=tf.int32,
-      )
-      camera_image_metadata = list(image.pose.transform)
-      camera_image_metadata.append(image.velocity.v_x)
-      camera_image_metadata.append(image.velocity.v_y)
-      camera_image_metadata.append(image.velocity.v_z)
-      camera_image_metadata.append(image.velocity.w_x)
-      camera_image_metadata.append(image.velocity.w_y)
-      camera_image_metadata.append(image.velocity.w_z)
-      camera_image_metadata.append(image.pose_timestamp)
-      camera_image_metadata.append(image.shutter)
-      camera_image_metadata.append(image.camera_trigger_time)
-      camera_image_metadata.append(image.camera_readout_done_time)
-      image_points = tf.constant(
-          [[100, 1000, 20], [150, 1000, 20]], dtype=tf.float32
-      )
-      global_points = py_camera_model_ops.image_to_world(
-          extrinsic, intrinsic, metadata, camera_image_metadata, image_points
-      )
-      global_velocity = tf.constant(
-          [[10.0, -10.0, 2.0], [-3.5, 11.0, 2.5]], dtype=tf.float32
-      )
-      zero_velocity = tf.constant(
-          [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=tf.float32
-      )
+  def test_world_to_image_moving_point(self):
+    image_points = tf.constant(
+        [[100, 1000, 20], [150, 1000, 20]], dtype=tf.float32
+    )
+    global_points = py_camera_model_ops.image_to_world(
+        *self.params, image_points
+    )
+    global_velocity = tf.constant(
+        [[10.0, -10.0, 2.0], [-3.5, 11.0, 2.5]], dtype=tf.float32
+    )
+    zero_velocity = tf.constant(
+        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], dtype=tf.float32
+    )
 
-      image_points_with_zero_velocity_t = (
-          py_camera_model_ops.world_to_image_moving_point(
-              extrinsic,
-              intrinsic,
-              metadata,
-              camera_image_metadata,
-              global_points,
-              zero_velocity,
-          )
-      )
-      image_points_with_nonzero_velocity_t = (
-          py_camera_model_ops.world_to_image_moving_point(
-              extrinsic,
-              intrinsic,
-              metadata,
-              camera_image_metadata,
-              global_points,
-              global_velocity,
-          )
-      )
+    image_points_with_zero_velocity_t = (
+        py_camera_model_ops.world_to_image_moving_point(
+            *self.params, global_points, zero_velocity
+        )
+    )
+    image_points_with_nonzero_velocity_t = (
+        py_camera_model_ops.world_to_image_moving_point(
+            *self.params, global_points, global_velocity
+        )
+    )
 
     self.assertEqual(image_points_with_zero_velocity_t.shape[-1], 3)
     self.assertEqual(image_points_with_nonzero_velocity_t.shape[-1], 3)
-
-    with self.test_session(graph=g) as sess:
-      image_points_with_zero_velocity_t = sess.run(
-          image_points_with_zero_velocity_t
-      )
-      image_points_with_nonzero_velocity_t = sess.run(
-          image_points_with_nonzero_velocity_t
-      )
-
     self.assertAllClose(
         image_points_with_zero_velocity_t[:, 0:2],
         image_points[:, 0:2],
@@ -247,5 +203,4 @@ class CameraModelOpsTest(tf.test.TestCase):
 
 
 if __name__ == '__main__':
-  tf.compat.v1.disable_eager_execution()
   tf.test.main()

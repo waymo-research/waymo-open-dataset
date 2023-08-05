@@ -55,11 +55,11 @@ py_library(
     srcs = ["pca_codec.py"],
     srcs_version = "PY3",
     deps = [
+        requirement("dacite"),
         requirement("numpy"),
         requirement("scikit-learn"),
         requirement("tensorflow"),
         ":tiling",
-        "//third_party/py/dacite",
     ],
 )
 

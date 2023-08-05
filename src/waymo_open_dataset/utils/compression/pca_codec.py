@@ -55,7 +55,7 @@ def fit_pca(
   It is convenience wrapper for sklearn methods.
 
   Args:
-    data: an array with shape [num_samples, num_featutures].
+    data: an array with shape [num_samples, num_features].
     num_components: number of PCA componenents to use.
 
   Returns:
@@ -78,7 +78,7 @@ class Pca:
 
   def __init__(self, params: PcaParams):
     # shape: [1, input_dims]
-    # Use float64 to avoid loosing precision due to numerical issues.
+    # Use float64 to avoid losing precision due to numerical issues.
     to_tensor = lambda x: tf.convert_to_tensor(x, dtype=tf.float64)
     self._mean = to_tensor(params.mean)[tf.newaxis, :]
     # shape: [1, input_dims]
@@ -101,7 +101,6 @@ def bucketed_quantization(
   """Returns quantization factors based on number of buckets for each dimension.
 
   It is a heuristic method to determine quantization factors for the Codec.
-  See https://colab.corp.google.com/drive/1wNJ5nMVsoNtC9aOjVQvD37OLfzapf-TH
 
   Args:
     data: an array with shape [n_samples, dims].

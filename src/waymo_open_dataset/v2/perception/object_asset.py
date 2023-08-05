@@ -236,15 +236,16 @@ class ObjectAssetRayCompressedComponent(component.Component):
   `ObjectAssetRayComponent` into `ObjectAssetRayCompressedComponent` and decode
   back.
 
-  The codec implements a lossy compression and depending on which parameters
-  were used to compress the data a compression ratio (comressed size divided by
-  uncompressed size) could reach ~0.07 - a drastic decreases size of the
-  dataset, while adding a small error (~1e-5 m) to ray origins and directions.
-  Which should be acceptable for most applications.
+  The codec implements a lossy compression algorithm. Depending on which
+  parameters were used to compress the data the compression ratio could reach
+  ~0.07. This results in a significant reduction in dataset size, while
+  introducing a negligible error (~1e-5 m) in ray origins and directions. This
+  level of error is generally deemed acceptable for most applications.
 
   Attributes:
-    reference: A reference value used to decompress camera ray origin and
-      direction. It is an implementation detail and should not be used directly.
+    reference: A reference value used to decompress camera ray origins and
+      directions. It is an implementation detail and should not be used
+      directly.
     quantized_values: compressed data.
     shape: shape of the original data.
   """

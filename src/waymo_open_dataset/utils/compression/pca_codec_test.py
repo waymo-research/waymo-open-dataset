@@ -38,7 +38,9 @@ class UtilsTest(tf.test.TestCase):
     # to be able to reconstruct the input.
     num_components = 20
 
-    sklearn_pipeline, pca = _lib.Pca(_lib.fit_pca(data, num_components))
+    sklearn_pipeline, pca_params = _lib.fit_pca(data, num_components)
+    pca = _lib.Pca(pca_params)
+
     data_tr = pca.transform(data)
     data_rec = pca.inverse_transform(data_tr)
 

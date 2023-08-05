@@ -133,7 +133,7 @@ class Box3d:
   size: Vec3d = _column()
   heading: float = _column(arrow_type=pa.float64())
 
-  def numpy(self, dtype: np.dtype) -> np.ndarray:
+  def numpy(self, dtype: type(np.dtype)) -> np.ndarray:
     """Return a numpy array, in the order of center, size, heading."""
     return np.asarray(
         [

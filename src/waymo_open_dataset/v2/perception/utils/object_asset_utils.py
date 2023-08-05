@@ -171,7 +171,7 @@ def rotate_points_along_z(points, rot_angle):
 
 
 def transform_points_to_box_coord(point_cloud, box_3d):
-  """Transform a point cloud to the 3D box coordinate.
+  """Transform a point cloud to coordinates relative to the 3D box.
 
   The input point cloud and box are in the same coordinate system.
   The box coordinate means that the box center is the origin, the box
@@ -194,7 +194,7 @@ def transform_points_to_box_coord(point_cloud, box_3d):
 def transform_directions_to_box_coord(
     directions: np.ndarray, box_3d: np.ndarray
 ) -> np.ndarray:
-  """Transforms normalized directions to the 3D box coordinate.
+  """Transforms normalized directions to coordinates relative to the 3D box.
 
   The input direction and box are in the same coordinate system.
   The box coordinate means that the box center is the origin, the box

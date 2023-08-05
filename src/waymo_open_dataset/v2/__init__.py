@@ -28,7 +28,7 @@ from waymo_open_dataset.v2.perception import object_asset
 from waymo_open_dataset.v2.perception import pose as _pose
 from waymo_open_dataset.v2.perception import segmentation as _segmentation
 from waymo_open_dataset.v2.perception.utils import lidar_utils as _lidar_utils
-from waymo_open_dataset.v2.perception.utils import object_asset_codec as _object_asset_codec
+from waymo_open_dataset.v2.perception.utils import object_asset_codec
 from waymo_open_dataset.v2.perception.utils import object_asset_utils
 
 
@@ -60,8 +60,8 @@ ObjectAssetRayComponent = object_asset.ObjectAssetRayComponent
 ObjectAssetRayCompressedComponent = (
     object_asset.ObjectAssetRayCompressedComponent
 )
-ObjectAssetRayCodec = _object_asset_codec.ObjectAssetRayCodec
-ObjectAssetRayCodecConfig = _object_asset_codec.ObjectAssetRayCodecConfig
+ObjectAssetRayCodec = object_asset_codec.ObjectAssetRayCodec
+ObjectAssetRayCodecConfig = object_asset_codec.ObjectAssetRayCodecConfig
 
 
 # Types and classes
@@ -104,6 +104,7 @@ TAG_BY_COMPONENT = {
     ObjectAssetLiDARSensorComponent: 'object_asset_lidar_sensor',
     ObjectAssetRefinedPoseComponent: 'object_asset_refined_pose',
     ObjectAssetRayComponent: 'object_asset_ray',
+    ObjectAssetRayCompressedComponent: 'object_asset_ray_compressed',
 }
 
 ALL_COMPONENTS = list(TAG_BY_COMPONENT.keys())
