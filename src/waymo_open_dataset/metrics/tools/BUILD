@@ -1,3 +1,5 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
+
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [

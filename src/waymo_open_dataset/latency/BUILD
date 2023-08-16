@@ -1,3 +1,4 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@wod_deps//:requirements.bzl", "requirement")
 
 package(

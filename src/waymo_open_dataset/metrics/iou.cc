@@ -296,6 +296,12 @@ Label::Box AlignedPredictionBox(
       aligned_prediction_box.set_center_x(ground_truth_box.center_x());
       aligned_prediction_box.set_center_y(ground_truth_box.center_y());
       break;
+    case Config::LongitudinalErrorTolerantConfig::
+        TYPE_ANY_CLOSER_ONLY_RANGE_ALIGNED:
+    case Config::LongitudinalErrorTolerantConfig::
+        TYPE_FURTHER_ONLY_RANGE_ALIGNED:
+    case Config::LongitudinalErrorTolerantConfig::
+        TYPE_BETWEEN_ORIGIN_AND_GT_ONLY_RANGE_ALIGNED:
     case Config::LongitudinalErrorTolerantConfig::TYPE_RANGE_ALIGNED: {
       // To move the prediction box's center along the line of sight so that
       // it has the closest distance to the ground truth box's center, the
@@ -311,12 +317,29 @@ Label::Box AlignedPredictionBox(
       const double pd_range_sq =
           std::max(CenterVectorLengthSquare(prediction_box), kEpsilon);
       const double range_multiplier = gt_dot_pd / pd_range_sq;
+      double clamped_multiplier = range_multiplier;
+      if (align_type == Config::LongitudinalErrorTolerantConfig::
+                            TYPE_FURTHER_ONLY_RANGE_ALIGNED) {
+        clamped_multiplier = range_multiplier < 1.0 && range_multiplier >= 0.0
+                                 ? range_multiplier
+                                 : 1.0;
+      } else if (align_type == Config::LongitudinalErrorTolerantConfig::
+                                   TYPE_ANY_CLOSER_ONLY_RANGE_ALIGNED) {
+        clamped_multiplier = range_multiplier < 1.0 && range_multiplier >= 0.0
+                                 ? 1.0
+                                 : range_multiplier;
+      } else if (align_type ==
+                 Config::LongitudinalErrorTolerantConfig::
+                     TYPE_BETWEEN_ORIGIN_AND_GT_ONLY_RANGE_ALIGNED) {
+        clamped_multiplier = std::max(range_multiplier, 1.0);
+      }
+
       aligned_prediction_box.set_center_x(prediction_box.center_x() *
-                                          range_multiplier);
+                                          clamped_multiplier);
       aligned_prediction_box.set_center_y(prediction_box.center_y() *
-                                          range_multiplier);
+                                          clamped_multiplier);
       aligned_prediction_box.set_center_z(prediction_box.center_z() *
-                                          range_multiplier);
+                                          clamped_multiplier);
       break;
     }
     case Config::LongitudinalErrorTolerantConfig::TYPE_UNKNOWN:
