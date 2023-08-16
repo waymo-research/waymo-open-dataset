@@ -26,6 +26,15 @@ compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
 [wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
 respectively, for details.
 
+## August 2023 Update
+We released a large-scale object-centric asset dataset containing over 1.2M images and lidar observations of two major categories (vehicles and pedestrians) from the Perception Dataset (v2.0.0).
+
+ * Extracted perception objects from multi-sensor data: all five cameras and the top lidar.
+ * Lidar features include 3D point cloud sequences that support 3D object shape reconstruction. We additionally provide refined box pose through point cloud shape registration for all vehicle objects.
+ * Camera features include sequences of camera patches from the `most_visible_camera`, projected lidar returns on the corresponding camera, per-pixel camera rays information, and auto-labeled 2D panoptic segmentation that supports object NeRF reconstruction.
+ * Added a [tutorial](tutorial/tutorial_object_asset.ipynb) and supporting code.
+
+
 ## March 2023 Update
 This major update includes supporting code to four challenges at waymo.com/open, and dataset updates to both the Perception and Motion Datasets.
 

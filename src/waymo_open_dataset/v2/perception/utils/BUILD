@@ -22,6 +22,14 @@ py_library(
     ],
 )
 
+py_library(
+    name = "object_asset_utils",
+    srcs = ["object_asset_utils.py"],
+    deps = [
+        requirement("numpy"),
+    ],
+)
+
 py_test(
     name = "lidar_utils_test",
     srcs = ["lidar_utils_test.py"],
@@ -41,5 +49,41 @@ py_test(
         "//waymo_open_dataset/v2/perception:pose",
         "//waymo_open_dataset/v2/perception:segmentation",
         "//waymo_open_dataset/v2/perception/compat_v1:interfaces",
+    ],
+)
+
+py_test(
+    name = "object_asset_utils_test",
+    srcs = ["object_asset_utils_test.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        ":object_asset_utils",
+    ],
+)
+
+py_library(
+    name = "object_asset_codec",
+    srcs = ["object_asset_codec.py"],
+    deps = [
+        requirement("numpy"),
+        requirement("pandas"),
+        requirement("tensorflow"),
+        "//waymo_open_dataset/utils/compression:pca_codec",
+        "//waymo_open_dataset/v2/perception:object_asset",
+    ],
+)
+
+py_test(
+    name = "object_asset_codec_test",
+    srcs = ["object_asset_codec_test.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("pandas"),
+        ":object_asset_codec",
+        "//waymo_open_dataset/utils/compression:pca_codec",
+        "//waymo_open_dataset/v2/perception:base",
+        "//waymo_open_dataset/v2/perception:object_asset",
     ],
 )

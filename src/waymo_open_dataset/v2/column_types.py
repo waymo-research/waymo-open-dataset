@@ -20,6 +20,8 @@ columnar format where each column contains all values for a field from the
 collection. See docstring of the `Component` class for more details.
 """
 import dataclasses
+
+import numpy as np
 import pyarrow as pa
 
 from waymo_open_dataset.v2 import component
@@ -55,11 +57,22 @@ class Vec3s:
 
 @dataclasses.dataclass(frozen=True)
 class Vec3d:
-  """A dataclass to store double-typed coordinates of a 3D vector."""
+  """A dataclass to store double-typed coordinates of a 3D vector.
+
+  Attributes:
+    x: A float, indicating the X coordinate of the 3D vector.
+    y: A float, indicating the Y coordinate of the 3D vector.
+    z: A float, indicating the Z coordinate of the 3D vector.
+    numpy: A numpy array, in the order of x, y, z.
+  """
 
   x: float = _column(arrow_type=pa.float64())
   y: float = _column(arrow_type=pa.float64())
   z: float = _column(arrow_type=pa.float64())
+
+  @property
+  def numpy(self) -> np.ndarray:
+    return np.asarray([self.x, self.y, self.z])
 
 
 @dataclasses.dataclass(frozen=True)
@@ -119,6 +132,21 @@ class Box3d:
   center: Vec3d = _column()
   size: Vec3d = _column()
   heading: float = _column(arrow_type=pa.float64())
+
+  def numpy(self, dtype: type(np.dtype)) -> np.ndarray:
+    """Return a numpy array, in the order of center, size, heading."""
+    return np.asarray(
+        [
+            self.center.x,
+            self.center.y,
+            self.center.z,
+            self.size.x,
+            self.size.y,
+            self.size.z,
+            self.heading,
+        ],
+        dtype=dtype,
+    )
 
 
 @dataclasses.dataclass(frozen=True)

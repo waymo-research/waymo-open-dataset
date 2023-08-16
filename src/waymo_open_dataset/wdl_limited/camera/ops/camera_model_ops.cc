@@ -58,6 +58,10 @@ struct Input {
   const Tensor* input_coordinate = nullptr;
 };
 
+struct MovingPointInput : Input {
+  const Tensor* input_velocity = nullptr;
+};
+
 template <typename T>
 DataType GetTensorflowType() {
   if (std::is_same<absl::remove_const_t<T>, double>::value) {
@@ -169,6 +173,69 @@ REGISTER_KERNEL_BUILDER(
     WorldToImageOp<double>);
 
 template <typename T>
+class WorldToImageMovingPointOp : public OpKernel {
+ public:
+  explicit WorldToImageMovingPointOp(OpKernelConstruction* ctx)
+      : OpKernel(ctx) {
+    OP_REQUIRES_OK(ctx, ctx->GetAttr("return_depth", &return_depth_));
+  }
+  void Compute(OpKernelContext* ctx) override {
+    MovingPointInput input;
+    OP_REQUIRES_OK(ctx, ctx->input("extrinsic", &input.extrinsic));
+    OP_REQUIRES_OK(ctx, ctx->input("intrinsic", &input.intrinsic));
+    OP_REQUIRES_OK(ctx, ctx->input("metadata", &input.metadata));
+    OP_REQUIRES_OK(
+        ctx, ctx->input("camera_image_metadata", &input.camera_image_metadata));
+    OP_REQUIRES_OK(ctx,
+                   ctx->input("global_coordinate", &input.input_coordinate));
+    OP_REQUIRES_OK(ctx, ctx->input("global_velocity", &input.input_velocity));
+
+    co::CameraCalibration calibration;
+    co::CameraImage image;
+    ParseInput<T>(input, &calibration, &image);
+
+    co::CameraModel model(calibration);
+    model.PrepareProjection(image);
+
+    const int num_points = input.input_coordinate->dim_size(0);
+    const int out_channel = 3 + return_depth_;
+    CHECK_EQ(3, input.input_coordinate->dim_size(1));
+    Tensor image_coordinates(GetTensorflowType<T>(), {num_points, out_channel});
+    for (int i = 0; i < num_points; ++i) {
+      double u_d = 0.0;
+      double v_d = 0.0;
+      double depth = 0.0;
+      const bool valid = model.WorldToImageMovingPointWithDepth(
+          input.input_coordinate->matrix<T>()(i, 0),
+          input.input_coordinate->matrix<T>()(i, 1),
+          input.input_coordinate->matrix<T>()(i, 2),
+          input.input_velocity->matrix<T>()(i, 0),
+          input.input_velocity->matrix<T>()(i, 1),
+          input.input_velocity->matrix<T>()(i, 2),
+          /*check_image_bounds=*/false, &u_d, &v_d, &depth);
+      image_coordinates.matrix<T>()(i, 0) = u_d;
+      image_coordinates.matrix<T>()(i, 1) = v_d;
+      if (return_depth_) image_coordinates.matrix<T>()(i, 2) = depth;
+      image_coordinates.matrix<T>()(i, out_channel - 1) = static_cast<T>(valid);
+    }
+    ctx->set_output(0, image_coordinates);
+  }
+
+ private:
+  bool return_depth_ = false;
+};
+
+REGISTER_KERNEL_BUILDER(Name("WorldToImageMovingPoint")
+                            .Device(DEVICE_CPU)
+                            .TypeConstraint<float>("T"),
+                        WorldToImageMovingPointOp<float>);
+
+REGISTER_KERNEL_BUILDER(Name("WorldToImageMovingPoint")
+                            .Device(DEVICE_CPU)
+                            .TypeConstraint<double>("T"),
+                        WorldToImageMovingPointOp<double>);
+
+template <typename T>
 class ImageToWorldOp final : public OpKernel {
  public:
   explicit ImageToWorldOp(OpKernelConstruction* ctx) : OpKernel(ctx) {}
@@ -247,6 +314,46 @@ camera_image_metadata: [16 + 6 + 1 + 1 + 1 + 1]=[26] tensor.
   CameraImage::[pose(16), velocity(6), pose_timestamp(1), shutter(1),
   camera_trigger_time(1), camera_readout_done_time(1)].
 global_coordinate: [N, 3] float tensor. Points in global frame.
+image_coordinate: [N, 3] float tensor. [N, 0:2] are points in image frame.
+  The points can be outside of the image. The last channel [N, 2] tells whether
+  a projection is valid or not. 0 means invalid. 1 means valid. A projection
+  can be invalid if the point is behind the camera or if the radial distortion
+  is too large.
+)doc");
+
+REGISTER_OP("WorldToImageMovingPoint")
+    .Attr("T: {float, double}")
+    .Attr("return_depth: bool = false")
+    .Input("extrinsic: T")
+    .Input("intrinsic: T")
+    .Input("metadata: int32")
+    .Input("camera_image_metadata: T")
+    .Input("global_coordinate: T")
+    .Input("global_velocity: T")
+    .Output("image_coordinate: T")
+    .SetShapeFn([](shape_inference::InferenceContext* c) {
+      bool return_depth;
+      auto attr_status = c->GetAttr("return_depth", &return_depth);
+      if (return_depth) {
+        auto num_points = c->Dim(c->input(4), 0);
+        c->set_output(0, c->MakeShape({num_points, 4}));
+      } else {
+        c->set_output(0, c->input(4));
+      }
+      return ::tensorflow::Status();
+    })
+    .Doc(R"doc(
+Maps global coordinates to image coordinates by considering each point's
+velocity. See dataset.proto for more description of each field.
+
+extrinsic: [4, 4] camera extrinsic matrix. CameraCalibration::extrinsic.
+intrinsic: [9] camera intrinsic matrix. CameraCalibration::intrinsic.
+metadata: [3] CameraCalibration::[width, height, rolling_shutter_direction].
+camera_image_metadata: [16 + 6 + 1 + 1 + 1 + 1]=[26] tensor.
+  CameraImage::[pose(16), velocity(6), pose_timestamp(1), shutter(1),
+  camera_trigger_time(1), camera_readout_done_time(1)].
+global_coordinate: [N, 3] float tensor. Points in global frame.
+global_velocity: [N, 3] float tensor. Points velocity in global frame.
 image_coordinate: [N, 3] float tensor. [N, 0:2] are points in image frame.
   The points can be outside of the image. The last channel [N, 2] tells whether
   a projection is valid or not. 0 means invalid. 1 means valid. A projection

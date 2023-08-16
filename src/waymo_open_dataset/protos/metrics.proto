@@ -159,6 +159,28 @@ message Config {
       // The center of the prediction box moves to the center of the ground
       // truth box, which means no localization error after alignment.
       TYPE_CENTER_ALIGNED = 3;
+      // The center of the prediction box moves along the line of sight such
+      // that it has the closest distance to the center of the ground truth box.
+      // Same as `TYPE_RANGE_ALIGNED` except this only applies if the prediction
+      // is beyond the ground truth. Example: given O is sensor origin, G ground
+      // truth center, and P prediction center (O -> G [P]) P will only be moved
+      // if it is beyond G in reference to O.
+      TYPE_FURTHER_ONLY_RANGE_ALIGNED = 4;
+      // The center of the prediction box moves along the line of sight such
+      // that it has the closest distance to the center of the ground truth box.
+      // Same as `TYPE_RANGE_ALIGNED` except this only applies if the prediction
+      // is before the ground truth in references to the sensor origin. Example:
+      // given O is sensor origin, G ground truth center, and P(1/2) the
+      // prediction center ([P1] O -> [P2] -> G ) P will only be moved if it is
+      // before G in reference to O.
+      TYPE_ANY_CLOSER_ONLY_RANGE_ALIGNED = 5;
+      // The center of the prediction box moves along the line of sight such
+      // that it has the closest distance to the center of the ground truth box.
+      // Same as `TYPE_RANGE_ALIGNED` except this only applies if the prediction
+      // is between the sensor origin and ground truth. Example: given O is
+      // sensor origin, G ground truth center, and P prediction center (O -> [P]
+      // -> G ) P will only be moved if it is between G and O.
+      TYPE_BETWEEN_ORIGIN_AND_GT_ONLY_RANGE_ALIGNED = 6;
     }
     optional AlignType align_type = 5 [default = TYPE_RANGE_ALIGNED];
   }

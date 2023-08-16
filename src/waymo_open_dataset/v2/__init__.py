@@ -24,9 +24,13 @@ from waymo_open_dataset.v2.perception import camera_image as _camera_image
 from waymo_open_dataset.v2.perception import context as _context
 from waymo_open_dataset.v2.perception import keypoints as _keypoints
 from waymo_open_dataset.v2.perception import lidar as _lidar
+from waymo_open_dataset.v2.perception import object_asset
 from waymo_open_dataset.v2.perception import pose as _pose
 from waymo_open_dataset.v2.perception import segmentation as _segmentation
 from waymo_open_dataset.v2.perception.utils import lidar_utils as _lidar_utils
+from waymo_open_dataset.v2.perception.utils import object_asset_codec
+from waymo_open_dataset.v2.perception.utils import object_asset_utils
+
 
 # Supported components.
 CameraBoxComponent = _box.CameraBoxComponent
@@ -48,6 +52,17 @@ LiDARSegmentationLabelComponent = _segmentation.LiDARSegmentationLabelComponent
 ProjectedLiDARBoxComponent = _box.ProjectedLiDARBoxComponent
 StatsComponent = _context.StatsComponent
 VehiclePoseComponent = _pose.VehiclePoseComponent
+ObjectAssetAutoLabelComponent = object_asset.ObjectAssetAutoLabelComponent
+ObjectAssetCameraSensorComponent = object_asset.ObjectAssetCameraSensorComponent
+ObjectAssetLiDARSensorComponent = object_asset.ObjectAssetLiDARSensorComponent
+ObjectAssetRefinedPoseComponent = object_asset.ObjectAssetRefinedPoseComponent
+ObjectAssetRayComponent = object_asset.ObjectAssetRayComponent
+ObjectAssetRayCompressedComponent = (
+    object_asset.ObjectAssetRayCompressedComponent
+)
+ObjectAssetRayCodec = object_asset_codec.ObjectAssetRayCodec
+ObjectAssetRayCodecConfig = object_asset_codec.ObjectAssetRayCodecConfig
+
 
 # Types and classes
 Vec2s = _column_types.Vec2s
@@ -84,6 +99,12 @@ TAG_BY_COMPONENT = {
     ProjectedLiDARBoxComponent: 'projected_lidar_box',
     StatsComponent: 'stats',
     VehiclePoseComponent: 'vehicle_pose',
+    ObjectAssetAutoLabelComponent: 'object_asset_auto_label',
+    ObjectAssetCameraSensorComponent: 'object_asset_camera_sensor',
+    ObjectAssetLiDARSensorComponent: 'object_asset_lidar_sensor',
+    ObjectAssetRefinedPoseComponent: 'object_asset_refined_pose',
+    ObjectAssetRayComponent: 'object_asset_ray',
+    ObjectAssetRayCompressedComponent: 'object_asset_ray_compressed',
 }
 
 ALL_COMPONENTS = list(TAG_BY_COMPONENT.keys())

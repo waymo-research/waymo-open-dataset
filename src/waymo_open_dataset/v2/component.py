@@ -16,8 +16,9 @@
 import abc
 import collections
 import dataclasses
+import types
 import typing
-from typing import Any, Callable, Optional, Union, TypeVar
+from typing import Any, Callable, Optional, Type, TypeVar, Union
 
 import pyarrow as pa
 
@@ -61,7 +62,7 @@ class Component(metaclass=abc.ABCMeta):
   """
 
   @classmethod
-  def from_dict(cls, columns: dict[str, Any]) -> 'Component':
+  def from_dict(cls: Type[_T], columns: dict[str, Any]) -> _T:
     """Creates an instance of the component from a flat dictionary.
 
     Args:
@@ -189,7 +190,11 @@ def _column_arrow_type(field: dataclasses.Field[Any]) -> pa.DataType:
 
 def _issubclass(instance_or_class: Union[Any, type], type_: type) -> bool:  # pylint: disable=g-bare-generic
   """An analog to issubclass method which works for instances as well."""
-  if isinstance(instance_or_class, type):
+  # NOTE: `type[int]` is not a class, but an instance of the class
+  # `types.GenericAlias` which is also an instance of `type`.
+  if isinstance(instance_or_class, type) and not isinstance(
+      instance_or_class, types.GenericAlias
+  ):
     return issubclass(instance_or_class, type_)
   else:
     return isinstance(instance_or_class, type_)

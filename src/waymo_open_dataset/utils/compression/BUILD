@@ -28,3 +28,50 @@ py_test(
         ":delta_encoder",
     ],
 )
+
+py_library(
+    name = "tiling",
+    srcs = ["tiling.py"],
+    srcs_version = "PY3",
+    deps = [
+        requirement("tensorflow"),
+    ],
+)
+
+py_test(
+    name = "tiling_test",
+    srcs = ["tiling_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        requirement("absl-py"),
+        requirement("tensorflow"),
+        ":tiling",
+    ],
+)
+
+py_library(
+    name = "pca_codec",
+    srcs = ["pca_codec.py"],
+    srcs_version = "PY3",
+    deps = [
+        requirement("dacite"),
+        requirement("numpy"),
+        requirement("scikit-learn"),
+        requirement("tensorflow"),
+        ":tiling",
+    ],
+)
+
+py_test(
+    name = "pca_codec_test",
+    srcs = ["pca_codec_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("tensorflow"),
+        ":pca_codec",
+    ],
+)

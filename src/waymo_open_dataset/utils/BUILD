@@ -229,6 +229,15 @@ py_library(
     ],
 )
 
+py_library(
+    name = "example_utils",
+    srcs = ["example_utils.py"],
+    deps = [
+        requirement("numpy"),
+        requirement("tensorflow"),
+    ],
+)
+
 # Tests
 py_test(
     name = "box_utils_test",
@@ -428,5 +437,16 @@ py_test(
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:compressed_lidar_proto_py_pb2",
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "example_utils_test",
+    srcs = ["example_utils_test.py"],
+    python_version = "PY3",
+    deps = [
+        requirement("absl-py"),
+        requirement("tensorflow"),
+        ":example_utils",
     ],
 )

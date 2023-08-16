@@ -196,8 +196,10 @@ py_wheel(
         "tensorflow==2.11",
         "tensorflow_graphics==2021.12.3",
         "tensorflow_probability==0.19.0",
+        "visu3d==1.5.1",
+        "dacite==1.8.1",
     ],
-    version = "1.5.2",
+    version = "1.6.0",
     deps = [
         ":all_python_modules",
     ],
@@ -213,7 +215,7 @@ py_wheel(
         "numpy==1.21.5",
         "tensorflow==2.11",
     ],
-    version = "1.5.2",
+    version = "1.6.0",
     deps = [
         "@deeplab2",
     ],

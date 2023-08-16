@@ -101,6 +101,34 @@ py_library(
     ],
 )
 
+py_library(
+    name = "object_asset",
+    srcs = ["object_asset.py"],
+    deps = [
+        requirement("numpy"),
+        requirement("pyarrow"),
+        requirement("tensorflow"),
+        ":base",
+        "//waymo_open_dataset/v2:column_types",
+        "//waymo_open_dataset/v2:component",
+    ],
+)
+
+py_test(
+    name = "object_asset_test",
+    srcs = ["object_asset_test.py"],
+    deps = [
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("pyarrow"),
+        requirement("tensorflow"),
+        ":base",
+        ":camera_image",
+        ":object_asset",
+        "//waymo_open_dataset/v2:column_types",
+    ],
+)
+
 py_test(
     name = "keypoints_test",
     srcs = ["keypoints_test.py"],

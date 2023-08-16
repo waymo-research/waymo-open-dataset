@@ -139,3 +139,8 @@ class CameraLabelKey(CameraKey):
 @dataclasses.dataclass(frozen=True)
 class CameraLabelComponent(component.Component):
   key: CameraLabelKey
+
+
+@dataclasses.dataclass(frozen=True)
+class ObjectAssetKey(LaserLabelKey):
+  camera_name: int = component.create_column(arrow_type=pa.int8())

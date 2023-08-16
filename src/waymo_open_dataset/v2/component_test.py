@@ -50,17 +50,17 @@ class RecordWithRepeatedField:
 class MyKey(_lib.Key):
   name: str = _lib.create_column(arrow_type=pa.string())
 
-  def to_proto(self):
-    raise NotImplementedError()
-
 
 @dataclasses.dataclass(frozen=True)
 class MyComponent(_lib.Component):
   key: MyKey
   field: str = _lib.create_column(arrow_type=pa.string())
 
-  def to_proto(self):
-    raise NotImplementedError()
+
+@dataclasses.dataclass(frozen=True)
+class ComponentWithPrimitiveField(_lib.Component):
+  key: MyKey
+  values: list[int] = _lib.create_column(arrow_type=pa.list_(pa.int32()))
 
 
 def _field_value(obj, field):
@@ -146,6 +146,17 @@ class FlattenArrowTypesTest(absltest.TestCase):
 
     self.assertEqual(
         {'[MyComponent].field': pa.string(), 'key.name': pa.string()}, output
+    )
+
+  def test_schema_for_a_component_with_a_primitive_column_is_correct(self):
+    schema = ComponentWithPrimitiveField.schema()
+    schema_dict = dict(zip(schema.names, schema.types))
+    self.assertEqual(
+        schema_dict,
+        {
+            'key.name': pa.string(),
+            '[ComponentWithPrimitiveField].values': pa.list_(pa.int32()),
+        },
     )
 
 

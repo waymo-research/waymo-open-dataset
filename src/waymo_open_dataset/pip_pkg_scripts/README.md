@@ -5,7 +5,7 @@ mkdir /tmp/wod
 cd src
 docker build \
     --tag=open_dataset_pip\
-    -f src/waymo_open_dataset/waymo_open_dataset/pip_pkg_scripts/build.Dockerfile\
+    -f waymo_open_dataset/waymo_open_dataset/pip_pkg_scripts/build.Dockerfile\
     --build-arg USERNAME=$USER\
     --build-arg USER_UID=$`(id -u `$USER) .
 docker run --mount type=bind,source=/tmp/wod,target=/tmp/wod open_dataset_pip

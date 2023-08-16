@@ -72,7 +72,7 @@ class MetricFeatures:
       Shape: (n_samples, n_objects).
     time_to_collision: Time (in seconds) before the object collides with the
       object it is following (if it exists), assuming constant speeds.
-      Shape: (n_samples, n_objects).
+      Shape: (n_samples, n_objects, n_steps).
     distance_to_road_edge: Signed distance (in meters) to the nearest road edge
       in the scene. Shape: (n_samples, n_objects, n_steps).
     offroad_indication: Boolean value indicating whether the object went

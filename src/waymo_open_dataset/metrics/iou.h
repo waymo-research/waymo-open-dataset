@@ -105,6 +105,10 @@ ComputeIoUFunc GetComputeLetIoUFunc(
 // Converts a box proto to a polygon.
 Polygon2d ToPolygon2d(const open_dataset::Label::Box& box);
 
+// Apply translation to a 3D box proto.
+Label::Box TranslateBox(const Label::Box& box, const double& t_x,
+                        const double& t_y, const double& t_z);
+
 }  // namespace open_dataset
 }  // namespace waymo
 
