@@ -9,7 +9,7 @@ numpy==1.21.5
 openexr==1.3.9
 pandas==1.5.3
 patchelf==0.17.2.1
-pillow==9.2.0
+pillow==10.0.1
 plotly==5.13.1
 pyarrow==10.0.0
 scikit-image==0.20.0
