@@ -11,7 +11,7 @@ pandas==1.5.3
 patchelf==0.17.2.1
 pillow==9.2.0
 plotly==5.13.1
-pyarrow==10.0.0
+pyarrow==14.0.1
 scikit-image==0.20.0
 scikit-learn==1.2.2
 setuptools==67.6.0
