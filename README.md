@@ -26,6 +26,12 @@ compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
 [wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
 respectively, for details.
 
+## December 2023 Update
+We released v1.6.1 version of the pip package with fixes for the WOSAC metrics:
+- Fixing a bug in validity checking for collision and offroad.
+- Modifying the behaviour of collision/offroad checking when invalid.
+
+
 ## August 2023 Update
 We released a large-scale object-centric asset dataset containing over 1.2M images and lidar observations of two major categories (vehicles and pedestrians) from the Perception Dataset (v2.0.0).
 

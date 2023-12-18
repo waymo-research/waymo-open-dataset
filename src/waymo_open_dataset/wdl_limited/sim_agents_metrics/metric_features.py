@@ -67,16 +67,15 @@ class MetricFeatures:
       in angular_speed. Shape: (n_samples, n_objects, n_steps).
     distance_to_nearest_object: Signed distance (in meters) to the nearest
       object in the scene. Shape: (n_samples, n_objects, n_steps).
-    collision_indication: Boolean value indicating whether the object collided,
-      at any point in time, with any other object.
-      Shape: (n_samples, n_objects).
+    collision_per_step: Boolean tensor indicating whether the object collided,
+      with any other object. Shape: (n_samples, n_objects, n_steps).
     time_to_collision: Time (in seconds) before the object collides with the
       object it is following (if it exists), assuming constant speeds.
       Shape: (n_samples, n_objects, n_steps).
     distance_to_road_edge: Signed distance (in meters) to the nearest road edge
       in the scene. Shape: (n_samples, n_objects, n_steps).
-    offroad_indication: Boolean value indicating whether the object went
-      off-road, at any point in time. Shape: (n_samples, n_objects).
+    offroad_per_step: Boolean tensor indicating whether the object went
+      off-road. Shape: (n_samples, n_objects, n_steps).
   """
   object_id: tf.Tensor
   valid: tf.Tensor
@@ -86,10 +85,10 @@ class MetricFeatures:
   angular_speed: tf.Tensor
   angular_acceleration: tf.Tensor
   distance_to_nearest_object: tf.Tensor
-  collision_indication: tf.Tensor
+  collision_per_step: tf.Tensor
   time_to_collision: tf.Tensor
   distance_to_road_edge: tf.Tensor
-  offroad_indication: tf.Tensor
+  offroad_per_step: tf.Tensor
 
 
 def compute_metric_features(
@@ -114,7 +113,7 @@ def compute_metric_features(
   # history from the original scenario. These composite trajectories are used to
   # compute dynamics features, which require a few steps of context.
   simulated_trajectories = converters.joint_scene_to_trajectories(
-      joint_scene, scenario)
+      joint_scene, scenario, use_log_validity=use_log_validity)
   # Extract `ObjectTrajectories` from the original scenario, used for
   # log-comparison metrics (i.e. displacement error). These also need to be
   # aligned to the simulated trajectories.
@@ -211,8 +210,6 @@ def compute_metric_features(
   # Shape: (n_evaluated_objects, n_steps).
   is_colliding_per_step = tf.less(
       distances_to_objects, interaction_features.COLLISION_DISTANCE_THRESHOLD)
-  # Shape: (n_evaluated_objects,)
-  is_colliding = tf.reduce_any(is_colliding_per_step, axis=1)
 
   times_to_collision = (
       interaction_features.compute_time_to_collision_with_object_in_front(
@@ -253,7 +250,6 @@ def compute_metric_features(
   is_offroad_per_step = tf.greater(
       distances_to_road_edge, map_metric_features.OFFROAD_DISTANCE_THRESHOLD
   )
-  is_offroad = tf.reduce_any(is_offroad_per_step, axis=1)
 
   # Pack into `MetricFeatures`, also adding a batch dimension of 1 (except for
   # `object_id`).
@@ -266,10 +262,10 @@ def compute_metric_features(
       angular_speed=angular_speed[tf.newaxis],
       angular_acceleration=angular_accel[tf.newaxis],
       distance_to_nearest_object=distances_to_objects[tf.newaxis],
-      collision_indication=is_colliding[tf.newaxis],
+      collision_per_step=is_colliding_per_step[tf.newaxis],
       time_to_collision=times_to_collision[tf.newaxis],
       distance_to_road_edge=distances_to_road_edge[tf.newaxis],
-      offroad_indication=is_offroad[tf.newaxis],
+      offroad_per_step=is_offroad_per_step[tf.newaxis],
   )
 
 

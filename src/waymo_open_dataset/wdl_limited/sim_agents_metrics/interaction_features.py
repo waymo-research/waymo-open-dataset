@@ -26,7 +26,7 @@ from waymo_open_dataset.wdl_limited.sim_agents_metrics import trajectory_feature
 # Constant distance to apply when distances between objects are invalid. This
 # will avoid the propagation of nans and should be reduced out when taking the
 # minimum anyway.
-_EXTREMELY_LARGE_DISTANCE = 1e10
+EXTREMELY_LARGE_DISTANCE = 1e10
 # Collision threshold, i.e. largest distance between objects that is considered
 # to be a collision.
 COLLISION_DISTANCE_THRESHOLD = 0.0
@@ -147,7 +147,7 @@ def compute_distance_to_nearest_object(
   # Mask out self-distances.
   self_mask = tf.eye(
       num_eval_objects, num_objects, dtype=tf.float32)[:, :, tf.newaxis]
-  signed_distances = signed_distances + self_mask * _EXTREMELY_LARGE_DISTANCE
+  signed_distances = signed_distances + self_mask * EXTREMELY_LARGE_DISTANCE
 
   # Mask out invalid boxes. As with box coordinates, the validity mask needs to
   # be reshuffled to have the same ordering. This is necessary because the
@@ -164,7 +164,7 @@ def compute_distance_to_nearest_object(
   valid_mask = tf.logical_and(eval_validity[:, tf.newaxis, :],
                               all_validity[tf.newaxis, :, :])
   signed_distances = tf.where(
-      valid_mask, signed_distances, _EXTREMELY_LARGE_DISTANCE)
+      valid_mask, signed_distances, EXTREMELY_LARGE_DISTANCE)
   # Aggregate over the "all objects" dimension.
   return tf.reduce_min(signed_distances, axis=1)
 
@@ -296,7 +296,7 @@ def compute_time_to_collision_with_object_in_front(
   # `masked_long_distance` shape: (num_steps, num_eval_objects, num_objects)
   masked_long_distance = (
       long_distance
-      + (1.0 - tf.cast(valid_mask, tf.float32)) * _EXTREMELY_LARGE_DISTANCE
+      + (1.0 - tf.cast(valid_mask, tf.float32)) * EXTREMELY_LARGE_DISTANCE
   )
 
   # `box_ahead_index` shape: (num_steps, num_evaluated_objects)

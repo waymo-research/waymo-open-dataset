@@ -122,12 +122,21 @@ def compute_scenario_metrics_for_bundle(
   angular_accel_likelihood = tf.exp(_reduce_average_with_validity(
       angular_accel_log_likelihood, acceleration_validity))
 
+  # Collision likelihood is computed by aggregating in time. For invalid objects
+  # in the logged scenario, we need to filter possible collisions in simulation.
+  sim_collision_indication = tf.reduce_any(
+      tf.where(log_features.valid, sim_features.collision_per_step, False),
+      axis=2)
+  log_collision_indication = tf.reduce_any(
+      tf.where(log_features.valid, log_features.collision_per_step, False),
+      axis=2)
+
   # Collision and distance to other objects. Again, aggregate over objects and
   # timesteps by summing the log-probabilities.
   collision_score = estimators.log_likelihood_estimate_scenario_level(
       feature_config=config.collision_indication,
-      log_values=log_features.collision_indication[0],
-      sim_values=sim_features.collision_indication
+      log_values=log_collision_indication[0],
+      sim_values=sim_collision_indication
   )
   collision_likelihood = tf.exp(tf.reduce_mean(collision_score))
 
@@ -155,10 +164,16 @@ def compute_scenario_metrics_for_bundle(
 
   # Off-road and distance to road edge. Again, aggregate over objects and
   # timesteps by summing the log-probabilities.
+  sim_offroad_indication = tf.reduce_any(
+      tf.where(log_features.valid, sim_features.offroad_per_step, False),
+      axis=2)
+  log_offroad_indication = tf.reduce_any(
+      tf.where(log_features.valid, log_features.offroad_per_step, False),
+      axis=2)
   offroad_score = estimators.log_likelihood_estimate_scenario_level(
       feature_config=config.offroad_indication,
-      log_values=log_features.offroad_indication[0],
-      sim_values=sim_features.offroad_indication,
+      log_values=log_offroad_indication[0],
+      sim_values=sim_offroad_indication,
   )
   offroad_likelihood = tf.exp(tf.reduce_mean(offroad_score))
 

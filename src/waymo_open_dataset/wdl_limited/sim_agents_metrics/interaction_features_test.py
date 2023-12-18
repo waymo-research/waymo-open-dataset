@@ -123,7 +123,7 @@ class InteractionFeaturesTest(tf.test.TestCase, parameterized.TestCase):
       self.assertAllClose(distances, tf.fill(distances.shape, 10.0))
     else:
       self.assertAllClose(distances, tf.fill(
-          distances.shape, interaction_features._EXTREMELY_LARGE_DISTANCE))
+          distances.shape, interaction_features.EXTREMELY_LARGE_DISTANCE))
 
   def test_distance_to_nearest_object_selects_nearest(self):
     # Create 3 boxes, box1 centered on (0, 0), box2 at 5m from box1 and box3

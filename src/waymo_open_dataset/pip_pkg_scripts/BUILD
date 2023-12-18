@@ -199,7 +199,7 @@ py_wheel(
         "visu3d==1.5.1",
         "dacite==1.8.1",
     ],
-    version = "1.6.0",
+    version = "1.6.1",
     deps = [
         ":all_python_modules",
     ],
@@ -215,7 +215,7 @@ py_wheel(
         "numpy==1.21.5",
         "tensorflow==2.11",
     ],
-    version = "1.6.0",
+    version = "1.6.1",
     deps = [
         "@deeplab2",
     ],

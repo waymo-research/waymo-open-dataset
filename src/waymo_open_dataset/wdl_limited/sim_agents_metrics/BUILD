@@ -139,6 +139,8 @@ py_test(
     srcs = ["metric_features_test.py"],
     deps = [
         requirement("tensorflow"),
+        ":interaction_features",
+        ":map_metric_features",
         ":metric_features",
         "//waymo_open_dataset/utils:test_utils",
         "//waymo_open_dataset/utils/sim_agents:converters",

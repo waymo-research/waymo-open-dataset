@@ -24,7 +24,7 @@ from waymo_open_dataset.utils import geometry_utils
 
 # Constant distance to apply when distances are invalid. This will avoid the
 # propagation of nans and should be reduced out when taking the maximum anyway.
-_EXTREMELY_LARGE_DISTANCE = 1e10
+EXTREMELY_LARGE_DISTANCE = 1e10
 # Off-road threshold, i.e. smallest distance away from the road edge that is
 # considered to be a off-road.
 OFFROAD_DISTANCE_THRESHOLD = 0.0
@@ -131,7 +131,7 @@ def compute_distance_to_road_edge(
   # Mask out invalid boxes.
   eval_validity = tf.gather(
       valid, tf.where(evaluated_object_mask)[:, 0], axis=0)
-  return tf.where(eval_validity, signed_distances, -_EXTREMELY_LARGE_DISTANCE)
+  return tf.where(eval_validity, signed_distances, -EXTREMELY_LARGE_DISTANCE)
 
 
 def _compute_signed_distance_to_polylines(

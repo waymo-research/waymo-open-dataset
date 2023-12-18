@@ -90,6 +90,7 @@ py_test(
     srcs = ["converters_test.py"],
     python_version = "PY3",
     deps = [
+        requirement("absl-py"),
         requirement("tensorflow"),
         ":converters",
         ":submission_specs",
