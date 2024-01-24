@@ -163,8 +163,8 @@ def get_upright_3d_box_corners(boxes, name=None):
     # [N, 8, 3]
     corners = tf.reshape(
         tf.stack([
-            l2, w2, -h2, -l2, w2, -h2, -l2, -w2, -h2, l2, -w2, -h2, l2, w2, h2,
-            -l2, w2, h2, -l2, -w2, h2, l2, -w2, h2
+            l2, w2, -h2, l2, -w2, -h2, -l2, -w2, -h2, -l2, w2, -h2, l2, w2, h2,
+            l2, -w2, h2, -l2, -w2, h2, -l2, w2, h2
         ],
                  axis=-1), [-1, 8, 3])
     # [N, 8, 3]
