@@ -15,6 +15,8 @@ limitations under the License.
 
 #include "waymo_open_dataset/metrics/motion_metrics_utils.h"
 
+#include <vector>
+
 #include <glog/logging.h>
 #include "google/protobuf/text_format.h"
 #include "google/protobuf/util/message_differencer.h"
@@ -84,6 +86,17 @@ Track RotateTrack(const Track& track, const double angle) {
   return result;
 }
 
+// Returns the given set of points rotated by a given angle in radians.
+std::vector<Vec2d> RotatePoints(const std::vector<Vec2d>& points,
+                                double angle_radians) {
+  std::vector<Vec2d> result;
+  result.reserve(points.size());
+  for (const auto& point : points) {
+    result.push_back(point.Rotated(angle_radians));
+  }
+  return result;
+}
+
 void TestTrackClassification(const std::vector<Vec2d>& points,
                              const TrajectoryType expected_type) {
   const Track track = CreateTrackFromPoints(points);
@@ -97,6 +110,14 @@ void TestTrackClassification(const std::vector<Vec2d>& points,
   track_rotated = RotateTrack(track, -1.0);
   type = ClassifyTrack(1, track_rotated);
   EXPECT_EQ(*type, expected_type);
+
+  // Rotate the trajectory points through a range of angles.
+  for (double angle = -M_PI; angle <= M_PI; angle += M_PI / 32) {
+    const std::vector<Vec2d> rotated_points = RotatePoints(points, angle);
+    const Track track = CreateTrackFromPoints(rotated_points);
+    auto type = ClassifyTrack(1, track);
+    EXPECT_EQ(*type, expected_type);
+  }
 }
 
 TEST(MotionMetricsUtils, ClassifyTrackStationary) {
@@ -106,6 +127,12 @@ TEST(MotionMetricsUtils, ClassifyTrackStationary) {
 
 TEST(MotionMetricsUtils, ClassifyTrackStraight) {
   std::vector<Vec2d> points = {{0, 0}, {0, 1}, {0, 2}, {0, 3}, {0, 4}};
+  TestTrackClassification(points, TrajectoryType::STRAIGHT);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackSemiStraightAcrossPiBoundary) {
+  std::vector<Vec2d> points = {
+      {0, 0}, {-1, 0.05}, {-2, 0}, {-3, -0.5}, {-4, -0.5}};
   TestTrackClassification(points, TrajectoryType::STRAIGHT);
 }
 
@@ -142,6 +169,48 @@ TEST(MotionMetricsUtils, ClassifyTrackLeftUTurn) {
                                {-6, 2},   {-7, 0},   {-8, -2},  {-9, -4},
                                {-10, -6}, {-12, -8}, {-14, -10}};
   TestTrackClassification(points, TrajectoryType::LEFT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackLeftUTurn180Deg) {
+  std::vector<Vec2d> points = {{0, 0},   {-2, 0},  {-4, 0},  {-6, -2},
+                               {-6, -4}, {-4, -6}, {-2, -8}, {0, -10},
+                               {2, -10}, {4, -10}, {6, -10}};
+  TestTrackClassification(points, TrajectoryType::LEFT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackLeftUTurnGT180Deg) {
+  std::vector<Vec2d> points = {{0, 0},   {-2, 0},  {-4, 0},  {-6, -2},
+                               {-6, -4}, {-4, -6}, {-2, -8}, {0, -10},
+                               {2, -10}, {4, -9},  {6, -8}};
+  TestTrackClassification(points, TrajectoryType::LEFT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackLeftUTurnLT180Deg) {
+  std::vector<Vec2d> points = {{0, 0},   {-2, 0},  {-4, 0},  {-6, -2},
+                               {-6, -4}, {-4, -6}, {-2, -8}, {0, -10},
+                               {2, -10}, {4, -10}, {6, -11}};
+  TestTrackClassification(points, TrajectoryType::LEFT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackRightUTurn180Deg) {
+  std::vector<Vec2d> points = {{0, 0},  {-2, 0}, {-4, 0}, {-6, 2},
+                               {-6, 4}, {-4, 6}, {-2, 8}, {0, 10},
+                               {2, 10}, {4, 10}, {6, 10}};
+  TestTrackClassification(points, TrajectoryType::RIGHT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackRightUTurnGT180Deg) {
+  std::vector<Vec2d> points = {{0, 0},  {-2, 0}, {-4, 0}, {-6, 2},
+                               {-6, 4}, {-4, 6}, {-2, 8}, {0, 10},
+                               {2, 10}, {4, 9},  {6, 8}};
+  TestTrackClassification(points, TrajectoryType::RIGHT_U_TURN);
+}
+
+TEST(MotionMetricsUtils, ClassifyTrackRightUTurnLT180Deg) {
+  std::vector<Vec2d> points = {{0, 0},  {-2, 0}, {-4, 0}, {-6, 2},
+                               {-6, 4}, {-4, 6}, {-2, 8}, {0, 10},
+                               {2, 10}, {4, 11}, {6, 12}};
+  TestTrackClassification(points, TrajectoryType::RIGHT_U_TURN);
 }
 
 TEST(MotionMetricsUtils, ClassifyTrackRightUTurn) {

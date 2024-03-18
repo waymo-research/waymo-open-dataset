@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
-"""WOMD utils to process LiDAR data."""
+"""Waymo Motion Open Dataset (WOMD) utils to process LiDAR data."""
 
 from typing import Tuple
 
@@ -42,7 +42,7 @@ def augment_womd_scenario_with_lidar_points(
   """Aguments the scenario with lidar data for the first 1.1 seconds.
 
   Args:
-    scenario: the WOMD scenario proto.
+    scenario: the WOMD scenario proto containing motion data.
     lidar_data: A WOMD scenario proto which only contains an non-empty
       `compressed_frame_laser_data` field. This field is merged into original
       WOMD scenario's `compressed_frame_laser_data`.

@@ -84,6 +84,7 @@ all_proto_library(
 all_proto_library(
     src = "scenario.proto",
     deps = [
+        ":camera_tokens_proto",
         ":compressed_lidar_proto",
         ":map_proto",
     ],
@@ -148,6 +149,13 @@ all_proto_library(
 
 all_proto_library(
     src = "compressed_lidar.proto",
+    deps = [
+        "//waymo_open_dataset:dataset_proto",
+    ],
+)
+
+all_proto_library(
+    src = "camera_tokens.proto",
     deps = [
         "//waymo_open_dataset:dataset_proto",
     ],

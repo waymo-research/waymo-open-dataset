@@ -17,6 +17,7 @@ limitations under the License.
 
 #include <set>
 
+#include "waymo_open_dataset/math/math_util.h"
 #include "waymo_open_dataset/math/vec2d.h"
 #include "waymo_open_dataset/protos/motion_metrics.pb.h"
 #include "waymo_open_dataset/protos/motion_submission.pb.h"
@@ -29,9 +30,9 @@ absl::optional<TrajectoryType> ClassifyTrack(int prediction_step,
                                              const Track& track) {
   // Parameters for classification.
   static constexpr float kMaxSpeedForStationary = 2.0;                 // (m/s)
-  static constexpr float kMaxDisplacementForStationary = 5.0;          // (m)
-  static constexpr float kMaxLateralDisplacementForStraight = 5.0;     // (m)
-  static constexpr float kMinLongitudinalDisplacementForUTurn = -5.0;  // (m)
+  static constexpr float kMaxDisplacementForStationary = 3.0;          // (m)
+  static constexpr float kMaxLateralDisplacementForStraight = 2.5;     // (m)
+  static constexpr float kMinLongitudinalDisplacementForUTurn = 0.0;  // (m)
   static constexpr float kMaxAbsHeadingDiffForStraight = M_PI / 6.0;   // (rad)
 
   // Find the last valid point in the track.
@@ -58,7 +59,8 @@ absl::optional<TrajectoryType> ClassifyTrack(int prediction_step,
   const double x_delta = end_state.center_x() - start_state.center_x();
   const double y_delta = end_state.center_y() - start_state.center_y();
   const double final_displacement = std::hypot(x_delta, y_delta);
-  const float heading_diff = end_state.heading() - start_state.heading();
+  const float heading_diff =
+      NormalizeAngle(end_state.heading() - start_state.heading());
   const Vec2d normalized_delta =
       Vec2d(x_delta, y_delta).Rotated(-start_state.heading());
   const float start_speed =
@@ -81,8 +83,8 @@ absl::optional<TrajectoryType> ClassifyTrack(int prediction_step,
     return dy < 0 ? TrajectoryType::STRAIGHT_RIGHT
                   : TrajectoryType::STRAIGHT_LEFT;
   }
-  if (heading_diff < -kMaxAbsHeadingDiffForStraight && dy < 0) {
-    return normalized_delta.x() < kMinLongitudinalDisplacementForUTurn
+  if (dy < 0) {
+    return dx < kMinLongitudinalDisplacementForUTurn
                ? TrajectoryType::RIGHT_U_TURN
                : TrajectoryType::RIGHT_TURN;
   }

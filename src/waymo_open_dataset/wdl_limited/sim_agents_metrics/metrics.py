@@ -1,17 +1,8 @@
-# Copyright 2023 The Waymo Open Dataset Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# Copyright (c) 2024 Waymo LLC. All rights reserved.
+
+# This is licensed under a BSD+Patent license.
+# Please see LICENSE and PATENTS text files.
+# ==============================================================================
 """Collection of metrics used to evaluate Sim Agents Challenge submissions."""
 
 from typing import List
@@ -21,12 +12,12 @@ import numpy as np
 import tensorflow as tf
 
 # copybara removed file resource import
-
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos import sim_agents_metrics_pb2
 from waymo_open_dataset.protos import sim_agents_submission_pb2
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import estimators
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import metric_features
+from waymo_open_dataset.wdl_limited.sim_agents_metrics import trajectory_features
 
 _METRIC_FIELD_NAMES_BY_BUCKET = {
     'kinematic': [
@@ -52,7 +43,7 @@ def load_metrics_config() -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
   """Loads the `SimAgentMetricsConfig` used for the challenge."""
   # pylint: disable=line-too-long
   # pyformat: disable
-  config_path = '{pyglib_resource}waymo_open_dataset/wdl_limited/sim_agents_metrics/challenge_config.textproto'.format(pyglib_resource='')
+  config_path = '{pyglib_resource}waymo_open_dataset/wdl_limited/sim_agents_metrics/challenge_2024_config.textproto'.format(pyglib_resource='')
   with open(config_path, 'r') as f:
     config = sim_agents_metrics_pb2.SimAgentMetricsConfig()
     text_format.Parse(f.read(), config)
@@ -95,9 +86,11 @@ def compute_scenario_metrics_for_bundle(
       log_values=log_features.angular_speed[0],
       sim_values=sim_features.angular_speed)
   # Get the log speed (linear and angular) validity. Since this is computed by
-  # a delta between steps `i` and `i+1`, we verify that both of these are valid
-  # (logical and).
-  speed_validity = _logical_and_diff(log_features.valid[0], prepend_value=False)
+  # a delta between steps `i-1` and `i+1`, we verify that both of these are
+  # valid (logical and).
+  speed_validity, acceleration_validity = (
+      trajectory_features.compute_kinematic_validity(log_features.valid[0])
+  )
   # The score is computed as the sum of the log-likelihoods, filtered by
   # validity. We exponentiate the result to get a score in the range [0,1].
   linear_speed_likelihood = tf.exp(_reduce_average_with_validity(
@@ -116,7 +109,6 @@ def compute_scenario_metrics_for_bundle(
       feature_config=config.angular_acceleration,
       log_values=log_features.angular_acceleration[0],
       sim_values=sim_features.angular_acceleration)
-  acceleration_validity = _logical_and_diff(speed_validity, prepend_value=False)
   linear_accel_likelihood = tf.exp(_reduce_average_with_validity(
       linear_accel_log_likelihood, acceleration_validity))
   angular_accel_likelihood = tf.exp(_reduce_average_with_validity(
@@ -124,6 +116,7 @@ def compute_scenario_metrics_for_bundle(
 
   # Collision likelihood is computed by aggregating in time. For invalid objects
   # in the logged scenario, we need to filter possible collisions in simulation.
+  # `sim_collision_indication` shape: (n_samples, n_objects).
   sim_collision_indication = tf.reduce_any(
       tf.where(log_features.valid, sim_features.collision_per_step, False),
       axis=2)
@@ -164,6 +157,7 @@ def compute_scenario_metrics_for_bundle(
 
   # Off-road and distance to road edge. Again, aggregate over objects and
   # timesteps by summing the log-probabilities.
+  # `sim_offroad_indication` shape: (n_samples, n_objects).
   sim_offroad_indication = tf.reduce_any(
       tf.where(log_features.valid, sim_features.offroad_per_step, False),
       axis=2)
@@ -191,6 +185,16 @@ def compute_scenario_metrics_for_bundle(
       )
   )
 
+  # ==== Simulated collision and offroad rates ====
+  simulated_collision_rate = tf.reduce_sum(
+      # `sim_collision_indication` shape: (n_samples, n_objects).
+      tf.cast(sim_collision_indication, tf.int32)
+  ) / tf.reduce_sum(tf.ones_like(sim_collision_indication, dtype=tf.int32))
+  simulated_offroad_rate = tf.reduce_sum(
+      # `sim_offroad_indication` shape: (n_samples, n_objects).
+      tf.cast(sim_offroad_indication, tf.int32)
+  ) / tf.reduce_sum(tf.ones_like(sim_offroad_indication, dtype=tf.int32))
+
   # ==== Meta-metric ====
   likelihood_metrics = {
       'linear_speed_likelihood': linear_speed_likelihood.numpy(),
@@ -216,7 +220,9 @@ def compute_scenario_metrics_for_bundle(
       metametric=metametric,
       average_displacement_error=average_displacement_error,
       min_average_displacement_error=min_average_displacement_error,
-      **likelihood_metrics
+      simulated_collision_rate=simulated_collision_rate.numpy(),
+      simulated_offroad_rate=simulated_offroad_rate.numpy(),
+      **likelihood_metrics,
   )
 
 
@@ -262,36 +268,10 @@ def aggregate_metrics_to_buckets(
       kinematic_metrics=bucketed_metrics['kinematic'],
       interactive_metrics=bucketed_metrics['interactive'],
       map_based_metrics=bucketed_metrics['map_based'],
-      min_ade=metrics.min_average_displacement_error
+      min_ade=metrics.min_average_displacement_error,
+      simulated_collision_rate=metrics.simulated_collision_rate,
+      simulated_offroad_rate=metrics.simulated_offroad_rate,
   )
-
-
-def _logical_and_diff(
-    valid: tf.Tensor, prepend_value: bool = False) -> tf.Tensor:
-  """Computes the 1-step logical and between the elements of a boolean tensor.
-
-  To determine the validity of fields that are computed by deltas between steps
-  (e.g. speed, acceleration), we determine that if any of the steps are invalid,
-  the whole difference needs to be invalidated (i.e. logical_and).
-
-  Args:
-    valid: A tensor of shape (..., n_steps).
-    prepend_value: The value to prepend to the result to maintain the original
-      tensor shape.
-
-  Returns:
-    The 1-step logical and between elements of `valid. The resulting shape is
-    still (..., n_steps), as the `prepend_value` is prepended to the whole
-    result.
-  """
-  if valid.dtype != tf.bool:
-    raise ValueError('The `valid` tensor must have boolean dtype. '
-                     f'(Actual: {valid.dtype}).')
-  prepend_shape = (*valid.shape[:-1], 1)
-  prepend_tensor = tf.fill(prepend_shape, prepend_value)
-  return tf.concat([
-      prepend_tensor, tf.logical_and(valid[..., 1:], valid[..., :-1])
-      ], axis=-1)
 
 
 def _reduce_average_with_validity(

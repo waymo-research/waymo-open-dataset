@@ -26,6 +26,28 @@ compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
 [wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
 respectively, for details.
 
+## March 2024 Update
+This update contains several changes/addition to the datasets:
+
+Perception dataset (v1.4.3 and v2.0.1):
+- We made improvements in the 3D semantic segmentation ground truth labels, especially for the class of motorcyclist.
+
+Motion dataset (v1.2.1):
+- The 1.2.1 WOMD release now provides camera data, including front, front-left, front-right, side-left, side-right, rear-left, rear-right, and rear sensors. Similar to the Lidar data, the camera data of the training, validation and testing sets cover the first 1 second of each of the 9 second windows. Instead of releasing raw camera images, we release the image tokens and image embedding extracted from a pre-trained VQ-GAN model.
+- The initial release of the WOMD camera data contained misalignment between LiDAR data and roadgraph inputs for some frames. The 1.2.1 release provides new timestamps for the lidar data with an updated pose transformation matrix per time step.
+
+We also provide the following changes to the code supporting the challenges.
+
+Motion prediction:
+- We have improved the logic behind the behavior bucketing used for mAP.
+
+Sim Agents:
+- We have improved the quality of the kinematic metrics by using smoother estimates of speeds and accelerations.
+- We have fixed an edge case for offroad computation with over-passes.
+- We have re-calibratred the metric configuration and composite metrics weights.
+- We report simulated collision and offroad rates (not likelihoods).
+
+
 ## December 2023 Update
 We released v1.6.1 version of the pip package with fixes for the WOSAC metrics:
 - Fixing a bug in validity checking for collision and offroad.
@@ -148,12 +170,12 @@ This code repository contains:
   pages={9710-9719}
 }
 
-@article{Kan_2023_arxiv,
+@InProceedings{Kan_2024_icra,
   author={Chen, Kan and Ge, Runzhou and Qiu, Hang and Ai-Rfou, Rami and Qi, Charles R. and Zhou, Xuanyu and Yang, Zoey and Ettinger, Scott and Sun, Pei and Leng, Zhaoqi and Mustafa, Mustafa and Bogun, Ivan and Wang, Weiyue and Tan, Mingxing and Anguelov, Dragomir},
   title={WOMD-LiDAR: Raw Sensor Dataset Benchmark for Motion Forecasting},
-  month={April},
-  journal={arXiv preprint arXiv:2304.03834},
-  year={2023}
+  month={May},
+  booktitle= Proceedings of the IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2024}
 }
 
 ## Dataset Metadata

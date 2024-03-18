@@ -28,7 +28,8 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     super().setUp()
     self.batch_size = 8
     inputs = occupancy_flow_test_util.make_one_data_batch(
-        batch_size=self.batch_size)
+        batch_size=self.batch_size
+    )
     self.inputs = occupancy_flow_data.add_sdc_fields(inputs)
     self.config = occupancy_flow_test_util.make_test_config()
 
@@ -46,12 +47,14 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     height = self.config.grid_height_cells
     width = self.config.grid_width_cells
     num_steps = occupancy_flow_renderer._get_num_steps_from_times(
-        times=times, config=self.config)
+        times=times, config=self.config
+    )
 
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
       self.assertEqual(
           agent_grids.view(object_type).shape,
-          (batch_size, height, width, num_steps))
+          (batch_size, height, width, num_steps),
+      )
       # The test tf example contains all object types, so:
       self.assertEqual(np.min(agent_grids.view(object_type).numpy()), 0.0)
       self.assertEqual(np.max(agent_grids.view(object_type).numpy()), 1.0)
@@ -70,7 +73,8 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     height = self.config.grid_height_cells
     width = self.config.grid_width_cells
     num_all_steps = occupancy_flow_renderer._get_num_steps_from_times(
-        times=times, config=self.config)
+        times=times, config=self.config
+    )
 
     waypoint_size = self.config.num_future_steps // self.config.num_waypoints
     num_flow_steps = num_all_steps - waypoint_size
@@ -78,11 +82,13 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
       self.assertEqual(
           agent_grids.view(object_type).shape,
-          (batch_size, height, width, num_flow_steps, 2))
+          (batch_size, height, width, num_flow_steps, 2),
+      )
 
   def test_render_roadgraph_from_inputs(self):
     roadgraph = occupancy_flow_renderer.render_roadgraph_from_inputs(
-        inputs=self.inputs, config=self.config)
+        inputs=self.inputs, config=self.config
+    )
 
     batch_size = self.batch_size
     height = self.config.grid_height_cells

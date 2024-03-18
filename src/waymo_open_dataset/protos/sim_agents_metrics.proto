@@ -125,6 +125,12 @@ message SimAgentMetrics {
   // Map-based features: distance to road edge, offroad indication.
   optional float distance_to_road_edge_likelihood = 11;
   optional float offroad_indication_likelihood = 12;
+
+  // Fraction of simulated objects that collide for at least one step with any
+  // other simulated object.
+  optional float simulated_collision_rate = 14;
+  // Fraction of simulated objects that drive offroad for at least one step.
+  optional float simulated_offroad_rate = 15;
 }
 
 // Bucketed version of the sim agent metrics. This aggregated message is used
@@ -148,4 +154,9 @@ message SimAgentsBucketedMetrics {
   optional float map_based_metrics = 6;
   // MinADE.
   optional float min_ade = 7;
+  // Fraction of simulated objects that collide for at least one step with any
+  // other simulated object.
+  optional float simulated_collision_rate = 8;
+  // Fraction of simulated objects that drive offroad for at least one step.
+  optional float simulated_offroad_rate = 9;
 }

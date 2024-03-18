@@ -1,20 +1,11 @@
-# Copyright 2023 The Waymo Open Dataset Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# Copyright (c) 2024 Waymo LLC. All rights reserved.
+
+# This is licensed under a BSD+Patent license.
+# Please see LICENSE and PATENTS text files.
+# ==============================================================================
 """Map-based metric features for sim agents."""
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 import tensorflow as tf
 
@@ -23,7 +14,7 @@ from waymo_open_dataset.utils import box_utils
 from waymo_open_dataset.utils import geometry_utils
 
 # Constant distance to apply when distances are invalid. This will avoid the
-# propagation of nans and should be reduced out when taking the maximum anyway.
+# propagation of nans and should be reduced out when taking the minimum anyway.
 EXTREMELY_LARGE_DISTANCE = 1e10
 # Off-road threshold, i.e. smallest distance away from the road edge that is
 # considered to be a off-road.
@@ -32,6 +23,10 @@ OFFROAD_DISTANCE_THRESHOLD = 0.0
 # How close the start and end point of a map feature need to be for the feature
 # to be considered cyclic, in m^2.
 _CYCLIC_MAP_FEATURE_TOLERANCE_M2 = 1.0
+# Scaling factor for vertical distances used when finding the closest segment to
+# a query point. This prevents wrong associations in cases with under- and
+# over-passes.
+_Z_STRETCH_FACTOR = 3.0
 
 
 _Polyline = Sequence[map_pb2.MapPoint]
@@ -93,31 +88,30 @@ def compute_distance_to_road_edge(
       [center_x, center_y, center_z, length, width, height, heading], axis=-1)
   num_objects, num_steps, num_features = boxes.shape
   boxes = tf.reshape(boxes, [num_objects * num_steps, num_features])
-  # Compute box corners using `box_utils`, and take the xy coords of the bottom
-  # corners, as we are only computing distances for 2D boxes.
-  box_corners = box_utils.get_upright_3d_box_corners(boxes)[:, :4, :2]
-  box_corners = tf.reshape(box_corners, (num_objects, num_steps, 4, 2))
+  # Compute box corners using `box_utils`, and take the xyz coords of the bottom
+  # corners.
+  box_corners = box_utils.get_upright_3d_box_corners(boxes)[:, :4]
+  box_corners = tf.reshape(box_corners, (num_objects, num_steps, 4, 3))
 
   # Gather objects in the evaluation set
-  # `eval_corners` shape: (num_evaluated_objects, num_steps, 4, 2).
+  # `eval_corners` shape: (num_evaluated_objects, num_steps, 4, 3).
   eval_corners = tf.gather(
       box_corners, tf.where(evaluated_object_mask)[:, 0], axis=0)
   num_eval_objects = eval_corners.shape[0]
 
   # Flatten query points.
-  # `flat_eval_corners` shape: (num_query_points, 2).
-  flat_eval_corners = tf.reshape(eval_corners, (-1, 2))
+  # `flat_eval_corners` shape: (num_query_points, 3).
+  flat_eval_corners = tf.reshape(eval_corners, (-1, 3))
 
   # Tensorize road edges.
-  polyline_tensors = []
-  for polyline in road_edge_polylines:
-    polyline_tensors.append(
-        tf.constant([[map_point.x, map_point.y] for map_point in polyline]))
+  polylines_tensor = _tensorize_polylines(road_edge_polylines)
+  is_polyline_cyclic = _check_polyline_cycles(road_edge_polylines)
 
   # Compute distances for all query points.
   # `corner_distance_to_road_edge` shape: (num_query_points).
   corner_distance_to_road_edge = _compute_signed_distance_to_polylines(
-      xys=flat_eval_corners, polylines=polyline_tensors
+      xyzs=flat_eval_corners, polylines=polylines_tensor,
+      is_polyline_cyclic=is_polyline_cyclic, z_stretch=_Z_STRETCH_FACTOR
   )
   # `corner_distance_to_road_edge` shape: (num_evaluated_objects, num_steps, 4).
   corner_distance_to_road_edge = tf.reshape(
@@ -134,9 +128,71 @@ def compute_distance_to_road_edge(
   return tf.where(eval_validity, signed_distances, -EXTREMELY_LARGE_DISTANCE)
 
 
+def _tensorize_polylines(polylines: Sequence[_Polyline]) -> tf.Tensor:
+  """Stacks a sequence of polylines into a tensor.
+
+  Args:
+    polylines: A sequence of Polyline objects.
+
+  Returns:
+    A float tensor with shape (num_polylines, max_length, 4) containing xyz
+      coordinates and a validity flag for all points in the polylines. Polylines
+      are padded with zeros up to the length of the longest one.
+  """
+  polyline_tensors = []
+  max_length = 0
+  for polyline in polylines:
+    # Skip degenerate polylines.
+    if len(polyline) < 2:
+      continue
+    max_length = max(max_length, len(polyline))
+    polyline_tensors.append(
+        # shape: (num_segments+1, 4: x,y,z,valid)
+        tf.constant([
+            [map_point.x, map_point.y, map_point.z, 1.0]
+            for map_point in polyline
+        ])
+    )
+  # shape: (num_polylines, max_length, 4)
+  return tf.stack(
+      [
+          tf.concat([p, tf.zeros([max_length - p.shape[0], 4])], axis=0)
+          for p in polyline_tensors
+      ],
+      axis=0,
+  )
+
+
+def _check_polyline_cycles(polylines: Sequence[_Polyline]) -> tf.Tensor:
+  """Checks if given polylines are cyclic and returns the result as a tensor.
+
+  Args:
+    polylines: A sequence of Polyline objects.
+
+  Returns:
+    A bool tensor with shape (num_polylines) indicating whether each polyline is
+    cyclic.
+  """
+  cycles = []
+  for polyline in polylines:
+    # Skip degenerate polylines.
+    if len(polyline) < 2:
+      continue
+    first_point = tf.constant([polyline[0].x, polyline[0].y, polyline[0].z])
+    last_point = tf.constant([polyline[-1].x, polyline[-1].y, polyline[-1].z])
+    cycles.append(
+        tf.reduce_sum(tf.math.square(first_point - last_point), axis=-1)
+        < _CYCLIC_MAP_FEATURE_TOLERANCE_M2
+    )
+  # shape: (num_polylines)
+  return tf.stack(cycles, axis=0)
+
+
 def _compute_signed_distance_to_polylines(
-    xys: tf.Tensor,
-    polylines: Sequence[tf.Tensor],
+    xyzs: tf.Tensor,
+    polylines: tf.Tensor,
+    is_polyline_cyclic: Optional[tf.Tensor] = None,
+    z_stretch: float = 1.0,
 ) -> tf.Tensor:
   """Computes the signed distance to the 2D boundary defined by polylines.
 
@@ -146,86 +202,94 @@ def _compute_signed_distance_to_polylines(
   The polylines should be oriented such that port side is inside the boundary
   and starboard is outside, a.k.a counterclockwise winding order.
 
-  Note: degenerate segments (start == end) can cause undefined behaviour.
-
-  Args:
-    xys: A float Tensor of shape (num_points, 2) containing xy coordinates of
-      query points.
-    polylines: List of tensors of shape (num_segments+1, 2) containing sequences
-      of xy coordinates representing start and end points of consecutive
-      segments.
-
-  Returns:
-    A tensor of shape (num_points), containing the signed distance from queried
-      points to the nearest polyline.
-  """
-  distances = []
-  for polyline in polylines:
-    # Skip degenerate polylines.
-    if len(polyline) < 2:
-      continue
-
-    distances.append(_compute_signed_distance_to_polyline(xys, polyline))
-
-  # `distances` shape: (num_points, num_nondegenerate_polylines).
-  distances = tf.stack(distances, axis=-1)
-  return tf.gather(
-      distances, tf.argmin(tf.abs(distances), axis=-1), batch_dims=1
-  )
-
-
-def _compute_signed_distance_to_polyline(
-    xys: tf.Tensor,
-    polyline: tf.Tensor,
-) -> tf.Tensor:
-  """Computes the signed distance to the 2D boundary defined by a polyline.
-
-  Negative distances correspond to being inside the boundary (e.g. on the
-  road), positive distances to being outside (e.g. off-road).
-
-  The polyline should be oriented such that port side is inside the boundary
-  and starboard is outside, a.k.a counterclockwise winding order.
+  The altitudes i.e. the z-coordinates of query points and polyline segments
+  are used to pair each query point with the most relevant segment, that is
+  closest and at the right altitude. The distances returned are 2D distances in
+  the xy plane.
 
   Note: degenerate segments (start == end) can cause undefined behaviour.
 
   Args:
-    xys: A float Tensor of shape (num_points, 2) containing xy coordinates of
+    xyzs: A float Tensor of shape (num_points, 3) containing xyz coordinates of
       query points.
-    polyline: A float Tensor of shape (num_segments+1, 2) containing sequences
-      of xy coordinates representing start and end points of consecutive
-      segments.
+    polylines: Tensor with shape (num_polylines, num_segments+1, 4) containing
+      sequences of xyz coordinates and validity, representing start and end
+      points of consecutive segments.
+    is_polyline_cyclic: A boolean Tensor with shape (num_polylines) indicating
+      whether each polyline is cyclic. If None, all polylines are considered
+      non-cyclic.
+    z_stretch: Factor by which to scale distances over the z axis. This can be
+      done to ensure edge points from the wrong level (e.g. overpasses) are not
+      selected. Defaults to 1.0 (no stretching).
+
 
   Returns:
-    A tensor of shape (num_points), containing the signed distance from queried
-      points to the polyline.
+    A tensor of shape (num_points), containing the signed 2D distance from
+      queried points to the nearest polyline.
   """
-  is_cyclic = (
-      tf.reduce_sum(tf.math.square(polyline[0] - polyline[-1]))
-      < _CYCLIC_MAP_FEATURE_TOLERANCE_M2
+  num_points = xyzs.shape[0]
+  tf.ensure_shape(xyzs, [num_points, 3])
+  num_polylines = polylines.shape[0]
+  num_segments = polylines.shape[1] - 1
+  tf.ensure_shape(polylines, [num_polylines, num_segments + 1, 4])
+
+  # shape: (num_polylines, num_segments+1)
+  is_point_valid = tf.cast(polylines[:, :, 3], dtype=tf.bool)
+  # shape: (num_polylines, num_segments)
+  is_segment_valid = tf.logical_and(
+      is_point_valid[:, :-1], is_point_valid[:, 1:]
   )
+
+  if is_polyline_cyclic is None:
+    is_polyline_cyclic = tf.zeros([num_polylines], dtype=tf.bool)
+  else:
+    tf.ensure_shape(is_polyline_cyclic, [num_polylines])
+
   # Get distance to each segment.
-  # shape: (num_points, num_segments, 2)
-  xy_starts = polyline[tf.newaxis, :-1, :2]
-  xy_ends = polyline[tf.newaxis, 1:, :2]
-  start_to_point = xys[:, tf.newaxis, :2] - xy_starts
-  start_to_end = xy_ends - xy_starts
+  # shape: (num_points, num_polylines, num_segments, 3)
+  xyz_starts = polylines[tf.newaxis, :, :-1, :3]
+  xyz_ends = polylines[tf.newaxis, :, 1:, :3]
+  start_to_point = xyzs[:, tf.newaxis, tf.newaxis, :3] - xyz_starts
+  start_to_end = xyz_ends - xyz_starts
 
   # Relative coordinate of point projection on segment.
-  # shape: (num_points, num_segments)
+  # shape: (num_points, num_polylines, num_segments)
   rel_t = tf.math.divide_no_nan(
-      geometry_utils.dot_product_2d(start_to_point, start_to_end),
-      geometry_utils.dot_product_2d(start_to_end, start_to_end),
+      geometry_utils.dot_product_2d(
+          start_to_point[..., :2], start_to_end[..., :2]
+      ),
+      geometry_utils.dot_product_2d(
+          start_to_end[..., :2], start_to_end[..., :2]
+      ),
   )
 
   # Negative if point is on port side of segment, positive if point on
   # starboard side of segment.
-  # shape: (num_points, num_segments)
-  n = tf.sign(geometry_utils.cross_product_2d(start_to_point, start_to_end))
-  # Absolute distance to segment.
-  # shape: (n_points, n_segments)
-  distance_to_segment = tf.linalg.norm(
-      start_to_point
-      - (start_to_end * tf.clip_by_value(rel_t, 0.0, 1.0)[..., tf.newaxis]),
+  # shape: (num_points, num_polylines, num_segments)
+  n = tf.sign(
+      geometry_utils.cross_product_2d(
+          start_to_point[..., :2], start_to_end[..., :2]
+      )
+  )
+
+  # Compute the absolute 3d distance to segment.
+  # The vertical component is scaled by `z-stretch` to increase the separation
+  # between different road altitudes.
+  # shape: (num_points, num_polylines, num_segments, 3)
+  segment_to_point = start_to_point - (
+      start_to_end * tf.clip_by_value(rel_t, 0.0, 1.0)[..., tf.newaxis]
+  )
+  # shape: (3)
+  stretch_vector = tf.constant([1.0, 1.0, z_stretch], dtype=tf.float32)
+  # shape: (num_points, num_polylines, num_segments)
+  distance_to_segment_3d = tf.linalg.norm(
+      segment_to_point * stretch_vector[tf.newaxis, tf.newaxis, tf.newaxis],
+      axis=-1,
+  )
+  # Absolute planar distance to segment.
+  # shape: (num_points, num_polylines, num_segments)
+  distance_to_segment_2d = tf.linalg.norm(
+      segment_to_point[..., :2],
       axis=-1,
   )
 
@@ -239,43 +303,126 @@ def _compute_signed_distance_to_polyline(
   #       sign of the distance depends on the convexity of the nearest and next
   #       segments.
 
-  # shape: (num_points, num_segments+2, 2)
+  # shape: (num_points, num_polylines, num_segments+2, 2)
   start_to_end_padded = tf.concat(
-      [start_to_end[:, -1:], start_to_end, start_to_end[:, :1]], axis=1
+      [
+          start_to_end[:, :, -1:, :2],
+          start_to_end[..., :2],
+          start_to_end[:, :, :1, :2],
+      ],
+      axis=-2,
   )
-  # shape: (num_points, num_segments+1)
+  # shape: (num_points, num_polylines, num_segments+1)
   is_locally_convex = tf.greater(
       geometry_utils.cross_product_2d(
-          start_to_end_padded[:, :-1], start_to_end_padded[:, 1:]
+          start_to_end_padded[:, :, :-1], start_to_end_padded[:, :, 1:]
       ),
       0.0,
   )
 
-  # shape: (num_points, num_segments)
+  # Get shifted versions of `n` and `is_segment_valid`. If the polyline is
+  # cyclic, the tensors are rolled, else they are padded with their edge value.
+  # shape: (num_points, num_polylines, num_segments)
   n_prior = tf.concat(
-      [tf.where(is_cyclic, n[:, -1:], n[:, :1]), n[:, :-1]], axis=-1
+      [
+          tf.where(
+              is_polyline_cyclic[tf.newaxis, :, tf.newaxis],
+              n[:, :, -1:],
+              n[:, :, :1],
+          ),
+          n[:, :, :-1],
+      ],
+      axis=-1,
   )
   n_next = tf.concat(
-      [n[:, 1:], tf.where(is_cyclic, n[:, :1], n[:, -1:])], axis=-1
+      [
+          n[:, :, 1:],
+          tf.where(
+              is_polyline_cyclic[tf.newaxis, :, tf.newaxis],
+              n[:, :, :1],
+              n[:, :, -1:],
+          ),
+      ],
+      axis=-1,
+  )
+  # shape: (num_polylines, num_segments)
+  is_prior_segment_valid = tf.concat(
+      [
+          tf.where(
+              is_polyline_cyclic[:, tf.newaxis],
+              is_segment_valid[:, -1:],
+              is_segment_valid[:, :1],
+          ),
+          is_segment_valid[:, :-1],
+      ],
+      axis=-1,
+  )
+  is_next_segment_valid = tf.concat(
+      [
+          is_segment_valid[:, 1:],
+          tf.where(
+              is_polyline_cyclic[:, tf.newaxis],
+              is_segment_valid[:, :1],
+              is_segment_valid[:, -1:],
+          ),
+      ],
+      axis=-1,
   )
 
-  # shape: (num_points, num_segments)
+  # shape: (num_points, num_polylines, num_segments)
   sign_if_before = tf.where(
-      is_locally_convex[:, :-1],
+      is_locally_convex[:, :, :-1],
       tf.maximum(n, n_prior),
       tf.minimum(n, n_prior),
   )
   sign_if_after = tf.where(
-      is_locally_convex[:, 1:], tf.maximum(n, n_next), tf.minimum(n, n_next)
+      is_locally_convex[:, :, 1:], tf.maximum(n, n_next), tf.minimum(n, n_next)
   )
 
-  # shape: (num_points, num_segments)
+  # shape: (num_points, num_polylines, num_segments)
   sign_to_segment = tf.where(
-      rel_t < 0.0, sign_if_before, tf.where(rel_t < 1.0, n, sign_if_after)
+      (rel_t < 0.0) & is_prior_segment_valid,
+      sign_if_before,
+      tf.where((rel_t > 1.0) & is_next_segment_valid, sign_if_after, n)
   )
 
-  # shape: (num_points)
-  distance_sign = tf.gather(
-      sign_to_segment, tf.argmin(distance_to_segment, axis=-1), batch_dims=1
+  # Flatten polylines together.
+  # shape: (num_points, all_segments)
+  distance_to_segment_3d = tf.reshape(
+      distance_to_segment_3d, (num_points, num_polylines * num_segments)
   )
-  return distance_sign * tf.math.reduce_min(distance_to_segment, axis=-1)
+  distance_to_segment_2d = tf.reshape(
+      distance_to_segment_2d, (num_points, num_polylines * num_segments)
+  )
+  sign_to_segment = tf.reshape(
+      sign_to_segment, (num_points, num_polylines * num_segments)
+  )
+
+  # Mask out invalid segments.
+  # shape: (all_segments)
+  is_segment_valid = tf.reshape(
+      is_segment_valid, (num_polylines * num_segments)
+  )
+  # shape: (num_points, all_segments)
+  distance_to_segment_3d = tf.where(
+      is_segment_valid[tf.newaxis],
+      distance_to_segment_3d,
+      EXTREMELY_LARGE_DISTANCE,
+  )
+  distance_to_segment_2d = tf.where(
+      is_segment_valid[tf.newaxis],
+      distance_to_segment_2d,
+      EXTREMELY_LARGE_DISTANCE,
+  )
+
+  # Get closest segment according to absolute 3D distance and return the
+  # corresponding signed 2D distance.
+  # shape: (num_points)
+  closest_segment_index = tf.argmin(distance_to_segment_3d, axis=-1)
+  distance_sign = tf.gather(
+      sign_to_segment, closest_segment_index, batch_dims=1
+  )
+  distance_2d = tf.gather(
+      distance_to_segment_2d, closest_segment_index, batch_dims=1
+  )
+  return distance_sign * distance_2d

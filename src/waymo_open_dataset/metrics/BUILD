@@ -168,6 +168,7 @@ cc_library(
     hdrs = ["motion_metrics_utils.h"],
     deps = [
         "//waymo_open_dataset/common:status",
+        "//waymo_open_dataset/math:math_util",
         "//waymo_open_dataset/math:polygon2d",
         "//waymo_open_dataset/math:vec2d",
         "//waymo_open_dataset/protos:motion_metrics_cc_proto",

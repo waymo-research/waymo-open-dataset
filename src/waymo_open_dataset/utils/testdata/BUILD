@@ -10,7 +10,7 @@ filegroup(
     srcs = [
         "motion_data_one_example.tfrecord",
         "motion_data_one_scenario.tfrecord",
-        "womd_lidar_data.tfrecord",
+        "womd_lidar_and_camera_data.tfrecord",
         "womd_point_cloud.png",
         "womd_scenario_input.tfrecord",
     ],

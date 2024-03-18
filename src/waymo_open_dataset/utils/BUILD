@@ -230,6 +230,15 @@ py_library(
 )
 
 py_library(
+    name = "womd_camera_utils",
+    srcs = ["womd_camera_utils.py"],
+    deps = [
+        requirement("numpy"),
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+py_library(
     name = "example_utils",
     srcs = ["example_utils.py"],
     deps = [
@@ -436,6 +445,19 @@ py_test(
         ":womd_lidar_utils",
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:compressed_lidar_proto_py_pb2",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
+    ],
+)
+
+py_test(
+    name = "womd_camera_utils_test",
+    srcs = ["womd_camera_utils_test.py"],
+    python_version = "PY3",
+    deps = [
+        requirement("numpy"),
+        requirement("tensorflow"),
+        ":womd_camera_utils",
+        "//waymo_open_dataset/protos:camera_tokens_proto_py_pb2",
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
     ],
 )

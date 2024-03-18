@@ -26,7 +26,7 @@ from waymo_open_dataset.utils import womd_lidar_utils
 # pylint: disable=line-too-long
 # pyformat: disable
 _WOMD_INPUT_SCENARIO_FILE = '{pyglib_resource}waymo_open_dataset/utils/testdata/womd_scenario_input.tfrecord'.format(pyglib_resource='')
-_WOMD_LIDAR_DATA_FILE = '{pyglib_resource}waymo_open_dataset/utils/testdata/womd_lidar_data.tfrecord'.format(pyglib_resource='')
+_WOMD_LIDAR_DATA_FILE = '{pyglib_resource}waymo_open_dataset/utils/testdata/womd_lidar_and_camera_data.tfrecord'.format(pyglib_resource='')
 # pyformat: enable
 # pylint: enable=line-too-long
 

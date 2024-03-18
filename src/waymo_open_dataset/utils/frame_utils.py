@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 """Utils for Frame protos."""
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -28,7 +28,7 @@ CameraProjections = Dict['dataset_pb2.LaserName.Name',
 SegmentationLabels = Dict['dataset_pb2.LaserName.Name',
                           List[dataset_pb2.MatrixInt32]]
 ParsedFrame = Tuple[RangeImages, CameraProjections, SegmentationLabels,
-                    Optional[dataset_pb2.MatrixFloat]]
+                    dataset_pb2.MatrixFloat]
 
 
 def parse_range_image_and_camera_projection(
@@ -51,7 +51,7 @@ def parse_range_image_and_camera_projection(
   range_images = {}
   camera_projections = {}
   seg_labels = {}
-  range_image_top_pose = None
+  range_image_top_pose: dataset_pb2.MatrixFloat = dataset_pb2.MatrixFloat()
   for laser in frame.lasers:
     if len(laser.ri_return1.range_image_compressed) > 0:  # pylint: disable=g-explicit-length-test
       range_image_str_tensor = tf.io.decode_compressed(

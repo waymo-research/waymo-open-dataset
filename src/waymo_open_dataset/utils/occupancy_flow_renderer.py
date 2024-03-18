@@ -16,7 +16,7 @@
 
 import dataclasses
 import math
-from typing import List, Mapping, Sequence, Tuple
+from typing import Mapping, Sequence
 
 import numpy as np
 import tensorflow as tf
@@ -36,6 +36,7 @@ class _SampledPoints:
   [batch_size, num_agents, num_steps, num_points] where num_points is
   (points_per_side_length * points_per_side_width).
   """
+
   # [batch, num_agents, num_steps, points_per_agent].
   x: tf.Tensor
   # [batch, num_agents, num_steps, points_per_agent].
@@ -90,7 +91,10 @@ def render_occupancy_from_inputs(
   assert_shapes = tf.debugging.assert_shapes
   batch_size, num_agents, num_steps, points_per_agent = agent_x.shape.as_list()
   topdown_shape = [
-      batch_size, config.grid_height_cells, config.grid_width_cells, num_steps
+      batch_size,
+      config.grid_height_cells,
+      config.grid_width_cells,
+      num_steps,
   ]
 
   # Transform from world coordinates to topdown image coordinates.
@@ -100,8 +104,9 @@ def render_occupancy_from_inputs(
       points_y=agent_y,
       config=config,
   )
-  assert_shapes([(point_is_in_fov,
-                  [batch_size, num_agents, num_steps, points_per_agent])])
+  assert_shapes(
+      [(point_is_in_fov, [batch_size, num_agents, num_steps, points_per_agent])]
+  )
 
   # Filter out points from invalid objects.
   agent_valid = tf.cast(agent_valid, tf.bool)
@@ -111,12 +116,15 @@ def render_occupancy_from_inputs(
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # Collect points for each agent type, i.e., pedestrians and vehicles.
     agent_type_matches = tf.equal(agent_type, object_type)
-    should_render_point = tf.logical_and(point_is_in_fov_and_valid,
-                                         agent_type_matches)
+    should_render_point = tf.logical_and(
+        point_is_in_fov_and_valid, agent_type_matches
+    )
 
     assert_shapes([
-        (should_render_point,
-         [batch_size, num_agents, num_steps, points_per_agent]),
+        (
+            should_render_point,
+            [batch_size, num_agents, num_steps, points_per_agent],
+        ),
     ])
 
     # Scatter points across topdown maps for each timestep.  The tensor
@@ -132,8 +140,10 @@ def render_occupancy_from_inputs(
     y_img_coord = tf.gather_nd(agent_y, point_indices)[..., tf.newaxis]
 
     num_points_to_render = point_indices.shape.as_list()[0]
-    assert_shapes([(x_img_coord, [num_points_to_render, 1]),
-                   (y_img_coord, [num_points_to_render, 1])])
+    assert_shapes([
+        (x_img_coord, [num_points_to_render, 1]),
+        (y_img_coord, [num_points_to_render, 1]),
+    ])
 
     # [num_points_to_render, 4]
     xy_img_coord = tf.concat(
@@ -210,8 +220,10 @@ def render_flow_from_inputs(
   waypoint_size = config.num_future_steps // config.num_waypoints
   num_flow_steps = num_steps - waypoint_size
   topdown_shape = [
-      batch_size, config.grid_height_cells, config.grid_width_cells,
-      num_flow_steps
+      batch_size,
+      config.grid_height_cells,
+      config.grid_width_cells,
+      num_flow_steps,
   ]
 
   # Transform from world coordinates to topdown image coordinates.
@@ -221,8 +233,9 @@ def render_flow_from_inputs(
       points_y=agent_y,
       config=config,
   )
-  assert_shapes([(point_is_in_fov,
-                  [batch_size, num_agents, num_steps, points_per_agent])])
+  assert_shapes(
+      [(point_is_in_fov, [batch_size, num_agents, num_steps, points_per_agent])]
+  )
 
   # Filter out points from invalid objects.
   agent_valid = tf.cast(agent_valid, tf.bool)
@@ -249,8 +262,10 @@ def render_flow_from_inputs(
   point_is_in_fov = point_is_in_fov[:, :, waypoint_size:, :]
   # agent_valid: And the two timesteps.  They both need to be valid.
   # [batch_size, num_agents, num_flow_steps, points_per_agent]
-  agent_valid = tf.logical_and(agent_valid[:, :, waypoint_size:, :],
-                               agent_valid[:, :, :-waypoint_size, :])
+  agent_valid = tf.logical_and(
+      agent_valid[:, :, waypoint_size:, :],
+      agent_valid[:, :, :-waypoint_size, :],
+  )
 
   # [batch_size, num_agents, num_flow_steps, points_per_agent]
   point_is_in_fov_and_valid = tf.logical_and(point_is_in_fov, agent_valid)
@@ -259,11 +274,14 @@ def render_flow_from_inputs(
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # Collect points for each agent type, i.e., pedestrians and vehicles.
     agent_type_matches = tf.equal(agent_type, object_type)
-    should_render_point = tf.logical_and(point_is_in_fov_and_valid,
-                                         agent_type_matches)
+    should_render_point = tf.logical_and(
+        point_is_in_fov_and_valid, agent_type_matches
+    )
     assert_shapes([
-        (should_render_point,
-         [batch_size, num_agents, num_flow_steps, points_per_agent]),
+        (
+            should_render_point,
+            [batch_size, num_agents, num_flow_steps, points_per_agent],
+        ),
     ])
 
     # [batch_size, height, width, num_flow_steps, 2]
@@ -290,7 +308,7 @@ def _render_flow_points_for_one_agent_type(
     dx: tf.Tensor,
     dy: tf.Tensor,
     should_render_point: tf.Tensor,
-    topdown_shape: List[int],
+    topdown_shape: list[int],
 ) -> tf.Tensor:
   """Renders topdown (dx, dy) flow for given agent points.
 
@@ -321,8 +339,10 @@ def _render_flow_points_for_one_agent_type(
   y_img_coord = tf.gather_nd(agent_y, point_indices)[..., tf.newaxis]
 
   num_points_to_render = point_indices.shape.as_list()[0]
-  assert_shapes([(x_img_coord, [num_points_to_render, 1]),
-                 (y_img_coord, [num_points_to_render, 1])])
+  assert_shapes([
+      (x_img_coord, [num_points_to_render, 1]),
+      (y_img_coord, [num_points_to_render, 1]),
+  ])
 
   # [num_points_to_render, 4]
   xy_img_coord = tf.concat(
@@ -385,8 +405,7 @@ def render_roadgraph_from_inputs(
 
   # Set up assert_shapes.
   assert_shapes = tf.debugging.assert_shapes
-  batch_size, num_rg_points, _ = (
-      inputs['roadgraph_samples/xyz'].shape.as_list())
+  batch_size, num_rg_points, _ = inputs['roadgraph_samples/xyz'].shape.as_list()
   topdown_shape = [batch_size, grid_height_cells, grid_width_cells, 1]
 
   # Translate the roadgraph points so that the autonomous vehicle is at the
@@ -406,12 +425,15 @@ def render_roadgraph_from_inputs(
 
   # [batch_size, num_rg_points, 1]
   rg_valid = inputs['roadgraph_samples/valid']
-  assert_shapes([(rg_points, [batch_size, num_rg_points, 3]),
-                 (rg_valid, [batch_size, num_rg_points, 1])])
+  assert_shapes([
+      (rg_points, [batch_size, num_rg_points, 3]),
+      (rg_valid, [batch_size, num_rg_points, 1]),
+  ])
   # [batch_size, num_rg_points]
   rg_x, rg_y, _ = tf.unstack(rg_points, axis=-1)
-  assert_shapes([(rg_x, [batch_size, num_rg_points]),
-                 (rg_y, [batch_size, num_rg_points])])
+  assert_shapes(
+      [(rg_x, [batch_size, num_rg_points]), (rg_y, [batch_size, num_rg_points])]
+  )
 
   if config.normalize_sdc_yaw:
     angle = math.pi / 2 - inputs['sdc/current/bbox_yaw']
@@ -444,8 +466,10 @@ def render_roadgraph_from_inputs(
   y_img_coord = tf.gather_nd(rg_y, point_indices)[..., tf.newaxis]
 
   num_points_to_render = point_indices.shape.as_list()[0]
-  assert_shapes([(x_img_coord, [num_points_to_render, 1]),
-                 (y_img_coord, [num_points_to_render, 1])])
+  assert_shapes([
+      (x_img_coord, [num_points_to_render, 1]),
+      (y_img_coord, [num_points_to_render, 1]),
+  ])
 
   # [num_points_to_render, 3]
   xy_img_coord = tf.concat(
@@ -474,7 +498,7 @@ def _transform_to_image_coordinates(
     points_x: tf.Tensor,
     points_y: tf.Tensor,
     config: occupancy_flow_metrics_pb2.OccupancyFlowTaskConfig,
-) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
   """Returns transformed points and a mask indicating whether point is in image.
 
   Args:
@@ -498,10 +522,13 @@ def _transform_to_image_coordinates(
   # Filter out points that are located outside the FOV of topdown map.
   point_is_in_fov = tf.logical_and(
       tf.logical_and(
-          tf.greater_equal(points_x, 0), tf.greater_equal(points_y, 0)),
+          tf.greater_equal(points_x, 0), tf.greater_equal(points_y, 0)
+      ),
       tf.logical_and(
           tf.less(points_x, config.grid_width_cells),
-          tf.less(points_y, config.grid_height_cells)))
+          tf.less(points_y, config.grid_height_cells),
+      ),
+  )
 
   return points_x, points_y, point_is_in_fov
 
@@ -527,10 +554,11 @@ def _sample_and_filter_agent_points(
   """
   # Set up assert_shapes.
   assert_shapes = tf.debugging.assert_shapes
-  batch_size, num_agents, _ = (inputs['state/current/x'].shape.as_list())
+  batch_size, num_agents, _ = inputs['state/current/x'].shape.as_list()
   num_steps = _get_num_steps_from_times(times, config)
   points_per_agent = (
-      config.agent_points_per_side_length * config.agent_points_per_side_width)
+      config.agent_points_per_side_length * config.agent_points_per_side_width
+  )
 
   # Sample points from agent boxes over specified time frames.
   # All fields have shape [batch_size, num_agents, num_steps, points_per_agent].
@@ -646,8 +674,10 @@ def _sample_agent_points(
     z = z - sdc_z
 
   if normalize_sdc_yaw:
-    angle = math.pi / 2 - inputs['sdc/current/bbox_yaw'][:, tf.newaxis,
-                                                         tf.newaxis, :]
+    angle = (
+        math.pi / 2
+        - inputs['sdc/current/bbox_yaw'][:, tf.newaxis, tf.newaxis, :]
+    )
     x, y = rotate_points_around_origin(x, y, angle)
     bbox_yaw = bbox_yaw + angle
 
@@ -687,7 +717,7 @@ def _sample_points_from_agent_boxes(
     y: Centers of agent boxes Y [..., 1] (same shape as x).
     z: Centers of agent boxes Z [..., 1] (same shape as x).
     bbox_yaw: Agent box orientations [..., 1] (same shape as x).
-    width : Widths of agent boxes [..., 1] (same shape as x).
+    width: Widths of agent boxes [..., 1] (same shape as x).
     length: Lengths of agent boxes [..., 1] (same shape as x).
     agent_type: Types of agents [..., 1] (same shape as x).
     valid: Agent state valid flag [..., 1] (same shape as x).
@@ -700,8 +730,14 @@ def _sample_points_from_agent_boxes(
   assert_shapes = tf.debugging.assert_shapes
   assert_shapes([(x, [..., 1])])
   x_shape = x.get_shape().as_list()
-  assert_shapes([(y, x_shape), (z, x_shape), (bbox_yaw, x_shape),
-                 (width, x_shape), (length, x_shape), (valid, x_shape)])
+  assert_shapes([
+      (y, x_shape),
+      (z, x_shape),
+      (bbox_yaw, x_shape),
+      (width, x_shape),
+      (length, x_shape),
+      (valid, x_shape),
+  ])
   if points_per_side_length < 1:
     raise ValueError('points_per_side_length must be >= 1')
   if points_per_side_width < 1:
@@ -756,7 +792,7 @@ def rotate_points_around_origin(
     x: tf.Tensor,
     y: tf.Tensor,
     angle: tf.Tensor,
-) -> Tuple[tf.Tensor, tf.Tensor]:
+) -> tuple[tf.Tensor, tf.Tensor]:
   """Rotates points around the origin.
 
   Args:
@@ -808,7 +844,8 @@ def _stack_field(
 
 def _get_num_steps_from_times(
     times: Sequence[str],
-    config: occupancy_flow_metrics_pb2.OccupancyFlowTaskConfig) -> int:
+    config: occupancy_flow_metrics_pb2.OccupancyFlowTaskConfig,
+) -> int:
   """Returns number of timesteps that exist in requested times."""
   num_steps = 0
   if 'past' in times:

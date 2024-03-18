@@ -38,7 +38,7 @@ def make_test_dataset(batch_size: int) -> tf.data.Dataset:
   return dataset
 
 
-def make_one_data_batch(batch_size: int) -> tf.Tensor:
+def make_one_data_batch(batch_size: int) -> dict[str, tf.Tensor]:
   """Returns a sample batch of data."""
   dataset = make_test_dataset(batch_size)
   it = iter(dataset)

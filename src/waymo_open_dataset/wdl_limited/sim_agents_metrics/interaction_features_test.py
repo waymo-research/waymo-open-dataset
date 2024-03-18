@@ -1,17 +1,8 @@
-# Copyright 2023 The Waymo Open Dataset Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# Copyright (c) 2024 Waymo LLC. All rights reserved.
+
+# This is licensed under a BSD+Patent license.
+# Please see LICENSE and PATENTS text files.
+# ==============================================================================
 
 import math
 from typing import List
@@ -32,6 +23,26 @@ MAX_HEADING_DIFF_FOR_SMALL_OVERLAP = (
     interaction_features.MAX_HEADING_DIFF_FOR_SMALL_OVERLAP
 )
 MAX_TTC_SEC = interaction_features.MAXIMUM_TIME_TO_COLLISION
+
+
+def _circle_to_circle_distance(x1: float, y1: float, r1: float, x2: float,
+                               y2: float, r2: float) -> float:
+  """Computes the distance between two circles.
+
+  Args:
+    x1: First coordinate of the first circle.
+    y1: Second coordinate of the first circle.
+    r1: Radius of the first circle.
+    x2: First coordinate of the second circle.
+    y2: Second coordinate of the second circle.
+    r2: Radius of the second circle.
+
+  Returns:
+    The signed distance between the two circles.
+  """
+  centers_distance = np.sqrt((x1 - x2)**2 + (y2 - y1)**2)
+  # Subtract the radii to get the circle to circle signed distance.
+  return centers_distance - r1 - r2
 
 
 class InteractionFeaturesTest(tf.test.TestCase, parameterized.TestCase):
@@ -94,7 +105,8 @@ class InteractionFeaturesTest(tf.test.TestCase, parameterized.TestCase):
         center_z=all_boxes[..., 2], length=all_boxes[..., 3],
         width=all_boxes[..., 4], height=all_boxes[..., 5],
         heading=all_boxes[..., 6], valid=validity,
-        evaluated_object_mask=evaluated_boxes)
+        evaluated_object_mask=evaluated_boxes,
+        corner_rounding_factor=0.)
 
     self.assertAllClose(distances, expected_distances)
 
@@ -150,7 +162,58 @@ class InteractionFeaturesTest(tf.test.TestCase, parameterized.TestCase):
         center_z=all_boxes[..., 2], length=all_boxes[..., 3],
         width=all_boxes[..., 4], height=all_boxes[..., 5],
         heading=all_boxes[..., 6], valid=validity,
-        evaluated_object_mask=evaluated_boxes)
+        evaluated_object_mask=evaluated_boxes,
+        corner_rounding_factor=0.)
+    self.assertAllClose(distances, expected_distances)
+
+  @parameterized.named_parameters(
+      (
+          'no_rounding',
+          0.,
+          # Touching corners
+          0.,
+      ),
+      (
+          'max_rounding',
+          1.,
+          # Circles of radii and centers 1, (0,0) and 2, (3, 3) respectively.
+          _circle_to_circle_distance(0., 0., 1., 3., 3., 2.)
+      ),
+      (
+          'medium_rounding',
+          0.5,
+          # Circles of radii and centers 0.5, (0.5,0.5) and 1, (2, 2)
+          # respectively.
+          _circle_to_circle_distance(0.5, 0.5, 0.5, 2., 2., 1.)
+      ),
+  )
+  def test_distance_to_nearest_object_with_corner_rounding(
+      self, corner_rounding_factor: float, expected_distance: float):
+    # Create 2 boxes, box1 shaped 2x2 centered on (0, 0), box2 shaped 6x4
+    # centered on (4, 3).
+    # Box parameters are ordered as (x,y,z,l,w,h,heading).
+    # Shape: (2, 1, 7).
+    all_boxes = tf.constant(
+        [[[0.0, 0.0, 0.0, 2.0, 2.0, 1.0, 0.0]],
+         [[4.0, 3.0, 0.0, 6.0, 4.0, 1.0, 0.0]]])
+    # Shape: (objects, steps, box parameters)
+    all_boxes = tf.broadcast_to(all_boxes, [2, 3, 7])
+
+    # Evaluate only box 1, and consider all the boxes valid at every step.
+    evaluated_boxes = tf.constant([True, False])
+    validity = tf.fill(all_boxes.shape[:-1], True)
+
+    expected_distances = tf.constant([[expected_distance]])
+    # Shape: (evaluated objects, steps)
+    expected_distances = tf.broadcast_to(expected_distances, [1, 3])
+
+    distances = interaction_features.compute_distance_to_nearest_object(
+        center_x=all_boxes[..., 0], center_y=all_boxes[..., 1],
+        center_z=all_boxes[..., 2], length=all_boxes[..., 3],
+        width=all_boxes[..., 4], height=all_boxes[..., 5],
+        heading=all_boxes[..., 6], valid=validity,
+        evaluated_object_mask=evaluated_boxes,
+        corner_rounding_factor=corner_rounding_factor)
     self.assertAllClose(distances, expected_distances)
 
   def test_time_to_collision_with_object_in_front_has_correct_shape(self):
@@ -280,21 +343,20 @@ class InteractionFeaturesTest(tf.test.TestCase, parameterized.TestCase):
     expected_ttc_sec = tf.convert_to_tensor(expected_ttc_sec, dtype=tf.float32)
 
     seconds_per_step = 0.1
-    # Simulate 1 step back to get non-nan speeds.
+    # Simulate 2 steps back and forward to get non-nan speeds with central
+    # difference.
+    center_x_1 = center_xys[:, 0]
+    center_x_2 = center_x_1 + speeds * tf.math.cos(headings) * seconds_per_step
+    center_x_0 = center_x_1 - speeds * tf.math.cos(headings) * seconds_per_step
     center_x = tf.stack(
-        [
-            center_xys[:, 0]
-            - speeds * tf.math.cos(headings) * seconds_per_step,
-            center_xys[:, 0],
-        ],
+        [center_x_0, center_x_1, center_x_2],
         axis=-1,
     )
+    center_y_1 = center_xys[:, 1]
+    center_y_2 = center_y_1 - speeds * tf.math.sin(headings) * seconds_per_step
+    center_y_0 = center_y_1 + speeds * tf.math.sin(headings) * seconds_per_step
     center_y = tf.stack(
-        [
-            center_xys[:, 1],
-            center_xys[:, 1]
-            + speeds * tf.math.sin(headings) * seconds_per_step,
-        ],
+        [center_y_0, center_y_1, center_y_2],
         axis=-1,
     )
     length = tf.broadcast_to(boxes_sizes[:, 0:1], center_x.shape)

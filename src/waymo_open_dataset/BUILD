@@ -35,6 +35,7 @@ all_proto_library(
 
 compile_pip_requirements(
     name = "requirements",
+    timeout = "moderate",
     extra_args = [
         "--resolver=backtracking",
         "--allow-unsafe",

@@ -1,17 +1,8 @@
-# Copyright 2023 The Waymo Open Dataset Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# Copyright (c) 2024 Waymo LLC. All rights reserved.
+
+# This is licensed under a BSD+Patent license.
+# Please see LICENSE and PATENTS text files.
+# ==============================================================================
 """Interaction metric features for sim agents."""
 
 import math
@@ -30,6 +21,11 @@ EXTREMELY_LARGE_DISTANCE = 1e10
 # Collision threshold, i.e. largest distance between objects that is considered
 # to be a collision.
 COLLISION_DISTANCE_THRESHOLD = 0.0
+# Rounding factor to apply to the corners of the object boxes in distance and
+# collision computation. The rounding factor is between 0 and 1, where 0 yields
+# rectangles with sharp corners (no rounding) and 1 yields capsule shapes.
+# Default value of 0.7 conservately fits most vehicle contours.
+CORNER_ROUNDING_FACTOR = 0.7
 
 # Condition thresholds for filtering obstacles driving ahead of the ego pbject
 # when computing the time-to-collision metric. This metric only considers
@@ -47,35 +43,50 @@ SMALL_OVERLAP_THRESHOLD = 0.5  # meters.
 MAXIMUM_TIME_TO_COLLISION = 5.0
 
 
+
+
+
 def compute_distance_to_nearest_object(
-    *, center_x: tf.Tensor, center_y: tf.Tensor, center_z: tf.Tensor,
-    length: tf.Tensor, width: tf.Tensor, height: tf.Tensor, heading: tf.Tensor,
-    valid: tf.Tensor, evaluated_object_mask: tf.Tensor
+    *,
+    center_x: tf.Tensor,
+    center_y: tf.Tensor,
+    center_z: tf.Tensor,
+    length: tf.Tensor,
+    width: tf.Tensor,
+    height: tf.Tensor,
+    heading: tf.Tensor,
+    valid: tf.Tensor,
+    evaluated_object_mask: tf.Tensor,
+    corner_rounding_factor: float = CORNER_ROUNDING_FACTOR,
 ) -> tf.Tensor:
   """Computes the distance to nearest object for each of the evaluated objects.
 
+  Objects are represented by 2D rectangles with rounded corners.
+
   Args:
-    center_x: A float Tensor of shape (num_objects, num_steps) containing
-      the x-component of the object positions.
-    center_y: A float Tensor of shape (num_objects, num_steps) containing
-      the y-component of the object positions.
-    center_z: A float Tensor of shape (num_objects, num_steps) containing
-      the z-component of the object positions.
-    length: A float Tensor of shape (num_objects, num_steps) containing
-      the object lengths.
-    width: A float Tensor of shape (num_objects, num_steps) containing
-      the object widths.
-    height: A float Tensor of shape (num_objects, num_steps) containing
-      the object heights.
-    heading: A float Tensor of shape (num_objects, num_steps) containing
-      the object headings, in radians.
+    center_x: A float Tensor of shape (num_objects, num_steps) containing the
+      x-component of the object positions.
+    center_y: A float Tensor of shape (num_objects, num_steps) containing the
+      y-component of the object positions.
+    center_z: A float Tensor of shape (num_objects, num_steps) containing the
+      z-component of the object positions.
+    length: A float Tensor of shape (num_objects, num_steps) containing the
+      object lengths.
+    width: A float Tensor of shape (num_objects, num_steps) containing the
+      object widths.
+    height: A float Tensor of shape (num_objects, num_steps) containing the
+      object heights.
+    heading: A float Tensor of shape (num_objects, num_steps) containing the
+      object headings, in radians.
     valid: A boolean Tensor of shape (num_objects, num_steps) containing the
       validity of the objects over time.
-    evaluated_object_mask: A boolean tensor of shape (num_objects), to index
-      the objects identified by the tensors defined above. If True, the object
-      is considered part of the "evaluation set", i.e. the object can actively
+    evaluated_object_mask: A boolean tensor of shape (num_objects), to index the
+      objects identified by the tensors defined above. If True, the object is
+      considered part of the "evaluation set", i.e. the object can actively
       collide into other objects. If False, the object can also be passively
       collided into.
+    corner_rounding_factor: Rounding factor to apply to the corners of the
+      object boxes, between 0 (no rounding) and 1 (capsule shape rounding).
 
   Returns:
     A tensor of shape (num_evaluated_objects, num_steps), containing the
@@ -84,9 +95,33 @@ def compute_distance_to_nearest_object(
   """
   # Concatenate tensors to have the same convention as `box_utils`.
   boxes = tf.stack(
-      [center_x, center_y, center_z, length, width, height, heading], axis=-1)
+      [center_x, center_y, center_z, length, width, height, heading], axis=-1
+  )
   num_objects, num_steps, num_features = boxes.shape
+
+  # Shrink the bounding boxes to get their rectangular "core". The rounded
+  # rectangles we want to process are distance isolines of the rectangle cores.
+
+  # The shrinking distance is half of the minimal dimension between length and
+  # width, multiplied by the rounding factor.
+  # Shape: [num_objects, num_steps]
+  shrinking_distance = (
+      tf.minimum(boxes[:, :, 3], boxes[:, :, 4]) * corner_rounding_factor / 2.
+  )
+  # Box cores to use in distance computation below, after shrinking all sides
+  # uniformly.
+  boxes = tf.concat(
+      [
+          boxes[:, :, :3],
+          boxes[:, :, 3:4] - 2.*shrinking_distance[..., tf.newaxis],
+          boxes[:, :, 4:5] - 2.*shrinking_distance[..., tf.newaxis],
+          boxes[:, :, 5:],
+      ],
+      axis=2,
+  )
+
   boxes = tf.reshape(boxes, [num_objects * num_steps, num_features])
+
   # Compute box corners using `box_utils`, and take xy coordinates of the lower
   # 4 corners (lower in terms of z-coordinate), as we are only computing
   # distances for 2D boxes.
@@ -99,29 +134,33 @@ def compute_distance_to_nearest_object(
   # later to filter out self distances).
   # `eval_corners` shape: (num_evaluated_objects, num_steps, 4, 2).
   eval_corners = tf.gather(
-      box_corners, tf.where(evaluated_object_mask)[:, 0], axis=0)
+      box_corners, tf.where(evaluated_object_mask)[:, 0], axis=0
+  )
   num_eval_objects = eval_corners.shape[0]
   # `other_corners` shape: (num_objects-num_evaluated_objects, num_steps, 4, 2).
   other_corners = tf.gather(
-      box_corners, tf.where(tf.logical_not(evaluated_object_mask))[:, 0],
-      axis=0)
+      box_corners, tf.where(tf.logical_not(evaluated_object_mask))[:, 0], axis=0
+  )
   # `all_corners` shape: (num_objects, num_steps, 4, 2).
   all_corners = tf.concat([eval_corners, other_corners], axis=0)
   # Broadcast both sets for pair-wise comparisons.
   eval_corners = tf.broadcast_to(
       eval_corners[:, tf.newaxis],
-      [num_eval_objects, num_objects, num_steps, 4, 2])
+      [num_eval_objects, num_objects, num_steps, 4, 2],
+  )
   all_corners = tf.broadcast_to(
-      all_corners[tf.newaxis],
-      [num_eval_objects, num_objects, num_steps, 4, 2])
+      all_corners[tf.newaxis], [num_eval_objects, num_objects, num_steps, 4, 2]
+  )
   # Flatten the first 3 dimensions to one single batch dimensions, as required
   # by `minkowski_sum_of_box_and_box_points()` and
   # `signed_distance_from_point_to_convex_polygon()`. We can reshape back
   # afterwards.
   eval_corners = tf.reshape(
-      eval_corners, [num_eval_objects * num_objects * num_steps, 4, 2])
+      eval_corners, [num_eval_objects * num_objects * num_steps, 4, 2]
+  )
   all_corners = tf.reshape(
-      all_corners, [num_eval_objects * num_objects * num_steps, 4, 2])
+      all_corners, [num_eval_objects * num_objects * num_steps, 4, 2]
+  )
   # The signed distance between two polygons A and B is equal to the distance
   # between the origin and the Minkowski sum A + (-B), where we generate -B by a
   # reflection. See for example:
@@ -137,16 +176,41 @@ def compute_distance_to_nearest_object(
   signed_distances_flat = (
       geometry_utils.signed_distance_from_point_to_convex_polygon(
           query_points=tf.zeros_like(minkowski_sum[:, 0, :]),
-          polygon_points=minkowski_sum
+          polygon_points=minkowski_sum,
       )
   )
+
   # Shape: (num_evaluated_objects, num_objects, num_steps).
   signed_distances = tf.reshape(
       signed_distances_flat, [num_eval_objects, num_objects, num_steps]
   )
+
+  # Gather the shrinking distances for the evaluated objects and for all objects
+  # after reordering.
+  # `eval_shrinking_distance` shape: (num_evaluated_objects, num_steps).
+  eval_shrinking_distance = tf.gather(
+      shrinking_distance, tf.where(evaluated_object_mask)[:, 0], axis=0
+  )
+  other_shrinking_distance = tf.gather(
+      shrinking_distance,
+      tf.where(tf.logical_not(evaluated_object_mask))[:, 0], axis=0
+  )
+  # `all_shrinking_distance` shape: (num_objects, num_steps).
+  all_shrinking_distance = tf.concat(
+      [eval_shrinking_distance, other_shrinking_distance], axis=0
+  )
+
+  # Recover distances between rounded boxes from the distances between core
+  # boxes by subtracting the shrinking distances. This is equivalent to
+  # inflating the core boxes isotropically by the same amount they were shrunk.
+  # Shape: (num_evaluated_objects, num_objects, num_steps).
+  signed_distances -= eval_shrinking_distance[:, tf.newaxis, :]
+  signed_distances -= all_shrinking_distance[tf.newaxis, :, :]
+
   # Mask out self-distances.
-  self_mask = tf.eye(
-      num_eval_objects, num_objects, dtype=tf.float32)[:, :, tf.newaxis]
+  self_mask = tf.eye(num_eval_objects, num_objects, dtype=tf.float32)[
+      :, :, tf.newaxis
+  ]
   signed_distances = signed_distances + self_mask * EXTREMELY_LARGE_DISTANCE
 
   # Mask out invalid boxes. As with box coordinates, the validity mask needs to
@@ -156,15 +220,18 @@ def compute_distance_to_nearest_object(
   # assigning a very large distance. This value could be returned by this
   # function only if there is at most one valid object in the scene.
   eval_validity = tf.gather(
-      valid, tf.where(evaluated_object_mask)[:, 0], axis=0)
+      valid, tf.where(evaluated_object_mask)[:, 0], axis=0
+  )
   other_validity = tf.gather(
-      valid, tf.where(tf.logical_not(evaluated_object_mask))[:, 0],
-      axis=0)
+      valid, tf.where(tf.logical_not(evaluated_object_mask))[:, 0], axis=0
+  )
   all_validity = tf.concat([eval_validity, other_validity], axis=0)
-  valid_mask = tf.logical_and(eval_validity[:, tf.newaxis, :],
-                              all_validity[tf.newaxis, :, :])
+  valid_mask = tf.logical_and(
+      eval_validity[:, tf.newaxis, :], all_validity[tf.newaxis, :, :]
+  )
   signed_distances = tf.where(
-      valid_mask, signed_distances, EXTREMELY_LARGE_DISTANCE)
+      valid_mask, signed_distances, EXTREMELY_LARGE_DISTANCE
+  )
   # Aggregate over the "all objects" dimension.
   return tf.reduce_min(signed_distances, axis=1)
 
@@ -230,14 +297,15 @@ def compute_time_to_collision_with_object_in_front(
   eval_boxes = tf.gather(boxes, tf.where(evaluated_object_mask)[:, 0], axis=1)
 
   ego_xy, ego_sizes, ego_yaw, ego_speed = tf.split(
-      eval_boxes, num_or_size_splits=[2, 2, 1, 1], axis=-1)
+      eval_boxes, num_or_size_splits=[2, 2, 1, 1], axis=-1
+  )
   other_xy, other_sizes, other_yaw, _ = tf.split(
-      boxes, num_or_size_splits=[2, 2, 1, 1], axis=-1)
+      boxes, num_or_size_splits=[2, 2, 1, 1], axis=-1
+  )
 
   # Absolute yaw difference between each ego box and every other box.
   # `yaw_diff` shape: (num_steps, num_evaluated_objects, num_objects, 1)
-  yaw_diff = tf.math.abs(
-      other_yaw[:, tf.newaxis] - ego_yaw[:, :, tf.newaxis])
+  yaw_diff = tf.math.abs(other_yaw[:, tf.newaxis] - ego_yaw[:, :, tf.newaxis])
 
   yaw_diff_cos = tf.math.cos(yaw_diff)
   yaw_diff_sin = tf.math.sin(yaw_diff)

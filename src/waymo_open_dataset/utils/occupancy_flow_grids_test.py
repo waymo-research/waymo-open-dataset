@@ -28,13 +28,15 @@ class OccupancyFlowGridsTest(tf.test.TestCase):
     super().setUp()
     self.batch_size = 8
     inputs = occupancy_flow_test_util.make_one_data_batch(
-        batch_size=self.batch_size)
+        batch_size=self.batch_size
+    )
     self.inputs = occupancy_flow_data.add_sdc_fields(inputs)
     self.config = occupancy_flow_test_util.make_test_config()
 
   def test_create_ground_truth_timestep_grids(self):
     timestep_grids = occupancy_flow_grids.create_ground_truth_timestep_grids(
-        inputs=self.inputs, config=self.config)
+        inputs=self.inputs, config=self.config
+    )
 
     batch_size = self.batch_size
     height = self.config.grid_height_cells
@@ -44,35 +46,58 @@ class OccupancyFlowGridsTest(tf.test.TestCase):
 
     waypoint_size = num_future_steps // self.config.num_waypoints
     num_all_steps = occupancy_flow_renderer._get_num_steps_from_times(
-        times=['past', 'current', 'future'], config=self.config)
+        times=['past', 'current', 'future'], config=self.config
+    )
     num_flow_steps = num_all_steps - waypoint_size
 
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
+      past_occupancy = timestep_grids.view(object_type).past_occupancy
+      current_occupancy = timestep_grids.view(object_type).current_occupancy
+      future_observed_occupancy = timestep_grids.view(
+          object_type
+      ).future_observed_occupancy
+      future_occluded_occupancy = timestep_grids.view(
+          object_type
+      ).future_occluded_occupancy
+      all_occupancy = timestep_grids.view(object_type).all_occupancy
+      all_flow = timestep_grids.view(object_type).all_flow
+      # Check for None to avoid pytype attribute-errors.
+
+      assert past_occupancy is not None
+      assert current_occupancy is not None
+      assert future_observed_occupancy is not None
+      assert future_occluded_occupancy is not None
+      assert all_occupancy is not None
+      assert all_flow is not None
       # Occupancy.
       self.assertEqual(
-          timestep_grids.view(object_type).past_occupancy.shape,
-          (batch_size, height, width, num_past_steps))
+          past_occupancy.shape,
+          (batch_size, height, width, num_past_steps),
+      )
       self.assertEqual(
-          timestep_grids.view(object_type).current_occupancy.shape,
-          (batch_size, height, width, 1))
+          current_occupancy.shape,
+          (batch_size, height, width, 1),
+      )
       self.assertEqual(
-          timestep_grids.view(object_type).future_observed_occupancy.shape,
-          (batch_size, height, width, num_future_steps))
+          future_observed_occupancy.shape,
+          (batch_size, height, width, num_future_steps),
+      )
       self.assertEqual(
-          timestep_grids.view(object_type).future_occluded_occupancy.shape,
-          (batch_size, height, width, num_future_steps))
+          future_occluded_occupancy.shape,
+          (batch_size, height, width, num_future_steps),
+      )
       # All occupancy for flow origin.
       self.assertEqual(
-          timestep_grids.view(object_type).all_occupancy.shape,
-          (batch_size, height, width, num_all_steps))
+          all_occupancy.shape,
+          (batch_size, height, width, num_all_steps),
+      )
       # Flow.
       self.assertEqual(
-          timestep_grids.view(object_type).all_flow.shape,
-          (batch_size, height, width, num_flow_steps, 2))
+          all_flow.shape,
+          (batch_size, height, width, num_flow_steps, 2),
+      )
 
       # The test scene contains all agent classes.  Verify some values too.
-      current_occupancy = timestep_grids.view(object_type).current_occupancy
-      all_flow = timestep_grids.view(object_type).all_flow
       self.assertEqual(tf.reduce_min(current_occupancy), 0)
       self.assertEqual(tf.reduce_max(current_occupancy), 1)
       self.assertLess(tf.reduce_min(all_flow), 0)
@@ -80,9 +105,11 @@ class OccupancyFlowGridsTest(tf.test.TestCase):
 
   def test_create_ground_truth_waypoint_grids(self):
     timestep_grids = occupancy_flow_grids.create_ground_truth_timestep_grids(
-        inputs=self.inputs, config=self.config)
+        inputs=self.inputs, config=self.config
+    )
     true_waypoints = occupancy_flow_grids.create_ground_truth_waypoint_grids(
-        timestep_grids=timestep_grids, config=self.config)
+        timestep_grids=timestep_grids, config=self.config
+    )
 
     batch_size = self.batch_size
     height = self.config.grid_height_cells
@@ -91,28 +118,36 @@ class OccupancyFlowGridsTest(tf.test.TestCase):
 
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
       self.assertLen(
-          true_waypoints.view(object_type).observed_occupancy, num_waypoints)
+          true_waypoints.view(object_type).observed_occupancy, num_waypoints
+      )
       self.assertLen(
-          true_waypoints.view(object_type).occluded_occupancy, num_waypoints)
+          true_waypoints.view(object_type).occluded_occupancy, num_waypoints
+      )
       self.assertLen(
-          true_waypoints.view(object_type).flow_origin_occupancy, num_waypoints)
+          true_waypoints.view(object_type).flow_origin_occupancy, num_waypoints
+      )
       self.assertLen(true_waypoints.view(object_type).flow, num_waypoints)
       self.assertEqual(
           true_waypoints.view(object_type).observed_occupancy[0].shape,
-          (batch_size, height, width, 1))
+          (batch_size, height, width, 1),
+      )
       self.assertEqual(
           true_waypoints.view(object_type).occluded_occupancy[0].shape,
-          (batch_size, height, width, 1))
+          (batch_size, height, width, 1),
+      )
       self.assertEqual(
           true_waypoints.view(object_type).flow_origin_occupancy[0].shape,
-          (batch_size, height, width, 1))
+          (batch_size, height, width, 1),
+      )
       self.assertEqual(
           true_waypoints.view(object_type).flow[0].shape,
-          (batch_size, height, width, 2))
+          (batch_size, height, width, 2),
+      )
 
   def test_create_ground_truth_vis_grids(self):
     timestep_grids = occupancy_flow_grids.create_ground_truth_timestep_grids(
-        inputs=self.inputs, config=self.config)
+        inputs=self.inputs, config=self.config
+    )
     vis_grids = occupancy_flow_grids.create_ground_truth_vis_grids(
         inputs=self.inputs,
         timestep_grids=timestep_grids,
@@ -123,9 +158,14 @@ class OccupancyFlowGridsTest(tf.test.TestCase):
     height = self.config.grid_height_cells
     width = self.config.grid_width_cells
 
+    # Check for None to avoid pytype attribute-errors.
+    assert vis_grids.roadgraph is not None
+    assert vis_grids.agent_trails is not None
+
     self.assertEqual(vis_grids.roadgraph.shape, (batch_size, height, width, 1))
-    self.assertEqual(vis_grids.agent_trails.shape,
-                     (batch_size, height, width, 1))
+    self.assertEqual(
+        vis_grids.agent_trails.shape, (batch_size, height, width, 1)
+    )
 
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ package(
 filegroup(
     name = "challenge_config",
     srcs = [
-        "challenge_config.textproto",
+        "challenge_2024_config.textproto",
     ],
 )
 
@@ -43,7 +43,6 @@ py_library(
     srcs = ["map_metric_features.py"],
     deps = [
         requirement("tensorflow"),
-        ":trajectory_features",
         "//waymo_open_dataset/protos:map_proto_py_pb2",
         "//waymo_open_dataset/utils:box_utils",
         "//waymo_open_dataset/utils:geometry_utils",
@@ -78,6 +77,7 @@ py_library(
         requirement("tensorflow"),
         ":estimators",
         ":metric_features",
+        ":trajectory_features",
         "//waymo_open_dataset/protos:scenario_proto_py_pb2",
         "//waymo_open_dataset/protos:sim_agents_metrics_proto_py_pb2",
         "//waymo_open_dataset/protos:sim_agents_submission_proto_py_pb2",
@@ -124,8 +124,6 @@ py_test(
     name = "map_metric_features_test",
     srcs = ["map_metric_features_test.py"],
     deps = [
-        requirement("absl-py"),
-        requirement("numpy"),
         requirement("tensorflow"),
         ":map_metric_features",
         "//waymo_open_dataset/utils:test_utils",
@@ -150,6 +148,7 @@ py_test(
 
 py_test(
     name = "metrics_test",
+    timeout = "long",
     srcs = ["metrics_test.py"],
     shard_count = 2,
     deps = [

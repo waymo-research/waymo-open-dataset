@@ -16,7 +16,7 @@
 
 import dataclasses
 import functools
-from typing import List, Mapping, Optional
+from typing import Mapping
 
 import tensorflow as tf
 
@@ -33,14 +33,15 @@ _ObjectType = scenario_pb2.Track.ObjectType
 @dataclasses.dataclass
 class _TimestepGridsOneType:
   """Occupancy and flow tensors over past/current/future for one agent type."""
+
   # [batch_size, height, width, 1]
-  current_occupancy: Optional[tf.Tensor] = None
+  current_occupancy: tf.Tensor | None = None
   # [batch_size, height, width, num_past_steps]
-  past_occupancy: Optional[tf.Tensor] = None
+  past_occupancy: tf.Tensor | None = None
   # [batch_size, height, width, num_future_steps]
-  future_observed_occupancy: Optional[tf.Tensor] = None
+  future_observed_occupancy: tf.Tensor | None = None
   # [batch_size, height, width, num_future_steps]
-  future_occluded_occupancy: Optional[tf.Tensor] = None
+  future_occluded_occupancy: tf.Tensor | None = None
   # Backward flow (dx, dy) for all observed and occluded agents.  Flow is
   # constructed between timesteps `waypoint_size` apart over all timesteps in
   # [past, current, future].  The flow for each timestep `t` contains (dx, dy)
@@ -49,11 +50,11 @@ class _TimestepGridsOneType:
   # waypoint_size = num_future_steps // num_waypoints
   # num_flow_steps = (num_past_steps + 1 + num_future_steps) - waypoint_size
   # [batch_size, height, width, num_flow_steps, 2]
-  all_flow: Optional[tf.Tensor] = None
+  all_flow: tf.Tensor | None = None
   # Observed and occluded occupancy over all timesteps.  This is used to
   # generate flow_origin tensors in WaypointGrids.
   # [batch_size, height, width, num_past_steps + 1 + num_future_steps]
-  all_occupancy: Optional[tf.Tensor] = None
+  all_occupancy: tf.Tensor | None = None
 
 
 # Holds ground-truth occupancy and flow tensors for each timestep in
@@ -61,14 +62,18 @@ class _TimestepGridsOneType:
 @dataclasses.dataclass
 class TimestepGrids:
   """Occupancy and flow for vehicles, pedestrians, cyclists."""
-  vehicles: _TimestepGridsOneType = dataclasses.field(
-      default_factory=_TimestepGridsOneType)
-  pedestrians: _TimestepGridsOneType = dataclasses.field(
-      default_factory=_TimestepGridsOneType)
-  cyclists: _TimestepGridsOneType = dataclasses.field(
-      default_factory=_TimestepGridsOneType)
 
-  def view(self, agent_type: str) -> _TimestepGridsOneType:
+  vehicles: _TimestepGridsOneType = dataclasses.field(
+      default_factory=_TimestepGridsOneType
+  )
+  pedestrians: _TimestepGridsOneType = dataclasses.field(
+      default_factory=_TimestepGridsOneType
+  )
+  cyclists: _TimestepGridsOneType = dataclasses.field(
+      default_factory=_TimestepGridsOneType
+  )
+
+  def view(self, agent_type: _ObjectType) -> _TimestepGridsOneType:
     """Retrieve occupancy and flow tensors for given agent type."""
     if agent_type == _ObjectType.TYPE_VEHICLE:
       return self.vehicles
@@ -84,18 +89,20 @@ class TimestepGrids:
 @dataclasses.dataclass
 class _WaypointGridsOneType:
   """Sequence of num_waypoints occupancy and flow tensors for one agent type."""
+
   # num_waypoints tensors shaped [batch_size, height, width, 1]
-  observed_occupancy: List[tf.Tensor] = dataclasses.field(default_factory=list)
+  observed_occupancy: list[tf.Tensor] = dataclasses.field(default_factory=list)
   # num_waypoints tensors shaped [batch_size, height, width, 1]
-  occluded_occupancy: List[tf.Tensor] = dataclasses.field(default_factory=list)
+  occluded_occupancy: list[tf.Tensor] = dataclasses.field(default_factory=list)
   # num_waypoints tensors shaped [batch_size, height, width, 2]
-  flow: List[tf.Tensor] = dataclasses.field(default_factory=list)
+  flow: list[tf.Tensor] = dataclasses.field(default_factory=list)
   # The origin occupancy for each flow waypoint.  Notice that a flow field
   # transforms some origin occupancy into some destination occupancy.
   # Flow-origin occupancies are the base occupancies for each flow field.
   # num_waypoints tensors shaped [batch_size, height, width, 1]
-  flow_origin_occupancy: List[tf.Tensor] = dataclasses.field(
-      default_factory=list)
+  flow_origin_occupancy: list[tf.Tensor] = dataclasses.field(
+      default_factory=list
+  )
 
 
 # Holds num_waypoints occupancy and flow tensors for all agent clases.  This is
@@ -103,14 +110,18 @@ class _WaypointGridsOneType:
 @dataclasses.dataclass
 class WaypointGrids:
   """Occupancy and flow sequences for vehicles, pedestrians, cyclists."""
-  vehicles: _WaypointGridsOneType = dataclasses.field(
-      default_factory=_WaypointGridsOneType)
-  pedestrians: _WaypointGridsOneType = dataclasses.field(
-      default_factory=_WaypointGridsOneType)
-  cyclists: _WaypointGridsOneType = dataclasses.field(
-      default_factory=_WaypointGridsOneType)
 
-  def view(self, agent_type: str) -> _WaypointGridsOneType:
+  vehicles: _WaypointGridsOneType = dataclasses.field(
+      default_factory=_WaypointGridsOneType
+  )
+  pedestrians: _WaypointGridsOneType = dataclasses.field(
+      default_factory=_WaypointGridsOneType
+  )
+  cyclists: _WaypointGridsOneType = dataclasses.field(
+      default_factory=_WaypointGridsOneType
+  )
+
+  def view(self, agent_type: _ObjectType) -> _WaypointGridsOneType:
     """Retrieve occupancy and flow sequences for given agent type."""
     if agent_type == _ObjectType.TYPE_VEHICLE:
       return self.vehicles
@@ -122,7 +133,8 @@ class WaypointGrids:
       raise ValueError(f'Unknown agent type:{agent_type}.')
 
   def get_observed_occupancy_at_waypoint(
-      self, k: int) -> occupancy_flow_data.AgentGrids:
+      self, k: int
+  ) -> occupancy_flow_data.AgentGrids:
     """Returns occupancies of currently-observed agents at waypoint k."""
     agent_grids = occupancy_flow_data.AgentGrids()
     if self.vehicles.observed_occupancy:
@@ -134,7 +146,8 @@ class WaypointGrids:
     return agent_grids
 
   def get_occluded_occupancy_at_waypoint(
-      self, k: int) -> occupancy_flow_data.AgentGrids:
+      self, k: int
+  ) -> occupancy_flow_data.AgentGrids:
     """Returns occupancies of currently-occluded agents at waypoint k."""
     agent_grids = occupancy_flow_data.AgentGrids()
     if self.vehicles.occluded_occupancy:
@@ -162,10 +175,10 @@ class WaypointGrids:
 class VisGrids:
   # Roadgraph elements.
   # [batch_size, height, width, 1]
-  roadgraph: Optional[tf.Tensor] = None
+  roadgraph: tf.Tensor | None = None
   # Trail of scene agents over past and current time frames.
   # [batch_size, height, width, 1]
-  agent_trails: Optional[tf.Tensor] = None
+  agent_trails: tf.Tensor | None = None
 
 
 def create_ground_truth_timestep_grids(
@@ -187,7 +200,8 @@ def create_ground_truth_timestep_grids(
   render_func = functools.partial(
       occupancy_flow_renderer.render_occupancy_from_inputs,
       inputs=inputs,
-      config=config)
+      config=config,
+  )
 
   current_occupancy = render_func(
       times=['current'],
@@ -266,38 +280,47 @@ def create_ground_truth_waypoint_grids(
     WaypointGrids object.
   """
   if config.num_future_steps % config.num_waypoints != 0:
-    raise ValueError(f'num_future_steps({config.num_future_steps}) must be '
-                     f'a multiple of num_waypoints({config.num_waypoints}).')
+    raise ValueError(
+        f'{config.num_future_steps=} must be a multiple of'
+        f' {config.num_waypoints=}.'
+    )
 
   true_waypoints = WaypointGrids(
       vehicles=_WaypointGridsOneType(
-          observed_occupancy=[], occluded_occupancy=[], flow=[]),
+          observed_occupancy=[], occluded_occupancy=[], flow=[]
+      ),
       pedestrians=_WaypointGridsOneType(
-          observed_occupancy=[], occluded_occupancy=[], flow=[]),
+          observed_occupancy=[], occluded_occupancy=[], flow=[]
+      ),
       cyclists=_WaypointGridsOneType(
-          observed_occupancy=[], occluded_occupancy=[], flow=[]),
+          observed_occupancy=[], occluded_occupancy=[], flow=[]
+      ),
   )
 
   # Observed occupancy.
   _add_ground_truth_observed_occupancy_to_waypoint_grids(
       timestep_grids=timestep_grids,
       waypoint_grids=true_waypoints,
-      config=config)
+      config=config,
+  )
   # Occluded occupancy.
   _add_ground_truth_occluded_occupancy_to_waypoint_grids(
       timestep_grids=timestep_grids,
       waypoint_grids=true_waypoints,
-      config=config)
+      config=config,
+  )
   # Flow origin occupancy.
   _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
       timestep_grids=timestep_grids,
       waypoint_grids=true_waypoints,
-      config=config)
+      config=config,
+  )
   # Flow.
   _add_ground_truth_flow_to_waypoint_grids(
       timestep_grids=timestep_grids,
       waypoint_grids=true_waypoints,
-      config=config)
+      config=config,
+  )
 
   return true_waypoints
 
@@ -317,7 +340,7 @@ def _add_ground_truth_observed_occupancy_to_waypoint_grids(
   waypoint_size = config.num_future_steps // config.num_waypoints
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_future_steps]
-    future_obs = timestep_grids.view(object_type).future_observed_occupancy  # pytype: disable=wrong-arg-types
+    future_obs = timestep_grids.view(object_type).future_observed_occupancy
     for k in range(config.num_waypoints):
       waypoint_end = (k + 1) * waypoint_size
       if config.cumulative_waypoints:
@@ -328,9 +351,10 @@ def _add_ground_truth_observed_occupancy_to_waypoint_grids(
         waypoint_occupancy = tf.reduce_max(segment, axis=-1, keepdims=True)
       else:
         # [batch_size, height, width, 1]
-        waypoint_occupancy = future_obs[..., waypoint_end - 1:waypoint_end]
-      waypoint_grids.view(object_type).observed_occupancy.append(  # pytype: disable=wrong-arg-types
-          waypoint_occupancy)
+        waypoint_occupancy = future_obs[..., waypoint_end - 1 : waypoint_end]
+      waypoint_grids.view(object_type).observed_occupancy.append(
+          waypoint_occupancy
+      )
 
 
 def _add_ground_truth_occluded_occupancy_to_waypoint_grids(
@@ -348,7 +372,7 @@ def _add_ground_truth_occluded_occupancy_to_waypoint_grids(
   waypoint_size = config.num_future_steps // config.num_waypoints
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_future_steps]
-    future_occ = timestep_grids.view(object_type).future_occluded_occupancy  # pytype: disable=wrong-arg-types
+    future_occ = timestep_grids.view(object_type).future_occluded_occupancy
     for k in range(config.num_waypoints):
       waypoint_end = (k + 1) * waypoint_size
       if config.cumulative_waypoints:
@@ -359,9 +383,10 @@ def _add_ground_truth_occluded_occupancy_to_waypoint_grids(
         waypoint_occupancy = tf.reduce_max(segment, axis=-1, keepdims=True)
       else:
         # [batch_size, height, width, 1]
-        waypoint_occupancy = future_occ[..., waypoint_end - 1:waypoint_end]
-      waypoint_grids.view(object_type).occluded_occupancy.append(  # pytype: disable=wrong-arg-types
-          waypoint_occupancy)
+        waypoint_occupancy = future_occ[..., waypoint_end - 1 : waypoint_end]
+      waypoint_grids.view(object_type).occluded_occupancy.append(
+          waypoint_occupancy
+      )
 
 
 def _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
@@ -380,12 +405,14 @@ def _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
   num_history_steps = config.num_past_steps + 1  # Includes past + current.
   num_future_steps = config.num_future_steps
   if waypoint_size > num_history_steps:
-    raise ValueError('If waypoint_size > num_history_steps, we cannot find the '
-                     'flow origin occupancy for the first waypoint.')
+    raise ValueError(
+        'If waypoint_size > num_history_steps, we cannot find the '
+        'flow origin occupancy for the first waypoint.'
+    )
 
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # [batch_size, height, width, num_past_steps + 1 + num_future_steps]
-    all_occupancy = timestep_grids.view(object_type).all_occupancy  # pytype: disable=wrong-arg-types
+    all_occupancy = timestep_grids.view(object_type).all_occupancy
     # Keep only the section containing flow_origin_occupancy timesteps.
     # First remove `waypoint_size` from the end.  Then keep the tail containing
     # num_future_steps timesteps.
@@ -402,10 +429,12 @@ def _add_ground_truth_flow_origin_occupancy_to_waypoint_grids(
         waypoint_flow_origin = tf.reduce_max(segment, axis=-1, keepdims=True)
       else:
         # [batch_size, height, width, 1]
-        waypoint_flow_origin = flow_origin_occupancy[..., waypoint_end -
-                                                     1:waypoint_end]
-      waypoint_grids.view(object_type).flow_origin_occupancy.append(  # pytype: disable=wrong-arg-types
-          waypoint_flow_origin)
+        waypoint_flow_origin = flow_origin_occupancy[
+            ..., waypoint_end - 1 : waypoint_end
+        ]
+      waypoint_grids.view(object_type).flow_origin_occupancy.append(
+          waypoint_flow_origin
+      )
 
 
 def _add_ground_truth_flow_to_waypoint_grids(
@@ -426,7 +455,7 @@ def _add_ground_truth_flow_to_waypoint_grids(
   for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
     # num_flow_steps = (num_past_steps + num_futures_steps) - waypoint_size
     # [batch_size, height, width, num_flow_steps, 2]
-    flow = timestep_grids.view(object_type).all_flow  # pytype: disable=wrong-arg-types
+    flow = timestep_grids.view(object_type).all_flow
     # Keep only the flow tail, containing num_future_steps timesteps.
     # [batch_size, height, width, num_future_steps, 2]
     flow = flow[:, :, :, -num_future_steps:, :]
@@ -450,7 +479,7 @@ def _add_ground_truth_flow_to_waypoint_grids(
         waypoint_flow = mean_flow
       else:
         waypoint_flow = flow[:, :, :, waypoint_end - 1, :]
-      waypoint_grids.view(object_type).flow.append(waypoint_flow)  # pytype: disable=wrong-arg-types
+      waypoint_grids.view(object_type).flow.append(waypoint_flow)
 
 
 def create_ground_truth_vis_grids(
@@ -469,7 +498,8 @@ def create_ground_truth_vis_grids(
     VisGrids object holding roadgraph and agent trails over past, current time.
   """
   roadgraph = occupancy_flow_renderer.render_roadgraph_from_inputs(
-      inputs, config)
+      inputs, config
+  )
   agent_trails = _create_agent_trails(timestep_grids)
 
   return VisGrids(
@@ -493,17 +523,21 @@ def _create_agent_trails(
   """
   agent_trails = 0.0
   num_past = tf.convert_to_tensor(
-      timestep_grids.vehicles.past_occupancy).shape.as_list()[-1]
+      timestep_grids.vehicles.past_occupancy
+  ).shape.as_list()[-1]
   for i in range(num_past):
     new_agents = (
-        timestep_grids.vehicles.past_occupancy[..., i:i + 1] +
-        timestep_grids.pedestrians.past_occupancy[..., i:i + 1] +
-        timestep_grids.cyclists.past_occupancy[..., i:i + 1])
+        timestep_grids.vehicles.past_occupancy[..., i : i + 1]
+        + timestep_grids.pedestrians.past_occupancy[..., i : i + 1]
+        + timestep_grids.cyclists.past_occupancy[..., i : i + 1]
+    )
     agent_trails = tf.clip_by_value(agent_trails * gamma + new_agents, 0, 1)
   new_agents = (
-      timestep_grids.vehicles.current_occupancy +
-      timestep_grids.pedestrians.current_occupancy +
-      timestep_grids.cyclists.current_occupancy)
-  agent_trails = tf.clip_by_value(agent_trails * gamma * gamma + new_agents, 0,
-                                  1)
+      timestep_grids.vehicles.current_occupancy
+      + timestep_grids.pedestrians.current_occupancy
+      + timestep_grids.cyclists.current_occupancy
+  )
+  agent_trails = tf.clip_by_value(
+      agent_trails * gamma * gamma + new_agents, 0, 1
+  )
   return agent_trails

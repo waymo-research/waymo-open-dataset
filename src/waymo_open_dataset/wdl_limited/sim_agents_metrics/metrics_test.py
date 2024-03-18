@@ -1,17 +1,8 @@
-# Copyright 2023 The Waymo Open Dataset Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
+# Copyright (c) 2024 Waymo LLC. All rights reserved.
+
+# This is licensed under a BSD+Patent license.
+# Please see LICENSE and PATENTS text files.
+# ==============================================================================
 
 import random
 
@@ -99,6 +90,9 @@ class MetricsTest(tf.test.TestCase):
         bundle_metrics.offroad_indication_likelihood, 0.999, places=2
     )
     self.assertAlmostEqual(bundle_metrics.min_average_displacement_error, 0.0)
+    self.assertAlmostEqual(bundle_metrics.simulated_offroad_rate, 0.0)
+    # The log scenario contains one colliding object over a total 4 objects.
+    self.assertAlmostEqual(bundle_metrics.simulated_collision_rate, 0.25)
 
   def test_compute_scenario_metrics(self):
     scenario = test_utils.get_womd_test_scenario()
@@ -128,6 +122,8 @@ class MetricsTest(tf.test.TestCase):
     # The metametric should be higher than 0 (the maximum depends on the weights
     # inside the config).
     self.assertGreater(bundle_metrics.metametric, 0.0)
+    self.assertBetween(bundle_metrics.simulated_collision_rate, 0.0, 1.0)
+    self.assertBetween(bundle_metrics.simulated_offroad_rate, 0.0, 1.0)
 
   def test_aggregate_scenario_metrics_returns_correctly(self):
     scenario = test_utils.get_womd_test_scenario()
@@ -179,7 +175,8 @@ class MetricsTest(tf.test.TestCase):
     # function is properly taking the weighted average.
     config.collision_indication.metametric_weight = 2.0
     test_metrics = sim_agents_metrics_pb2.SimAgentMetrics(
-        metametric=0.1, average_displacement_error=0.2,
+        metametric=0.1,
+        average_displacement_error=0.2,
         min_average_displacement_error=0.3,
         linear_speed_likelihood=0.5,
         linear_acceleration_likelihood=0.5,
@@ -190,6 +187,8 @@ class MetricsTest(tf.test.TestCase):
         time_to_collision_likelihood=0.0,
         distance_to_road_edge_likelihood=1.0,
         offroad_indication_likelihood=1.0,
+        simulated_collision_rate=0.5,
+        simulated_offroad_rate=0.5,
     )
 
     bucketed_metrics = metrics.aggregate_metrics_to_buckets(
@@ -197,10 +196,15 @@ class MetricsTest(tf.test.TestCase):
     self.assertProtoEquals(
         bucketed_metrics,
         sim_agents_metrics_pb2.SimAgentsBucketedMetrics(
-            realism_meta_metric=0.1, min_ade=0.3,
-            kinematic_metrics=0.5, interactive_metrics=0.5,
-            map_based_metrics=1.0
-        ))
+            realism_meta_metric=0.1,
+            min_ade=0.3,
+            kinematic_metrics=0.5,
+            interactive_metrics=0.5,
+            map_based_metrics=1.0,
+            simulated_collision_rate=0.5,
+            simulated_offroad_rate=0.5,
+        ),
+    )
 
 if __name__ == '__main__':
   tf.test.main()

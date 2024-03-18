@@ -20,11 +20,19 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "cameradata",
+    srcs = [
+        "womd_camera_codebook.npy",
+    ],
+)
+
 py_binary(
     name = "jupyter_kernel",
     srcs = ["jupyter_kernel.py"],
     data = [
         "tutorial_local.ipynb",
+        ":cameradata",
         ":framedata",
         "//waymo_open_dataset/metrics/tools:compute_detection_metrics_main",
         "//waymo_open_dataset/metrics/tools:fakedata",

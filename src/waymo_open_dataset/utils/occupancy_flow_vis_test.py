@@ -28,15 +28,19 @@ class OccupancyFlowVisTest(tf.test.TestCase):
     super().setUp()
     self.batch_size = 8
     inputs = occupancy_flow_test_util.make_one_data_batch(
-        batch_size=self.batch_size)
+        batch_size=self.batch_size
+    )
     self.inputs = occupancy_flow_data.add_sdc_fields(inputs)
     self.config = occupancy_flow_test_util.make_test_config()
     # Create sample grids.
     timestep_grids = occupancy_flow_grids.create_ground_truth_timestep_grids(
-        inputs=self.inputs, config=self.config)
+        inputs=self.inputs, config=self.config
+    )
     self.true_waypoints = (
         occupancy_flow_grids.create_ground_truth_waypoint_grids(
-            timestep_grids=timestep_grids, config=self.config))
+            timestep_grids=timestep_grids, config=self.config
+        )
+    )
     self.true_vis_grids = occupancy_flow_grids.create_ground_truth_vis_grids(
         inputs=self.inputs,
         timestep_grids=timestep_grids,

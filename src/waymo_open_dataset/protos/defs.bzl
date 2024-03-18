@@ -1,6 +1,7 @@
 """Build rule to build cc and py protos."""
 
-load("@com_google_protobuf//:protobuf.bzl", "cc_proto_library", "py_proto_library")
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 _SUFFIXES = {
     "proto": "_proto",
@@ -30,5 +31,7 @@ def all_proto_library(src, deps = None):
     if deps == None:
         deps = []
     base_name = src[:-len(".proto")]
-    py_proto_library(name = _target_name("py", base_name), srcs = [src], deps = _deps("py", deps))
-    cc_proto_library(name = _target_name("cc", base_name), srcs = [src], deps = _deps("cc", deps))
+    proto_name = _target_name("proto", base_name)
+    native.proto_library(name = proto_name, srcs = [src], deps = _deps("proto", deps))
+    py_proto_library(name = _target_name("py", base_name), deps = [":" + proto_name])
+    cc_proto_library(name = _target_name("cc", base_name), deps = [":" + proto_name])

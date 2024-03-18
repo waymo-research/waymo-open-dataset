@@ -55,6 +55,9 @@ message CameraName {
     FRONT_RIGHT = 3;
     SIDE_LEFT = 4;
     SIDE_RIGHT = 5;
+    REAR_LEFT = 6;
+    REAR = 7;
+    REAR_RIGHT = 8;
 
   }
 }

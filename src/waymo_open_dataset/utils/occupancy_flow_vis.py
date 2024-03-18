@@ -15,7 +15,6 @@
 """Visualization functions."""
 
 import math
-from typing import Optional, Tuple, Union
 
 import tensorflow as tf
 
@@ -54,7 +53,7 @@ def occupancy_rgb_image(
   rg_rgb = tf.concat([zeros, zeros, zeros], axis=-1)
   veh_rgb = tf.concat([veh, zeros, zeros], axis=-1)  # Red.
   ped_rgb = tf.concat([zeros, ped * 0.67, zeros], axis=-1)  # Green.
-  cyc_rgb = tf.concat([cyc * 0.33, zeros, zeros * 0.33], axis=-1)  # Purple.
+  cyc_rgb = tf.concat([zeros, zeros, cyc], axis=-1)  # Blue.
   bg_rgb = tf.concat([ones, ones, ones], axis=-1)  # White background.
   # Set alpha layers over all RGB channels.
   rg_a = tf.concat([roadgraph_image, roadgraph_image, roadgraph_image], axis=-1)
@@ -65,7 +64,7 @@ def occupancy_rgb_image(
   img, img_a = _alpha_blend(fg=rg_rgb, bg=bg_rgb, fg_a=rg_a)
   img, img_a = _alpha_blend(fg=veh_rgb, bg=img, fg_a=veh_a, bg_a=img_a)
   img, img_a = _alpha_blend(fg=ped_rgb, bg=img, fg_a=ped_a, bg_a=img_a)
-  img, img_a = _alpha_blend(fg=cyc_rgb, bg=img, fg_a=cyc_a, bg_a=img_a)
+  img, _ = _alpha_blend(fg=cyc_rgb, bg=img, fg_a=cyc_a, bg_a=img_a)
   return img
 
 
@@ -112,9 +111,9 @@ def _add_grayscale_layer(
 def _alpha_blend(
     fg: tf.Tensor,
     bg: tf.Tensor,
-    fg_a: Optional[tf.Tensor] = None,
-    bg_a: Optional[Union[tf.Tensor, float]] = None,
-) -> Tuple[tf.Tensor, tf.Tensor]:
+    fg_a: tf.Tensor | None = None,
+    bg_a: tf.Tensor | float | None = None,
+) -> tuple[tf.Tensor, tf.Tensor]:
   """Overlays foreground and background image with custom alpha values.
 
   Implements alpha compositing using Porter/Duff equations.
@@ -149,7 +148,7 @@ def _alpha_blend(
 def _optical_flow_to_hsv(
     flow: tf.Tensor,
     saturate_magnitude: float = -1.0,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> tf.Tensor:
   """Visualize an optical flow field in HSV colorspace.
 
@@ -178,11 +177,13 @@ def _optical_flow_to_hsv(
   with tf.name_scope(name or 'OpticalFlowToHSV'):
     flow_shape = flow.shape
     if len(flow_shape) < 3:
-      raise ValueError('flow must be at least 3-dimensional, got'
-                       f' `{flow_shape}`')
+      raise ValueError(
+          f'flow must be at least 3-dimensional, got `{flow_shape}`'
+      )
     if flow_shape[-1] != 2:
-      raise ValueError(f'flow must have innermost dimension of 2, got'
-                       f' `{flow_shape}`')
+      raise ValueError(
+          f'flow must have innermost dimension of 2, got `{flow_shape}`'
+      )
     height = flow_shape[-3]
     width = flow_shape[-2]
     flow_flat = tf.reshape(flow, (-1, height, width, 2))
@@ -194,18 +195,19 @@ def _optical_flow_to_hsv(
     if saturate_magnitude < 0:
       # [batch_size, 1, 1]
       local_saturate_magnitude = tf.reduce_max(
-          magnitudes, axis=(1, 2), keepdims=True)
+          magnitudes, axis=(1, 2), keepdims=True
+      )
     else:
       local_saturate_magnitude = tf.convert_to_tensor(saturate_magnitude)
 
     # Hue is angle scaled to [0.0, 1.0).
     hue = (tf.math.mod(tf.math.atan2(dy, dx), (2 * math.pi))) / (2 * math.pi)
     # Saturation is relative magnitude.
-    relative_magnitudes = tf.math.divide_no_nan(magnitudes,
-                                                local_saturate_magnitude)
+    relative_magnitudes = tf.math.divide_no_nan(
+        magnitudes, local_saturate_magnitude
+    )
     saturation = tf.minimum(
-        relative_magnitudes,
-        1.0  # Larger magnitudes saturate.
+        relative_magnitudes, 1.0  # Larger magnitudes saturate.
     )
     # Value is fixed.
     value = tf.ones_like(saturation)
@@ -216,7 +218,7 @@ def _optical_flow_to_hsv(
 def _optical_flow_to_rgb(
     flow: tf.Tensor,
     saturate_magnitude: float = -1.0,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> tf.Tensor:
   """Visualize an optical flow field in RGB colorspace."""
   name = name or 'OpticalFlowToRGB'
