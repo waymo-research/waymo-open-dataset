@@ -58,19 +58,19 @@ def parse_tf_example(tf_example: tf.Tensor) -> dict[str, tf.Tensor]:
       'scenario/id': tf.io.FixedLenFeature([], tf.string, default_value=None),
       # Roadgraph features.
       'roadgraph_samples/dir': tf.io.FixedLenFeature(
-          [20000, 3], tf.float32, default_value=None
+          [30000, 3], tf.float32, default_value=None
       ),
       'roadgraph_samples/id': tf.io.FixedLenFeature(
-          [20000, 1], tf.int64, default_value=None
+          [30000, 1], tf.int64, default_value=None
       ),
       'roadgraph_samples/type': tf.io.FixedLenFeature(
-          [20000, 1], tf.int64, default_value=None
+          [30000, 1], tf.int64, default_value=None
       ),
       'roadgraph_samples/valid': tf.io.FixedLenFeature(
-          [20000, 1], tf.int64, default_value=None
+          [30000, 1], tf.int64, default_value=None
       ),
       'roadgraph_samples/xyz': tf.io.FixedLenFeature(
-          [20000, 3], tf.float32, default_value=None
+          [30000, 3], tf.float32, default_value=None
       ),
       # Agent features.
       'state/id': tf.io.FixedLenFeature([128], tf.float32, default_value=None),
