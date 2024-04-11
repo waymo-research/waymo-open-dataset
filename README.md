@@ -26,6 +26,11 @@ compliance with the Waymo Dataset License Agreement for Non-Commercial Use. See
 [wdl_limited/sim_agents_metrics/](src/waymo_open_dataset/wdl_limited/sim_agents_metrics),
 respectively, for details.
 
+## April 2024 Update
+The Rules have been updated to allow training (including pre-training, co-training or fine-tuning models) using frozen, pre-trained weights from publicly available open source models for submissions to the Challenges. We also added a new sets of fields (which are now required, or the server will return an error) in the submission metadatas to track how participants generated their submissions.
+We updated the tutorials to reflect this change, check out the new fields in the submission proto files
+for motion, sim agents and occupancy flow.
+
 ## March 2024 Update
 This update contains several changes/addition to the datasets:
 
