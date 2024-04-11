@@ -2,6 +2,7 @@ load("@wod_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:versions.bzl", "gen_python_config_settings")
 load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
 
+
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = ["//visibility:public"],
@@ -115,6 +116,7 @@ py_package(
         "//waymo_open_dataset/utils:range_image_utils",
         "//waymo_open_dataset/utils:trajectory_utils",
         "//waymo_open_dataset/utils:transform_utils",
+        "//waymo_open_dataset/utils:womd_camera_utils",
         "//waymo_open_dataset/utils:womd_lidar_utils",
         "//waymo_open_dataset/utils/compression:delta_encoder",
         "//waymo_open_dataset/utils/sim_agents:converters",
@@ -159,22 +161,8 @@ gen_python_config_settings()
 
 py_wheel(
     name = "wheel",
-    classifiers = [
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Education",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.10",
-        "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Software Development",
-        "Topic :: Software Development :: Libraries",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-    ],
     description_file = "pypi_description.md",
     distribution = "waymo-open-dataset-tf-2-12-0",
-    homepage = "https://github.com/waymo-research/waymo-open-dataset",
     python_tag = "py3",
     # Should be in-sync with //requirements.in
     requires = [
@@ -197,28 +185,42 @@ py_wheel(
         "tensorflow_graphics==2021.12.3",
         "tensorflow_probability==0.19.0",
         "visu3d==1.5.1",
-        "dacite==1.8.1",
+        "dacite==1.8.1"
     ],
-    version = "1.6.2",
+    homepage = "https://github.com/waymo-research/waymo-open-dataset",
+    version = "1.6.4",
     deps = [
         ":all_python_modules",
     ],
+    classifiers = [
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Education',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3.10',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ]
 )
 
 py_wheel(
     name = "deeplab2_wheel",
     distribution = "deeplab2-for-wod",
-    homepage = "https://github.com/google-research/deeplab2",
     python_tag = "py3",
     requires = [
         "immutabledict==2.2.0",
         "numpy==1.21.5",
         "tensorflow==2.11",
     ],
+    homepage = "https://github.com/google-research/deeplab2",
     version = "1.6.1",
     deps = [
-        "@deeplab2",
-    ],
+        '@deeplab2//:deeplab2',
+    ]
 )
 
 py_binary(

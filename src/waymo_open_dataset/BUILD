@@ -2,6 +2,7 @@
 
 load("@rules_license//rules:license.bzl", "license")
 load("//waymo_open_dataset/protos:defs.bzl", "all_proto_library")
+
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
 package(
@@ -35,11 +36,11 @@ all_proto_library(
 
 compile_pip_requirements(
     name = "requirements",
-    timeout = "moderate",
     extra_args = [
         "--resolver=backtracking",
         "--allow-unsafe",
     ],
     requirements_in = "requirements.in",
     requirements_txt = "requirements.txt",
+    timeout = "moderate"
 )

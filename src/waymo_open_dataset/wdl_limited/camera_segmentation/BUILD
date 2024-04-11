@@ -14,7 +14,7 @@ py_library(
     name = "camera_segmentation_metrics",
     srcs = ["camera_segmentation_metrics.py"],
     deps = [
-        requirement("numpy"),
+        requirement('numpy'),
         "//waymo_open_dataset/protos:camera_segmentation_metrics_proto_py_pb2",
         "@deeplab2",
     ],
@@ -25,8 +25,8 @@ py_test(
     name = "camera_segmentation_metrics_test",
     srcs = ["camera_segmentation_metrics_test.py"],
     deps = [
-        requirement("numpy"),
-        requirement("tensorflow"),
+        requirement('numpy'),
+        requirement('tensorflow'),
         ":camera_segmentation_metrics",
     ],
 )

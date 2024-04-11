@@ -12,7 +12,7 @@ py_library(
     srcs = ["delta_encoder.py"],
     srcs_version = "PY3",
     deps = [
-        requirement("numpy"),
+        requirement('numpy'),
         "//waymo_open_dataset/protos:compressed_lidar_proto_py_pb2",
     ],
 )
@@ -23,8 +23,8 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        requirement("absl-py"),
-        requirement("numpy"),
+        requirement('absl-py'),
+        requirement('numpy'),
         ":delta_encoder",
     ],
 )
@@ -34,7 +34,7 @@ py_library(
     srcs = ["tiling.py"],
     srcs_version = "PY3",
     deps = [
-        requirement("tensorflow"),
+        requirement('tensorflow'),
     ],
 )
 
@@ -44,8 +44,8 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":tiling",
     ],
 )
@@ -55,10 +55,10 @@ py_library(
     srcs = ["pca_codec.py"],
     srcs_version = "PY3",
     deps = [
-        requirement("dacite"),
-        requirement("numpy"),
-        requirement("scikit-learn"),
-        requirement("tensorflow"),
+        requirement('dacite'),
+        requirement('numpy'),
+        requirement('scikit-learn'),
+        requirement('tensorflow'),
         ":tiling",
     ],
 )
@@ -69,9 +69,9 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        requirement("absl-py"),
-        requirement("numpy"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('numpy'),
+        requirement('tensorflow'),
         ":pca_codec",
     ],
 )

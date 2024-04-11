@@ -1,6 +1,6 @@
 load("@rules_python//python:py_binary.bzl", "py_binary")
-load("@wod_deps//:requirements.bzl", "requirement")
 
+load("@wod_deps//:requirements.bzl", "requirement")
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
     default_visibility = [
@@ -29,7 +29,7 @@ py_binary(
     srcs = ["make_objects_file_from_latency_results.py"],
     python_version = "PY3",
     deps = [
-        requirement("numpy"),
+        requirement('numpy'),
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],

@@ -56,7 +56,7 @@ def scenario_to_joint_scene(
   if trajectories.valid.shape[-1] != submission_specs.N_SIMULATION_STEPS:
     raise ValueError(
         'The Scenario used does not include the right number of time steps. '
-        f'Expected: {submission_specs.N_FULL_SCENARIO_STEPS}, '
+        f'Expected: {submission_specs.N_SIMULATION_STEPS}, '
         f'Actual: {trajectories.valid.shape[-1]}.')
   # Iterate over objects and create `SimulatedTrajectory`s.
   simulated_trajectories = []

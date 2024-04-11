@@ -92,4 +92,34 @@ message SimAgentsChallengeSubmission {
 
   // Link to paper or other link that describes the method.
   optional string method_link = 8;
+
+  // Set this to true if your model uses the lidar data provided in the motion
+  // dataset. This field is now REQUIRED for a valid submission.
+  optional bool uses_lidar_data = 9;
+
+  // Set this to true if your model uses the camera data provided in the motion
+  // dataset. This field is now REQUIRED for a valid submission.
+  optional bool uses_camera_data = 10;
+
+  // Set this to true if your model used publicly available open-source
+  // LLM/VLM(s) for pre-training. This field is now REQUIRED for a valid
+  // submission.
+  optional bool uses_public_model_pretraining = 11;
+
+  // If any open-source model was used, specify their names and configuration.
+  repeated string public_model_names = 13;
+
+  // Specify an estimate of the number of parameters of the model used to
+  // generate this submission. The number must be specified as an integer number
+  // followed by a multiplier suffix (from the set [K, M, B, T, ...], e.g.
+  // "200K"). This field is now REQUIRED for a valid submission.
+  optional string num_model_parameters = 12;
+
+  // Several submissions for the 2023 challenge did not comply with the
+  // closed-loop at 10Hz requirement we specified both on the website
+  // https://waymo.com/open/challenges/2024/sim-agents/ and the NeurIPS paper
+  // https://arxiv.org/abs/2305.12032, Section 3 "Task constraints". Please make
+  // sure your method complies with these rules before submitting, to ensure
+  // our leaderboard is fair.
+  optional bool acknowledge_complies_with_closed_loop_requirement = 14;
 }

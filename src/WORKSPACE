@@ -17,16 +17,14 @@ http_archive(
     strip_prefix = "rules_python-0.26.0",
     url = "https://github.com/bazelbuild/rules_python/releases/download/0.26.0/rules_python-0.26.0.tar.gz",
 )
-
 load("@rules_python//python:repositories.bzl", "py_repositories")
-
 py_repositories()
 
 http_archive(
     name = "rules_cc",
+    urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.9/rules_cc-0.0.9.tar.gz"],
     sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",
     strip_prefix = "rules_cc-0.0.9",
-    urls = ["https://github.com/bazelbuild/rules_cc/releases/download/0.0.9/rules_cc-0.0.9.tar.gz"],
 )
 
 http_archive(
@@ -83,7 +81,7 @@ http_archive(
     sha256 = "94aef187f688665dc299d09286bfa0d22c4ecb86a80b156dff6aabadc5a5c26d",
     strip_prefix = "abseil-cpp-273292d1cfc0a94a65082ee350509af1d113344d",
     urls = [
-        "https://github.com/abseil/abseil-cpp/archive/273292d1cfc0a94a65082ee350509af1d113344d.tar.gz",
+        "https://github.com/abseil/abseil-cpp/archive/273292d1cfc0a94a65082ee350509af1d113344d.tar.gz"
     ],
 )
 
@@ -135,9 +133,7 @@ http_archive(
         "https://github.com/protocolbuffers/protobuf/archive/v3.21.9.zip",
     ],
 )
-
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-
 protobuf_deps()
 
 http_archive(
@@ -179,6 +175,7 @@ py_repositories()
 
 python_register_toolchains(
     name = "python3_10",
+    python_version = "3.10",
     # Bazel's rules_python marks the python installation's lib directory as
     # read-only. This prevents python interpretor from generating .pyc files.
     # rules_python intend for that behavior because the content of .pyc files
@@ -192,7 +189,6 @@ python_register_toolchains(
     # https://github.com/bazelbuild/rules_python/pull/713 for more details on
     # the root problem and this work around.
     ignore_root_user_error = True,
-    python_version = "3.10",
 )
 
 load("@python3_10//:defs.bzl", "interpreter")

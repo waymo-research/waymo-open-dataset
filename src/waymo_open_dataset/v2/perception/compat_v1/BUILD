@@ -14,7 +14,7 @@ py_library(
     name = "interfaces",
     srcs = ["interfaces.py"],
     deps = [
-        requirement("pyarrow"),
+        requirement('pyarrow'),
         "//waymo_open_dataset:dataset_proto_py_pb2",
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/v2:component",
@@ -27,7 +27,7 @@ py_test(
     name = "interfaces_test",
     srcs = ["interfaces_test.py"],
     deps = [
-        requirement("absl-py"),
+        requirement('absl-py'),
         ":interfaces",
         "//waymo_open_dataset/v2/perception:base",
     ],
@@ -49,7 +49,7 @@ py_test(
     name = "keypoints_test",
     srcs = ["keypoints_test.py"],
     deps = [
-        requirement("absl-py"),
+        requirement('absl-py'),
         ":interfaces",
         ":keypoints",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -128,7 +128,7 @@ py_test(
     name = "pose_test",
     srcs = ["pose_test.py"],
     deps = [
-        requirement("absl-py"),
+        requirement('absl-py'),
         ":interfaces",
         ":pose",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -143,8 +143,8 @@ py_test(
         ":test_data",
     ],
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":interfaces",
         ":lidar",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -160,8 +160,8 @@ py_test(
         ":test_data",
     ],
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":camera_image",
         ":interfaces",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -176,8 +176,8 @@ py_test(
         ":test_data",
     ],
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":box",
         ":interfaces",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -191,8 +191,8 @@ py_test(
         ":test_data",
     ],
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":context",
         ":interfaces",
         "//waymo_open_dataset:dataset_proto_py_pb2",
@@ -208,8 +208,8 @@ py_test(
         ":test_data",
     ],
     deps = [
-        requirement("absl-py"),
-        requirement("tensorflow"),
+        requirement('absl-py'),
+        requirement('tensorflow'),
         ":interfaces",
         ":segmentation",
         "//waymo_open_dataset:dataset_proto_py_pb2",

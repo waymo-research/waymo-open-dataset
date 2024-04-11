@@ -1,5 +1,4 @@
 load("@wod_deps//:requirements.bzl", "requirement")
-
 package(
     default_visibility = [
         "//visibility:public",
@@ -20,9 +19,9 @@ cc_library(
         "//waymo_open_dataset/protos:motion_submission_cc_proto",
         "//waymo_open_dataset/protos:scenario_cc_proto",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/types:optional",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/types:optional",
         "@tensorflow_cc_deps//:cc_library",
     ],
 )
@@ -40,10 +39,10 @@ cc_binary(
     name = "metrics_ops.so",
     srcs = [
         "detection_metrics_ops.cc",
-        "matcher_ops.cc",
         "metrics_ops.cc",
         "motion_metrics_ops.cc",
         "tracking_metrics_ops.cc",
+        "matcher_ops.cc",
     ],
     copts = [
         "-pthread",
@@ -73,8 +72,8 @@ py_test(
     python_version = "PY3",
     deps = [
         ":py_metrics_ops",
-        requirement("numpy"),
-        requirement("tensorflow"),
+        requirement('numpy'),
+        requirement('tensorflow'),
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
@@ -88,8 +87,8 @@ py_test(
     deps = [
         ":py_metrics_ops",
         # Implicit python proto dependency.
-        requirement("numpy"),
-        requirement("tensorflow"),
+        requirement('numpy'),
+        requirement('tensorflow'),
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
         "//waymo_open_dataset/protos:motion_metrics_proto_py_pb2",
     ],
@@ -102,10 +101,11 @@ py_test(
     deps = [
         ":py_metrics_ops",
         # Implicit python proto dependency.
-        requirement("numpy"),
-        requirement("tensorflow"),
+        requirement('numpy'),
+        requirement('tensorflow'),
         "//waymo_open_dataset:label_proto_py_pb2",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],
 )
+

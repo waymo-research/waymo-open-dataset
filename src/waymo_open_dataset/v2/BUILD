@@ -30,8 +30,8 @@ py_library(
     name = "column_types",
     srcs = ["column_types.py"],
     deps = [
-        requirement("numpy"),
-        requirement("pyarrow"),
+        requirement('numpy'),
+        requirement('pyarrow'),
         ":component",
     ],
 )
@@ -40,8 +40,8 @@ py_test(
     name = "column_types_test",
     srcs = ["column_types_test.py"],
     deps = [
-        requirement("absl-py"),
-        requirement("numpy"),
+        requirement('absl-py'),
+        requirement('numpy'),
         ":column_types",
     ],
 )
@@ -49,15 +49,15 @@ py_test(
 py_library(
     name = "component",
     srcs = ["component.py"],
-    deps = [requirement("pyarrow")],
+    deps = [requirement('pyarrow')],
 )
 
 py_test(
     name = "component_test",
     srcs = ["component_test.py"],
     deps = [
-        requirement("absl-py"),
-        requirement("pyarrow"),
+        requirement('absl-py'),
+        requirement('pyarrow'),
         ":component",
     ],
 )
@@ -71,7 +71,7 @@ py_test(
     name = "typing_utils_test",
     srcs = ["typing_utils_test.py"],
     deps = [
-        requirement("absl-py"),
+        requirement('absl-py'),
         ":typing_utils",
     ],
 )
@@ -80,8 +80,8 @@ py_library(
     name = "dataframe_utils",
     srcs = ["dataframe_utils.py"],
     deps = [
-        requirement("dask"),
-        requirement("pandas"),
+        requirement('dask'),
+        requirement('pandas'),
     ],
 )
 
@@ -89,9 +89,9 @@ py_test(
     name = "dataframe_utils_test",
     srcs = ["dataframe_utils_test.py"],
     deps = [
-        requirement("absl-py"),
-        requirement("dask"),
-        requirement("pandas"),
+        requirement('absl-py'),
+        requirement('dask'),
+        requirement('pandas'),
         ":dataframe_utils",
     ],
 )
