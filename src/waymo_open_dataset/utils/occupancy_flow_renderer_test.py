@@ -51,13 +51,15 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     )
 
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
+      agent_grids_for_type = agent_grids.view(object_type)
+      assert agent_grids_for_type is not None, 'agent_grids is not set'
       self.assertEqual(
-          agent_grids.view(object_type).shape,
+          agent_grids_for_type.shape,
           (batch_size, height, width, num_steps),
       )
       # The test tf example contains all object types, so:
-      self.assertEqual(np.min(agent_grids.view(object_type).numpy()), 0.0)
-      self.assertEqual(np.max(agent_grids.view(object_type).numpy()), 1.0)
+      self.assertEqual(np.min(agent_grids_for_type.numpy()), 0.0)
+      self.assertEqual(np.max(agent_grids_for_type.numpy()), 1.0)
 
   def test_render_flow_from_inputs(self):
     times = ['past', 'current', 'future']
@@ -80,8 +82,10 @@ class OccupancyFlowRendererTest(tf.test.TestCase):
     num_flow_steps = num_all_steps - waypoint_size
 
     for object_type in occupancy_flow_data.ALL_AGENT_TYPES:
+      agent_grids_for_type = agent_grids.view(object_type)
+      assert agent_grids_for_type is not None, 'agent_grids is not set'
       self.assertEqual(
-          agent_grids.view(object_type).shape,
+          agent_grids_for_type.shape,
           (batch_size, height, width, num_flow_steps, 2),
       )
 

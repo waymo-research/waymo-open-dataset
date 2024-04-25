@@ -39,7 +39,7 @@ class AgentGrids:
   pedestrians: tf.Tensor | None = None
   cyclists: tf.Tensor | None = None
 
-  def view(self, agent_type: _ObjectType) -> tf.Tensor:
+  def view(self, agent_type: _ObjectType) -> tf.Tensor | None:
     """Retrieve topdown tensor for given agent type."""
     if agent_type == _ObjectType.TYPE_VEHICLE:
       return self.vehicles
