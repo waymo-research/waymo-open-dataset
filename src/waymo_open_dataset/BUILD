@@ -1,9 +1,9 @@
 # Waymo open dataset
 
-load("@rules_license//rules:license.bzl", "license")
-load("//waymo_open_dataset/protos:defs.bzl", "all_proto_library")
-
 load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+load("//waymo_open_dataset/protos:defs.bzl", "all_proto_library")
+load("@rules_license//rules:license.bzl", "license")
 
 package(
     default_applicable_licenses = ["//waymo_open_dataset:license"],
