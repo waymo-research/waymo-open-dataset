@@ -17,8 +17,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <cmath>
-#include <string>
-
+#include <vector>
 
 #include <glog/logging.h>
 #include "absl/base/attributes.h"
@@ -232,6 +231,17 @@ double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
   }
 
   return 0.0;
+}
+
+std::vector<double> BatchComputeIoU(const Label::Box& b1,
+                                    const std::vector<Label::Box>& b2s,
+                                    Label::Box::Type box_type) {
+  if (b2s.empty()) return {};
+  std::vector<double> ious(b2s.size());
+  for (int i = 0; i < b2s.size(); ++i) {
+    ious[i] = ComputeIoU(b1, b2s[i], box_type);
+  }
+  return ious;
 }
 
 double ComputeLongitudinalAffinity(

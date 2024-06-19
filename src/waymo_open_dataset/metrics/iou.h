@@ -17,6 +17,7 @@ limitations under the License.
 #define WAYMO_OPEN_DATASET_METRICS_IOU_H_
 
 #include <functional>
+#include <vector>
 
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/math/polygon2d.h"
@@ -41,7 +42,13 @@ using ComputeIoUFunc =
 double ComputeIoU(const Label::Box& b1, const Label::Box& b2,
                   Label::Box::Type box_type);
 
-// Computes the longitudinal affinity between a precition bounding box and a
+// Batched version of `ComputeIoU` above that computes IoU for `b1` and all the
+// given `b2`s.
+std::vector<double> BatchComputeIoU(const Label::Box& b1,
+                                    const std::vector<Label::Box>& b2s,
+                                    Label::Box::Type box_type);
+
+// Computes the longitudinal affinity between a prediction bounding box and a
 // ground truth bounding box.
 //
 // The localization error (e_loc) is decomposed into longitudinal error (e_lon)

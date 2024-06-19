@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "waymo_open_dataset/metrics/iou.h"
 
-#include <cmath>
+#include <vector>
 
 #include <gtest/gtest.h>
 #include "waymo_open_dataset/label.pb.h"
@@ -99,6 +99,48 @@ TEST(ComputeIoU, Box3d) {
   EXPECT_NEAR(0.0, ComputeIoU(b10, b10, Label::Box::TYPE_3D), kError);
   EXPECT_NEAR(0.00505, ComputeIoU(b1, b11, Label::Box::TYPE_3D), kError);
   EXPECT_NEAR(1.0, ComputeIoU(b11, b11, Label::Box::TYPE_3D), kError);
+}
+
+TEST(BatchComputeIoU, EmptyB2s) {
+  const Label::Box b1 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
+  ASSERT_EQ(BatchComputeIoU(b1, {}, Label::Box::TYPE_3D).size(), 0);
+}
+
+TEST(BatchComputeIoU, Box3d) {
+  // Boxes and expected values are the same as the non-batched version above.
+  const Label::Box b1 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
+  // Same as b1.
+  const Label::Box b2 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
+  // Zero overlap.
+  const Label::Box b3 = BuildBox3d(10.0, 10.0, 0.0, 1.0, 2.0, 2.0, 1.0);
+  const Label::Box b4 = BuildBox3d(0.5, 0.0, 0.0, 1.0, 4.0, 4.0, 0.0);
+  const Label::Box b5 = BuildBox3d(0.5, 0.0, 0.0, 1.0, 4.0, 4.0, M_PI * 0.5);
+  const Label::Box b6 = BuildBox3d(0.5, 0.0, 0.0, 1.0, 4.0, 2.0, M_PI * 0.25);
+  // Zero-sized box.
+  const Label::Box b7 = BuildBox3d(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  const Label::Box b8 = BuildBox3d(0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+  // Tiny box
+  const Label::Box b9 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 1e-12, 1.0, 0.0);
+  // Small box
+  const Label::Box b10 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 1.01e-2, 2.0, 0.0);
+
+  const std::vector<Label::Box> boxes = {b2, b3, b4, b5,  b6,
+                                         b7, b8, b9, b10, b1};
+  const std::vector<double>& ious =
+      BatchComputeIoU(b1, boxes, Label::Box::TYPE_3D);
+  ASSERT_EQ(ious.size(), 10);
+  EXPECT_NEAR(1.0, ious[0], kError);
+  EXPECT_NEAR(0.0, ious[1], kError);
+  EXPECT_NEAR(0.5 * 2.0 * 2.0 / (4.0 + 16.0 - 0.5 * 2.0 * 2.0), ious[2],
+              kError);
+  EXPECT_NEAR(0.5 * 2.0 * 2.0 / (4.0 + 16.0 - 0.5 * 2.0 * 2.0), ious[3],
+              kError);
+  EXPECT_NEAR(0.24074958176697656, ious[4], kError);
+  EXPECT_NEAR(0.0, ious[5], kError);
+  EXPECT_NEAR(0.0, ious[6], kError);
+  EXPECT_NEAR(0.0, ious[7], kError);
+  EXPECT_NEAR(0.00505, ious[8], kError);
+  EXPECT_NEAR(1.0, ious[9], kError);
 }
 
 TEST(ComputeLongitudinalAffinity, Box3d) {
