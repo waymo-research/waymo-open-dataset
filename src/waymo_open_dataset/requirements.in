@@ -14,7 +14,7 @@ plotly==5.13.1
 pyarrow==10.0.0
 scikit-image==0.20.0
 scikit-learn==1.2.2
-setuptools==67.6.0
+setuptools==70.0.0
 tensorflow==2.12
 tensorflow_graphics==2021.12.3
 tensorflow_probability==0.19.0
