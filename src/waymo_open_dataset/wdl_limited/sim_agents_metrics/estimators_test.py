@@ -46,25 +46,51 @@ class EstimatorsTest(parameterized.TestCase, tf.test.TestCase):
     )
 
   @parameterized.named_parameters(
-      {'testcase_name': 'no_time_collapse', 'independent_timesteps': False},
-      {'testcase_name': 'time_collapse', 'independent_timesteps': True},
+      {
+          'testcase_name': 'no_time_collapse_no_aggregate_objects',
+          'independent_timesteps': False,
+          'aggregate_objects': False,
+      },
+      {
+          'testcase_name': 'time_collapse_no_aggregate_objects',
+          'independent_timesteps': True,
+          'aggregate_objects': False,
+      },
+      {
+          'testcase_name': 'no_time_collapse_with_aggregate_objects',
+          'independent_timesteps': False,
+          'aggregate_objects': True,
+      },
+      {
+          'testcase_name': 'time_collapse_with_aggregate_objects',
+          'independent_timesteps': True,
+          'aggregate_objects': True,
+      },
   )
   def test_log_likelihood_estimate_timeseries_returns_correct_shape(
-      self, independent_timesteps):
+      self, independent_timesteps: bool, aggregate_objects: bool
+  ):
     feature_config = _FeatureConfig(
         histogram=TEST_HISTOGRAM,
         independent_timesteps=independent_timesteps,
-        metametric_weight=0.0)
+        metametric_weight=0.0,
+        aggregate_objects=aggregate_objects,
+    )
     log_likelihood = estimators.log_likelihood_estimate_timeseries(
         feature_config=feature_config,
         log_values=tf.zeros((4, 80)),
         sim_values=tf.zeros((32, 4, 80)))
     self.assertEqual(log_likelihood.shape, (4, 80))
 
-  def test_log_likelihood_estimate_single_value_returns_correct_shape(self):
+  @parameterized.parameters((True), (False))
+  def test_log_likelihood_estimate_single_value_returns_correct_shape(
+      self, aggregate_objects: bool
+  ):
     feature_config = _FeatureConfig(
         histogram=TEST_HISTOGRAM,
-        metametric_weight=0.0)
+        metametric_weight=0.0,
+        aggregate_objects=aggregate_objects,
+    )
     log_likelihood = estimators.log_likelihood_estimate_scenario_level(
         feature_config=feature_config,
         log_values=tf.zeros((4,)),

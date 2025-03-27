@@ -25,11 +25,15 @@ from waymo_open_dataset.utils.sim_agents import submission_specs
 
 
 def get_test_simulated_trajectories(
-    scenario: scenario_pb2.Scenario, num_sim_steps: int = 80):
+    scenario: scenario_pb2.Scenario,
+    challenge_type: submission_specs.ChallengeType,
+    num_sim_steps: int,
+):
   """Generates zero-valued trajectories of the expected sim duration."""
   trajectories = []
+  config = submission_specs.get_submission_config(challenge_type)
   for track in scenario.tracks:
-    if submission_specs.is_valid_sim_agent(track):
+    if config.is_valid_sim_agent(track):
       trajectories.append(sim_agents_submission_pb2.SimulatedTrajectory(
           center_x=[0.0] * num_sim_steps, center_y=[0.0] * num_sim_steps,
           center_z=[0.0] * num_sim_steps, heading=[0.0] * num_sim_steps,

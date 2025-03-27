@@ -14,12 +14,15 @@ import tensorflow_probability as tfp
 from waymo_open_dataset.protos import sim_agents_metrics_pb2
 
 
-def log_likelihood_estimate_timeseries(
+def _log_likelihood_estimate_timeseries_agent_level(
     feature_config: sim_agents_metrics_pb2.SimAgentMetricsConfig.FeatureConfig,
     log_values: tf.Tensor,
     sim_values: tf.Tensor,
 ) -> tf.Tensor:
   """Computes the log-likelihood estimates for a time-series simulated feature.
+
+  This log-likelihood estimation is performed on a per-agent basis.
+  Note: This function is only used for the SIM_AGENTS challenge.
 
   Args:
     feature_config: A time-series compatible `FeatureConfig`.
@@ -67,6 +70,110 @@ def log_likelihood_estimate_timeseries(
   # reshape back to the initial `log_values` shape.
   log_likelihood = tf.reshape(log_likelihood, (n_objects, n_steps))
   return log_likelihood
+
+
+def _log_likelihood_estimate_timeseries_scene_level(
+    feature_config: sim_agents_metrics_pb2.SimAgentMetricsConfig.FeatureConfig,
+    log_values: tf.Tensor,
+    sim_values: tf.Tensor,
+) -> tf.Tensor:
+  """Computes the log-likelihood estimates for a time-series simulated feature.
+
+  This log-likelihood estimation is performed on a scene-level basis,
+  aggregating over all agents. One scene is one snapshot of information at one
+  timestep. One scenario contains multiple scene, like 91 scenes for scenario
+  gen in WOMD. One Scene contains multiple agents.
+  Note: This function is only used for the SCENARIO_GEN challenge.
+
+  Args:
+    feature_config: A time-series compatible `FeatureConfig`.
+    log_values: A float Tensor with shape (n_objects, n_steps).
+    sim_values: A float Tensor with shape (n_rollouts, n_objects, n_steps).
+
+  Returns:
+    A tensor of shape (n_objects, n_steps) containing the log probability
+    estimates of the log features under the simulated distribution of the same
+    feature.
+  """
+  tf.assert_rank(log_values, 2)
+  tf.assert_rank(sim_values, 3)
+  n_rollouts, n_objects, n_steps = sim_values.shape
+  if log_values.shape != (n_objects, n_steps):
+    raise ValueError(
+        f'Log values must be of shape: {(n_objects, n_steps)} '
+        f'(Actual: {log_values.shape})'
+    )
+  if feature_config.independent_timesteps:
+    # If time steps needs to be considered independent, reshape:
+    # - `sim_values` as (1, n_objects * n_rollouts * n_steps)
+    # - `log_values` as (1, n_objects * n_steps)
+    sim_values = tf.reshape(
+        tf.transpose(sim_values, [1, 0, 2]),
+        (1, n_objects * n_rollouts * n_steps),
+    )
+    log_values = tf.reshape(
+        tf.transpose(log_values, [1, 0]), (1, n_objects * n_steps)
+    )
+  else:
+    # If values in time are instead to be compared per-step, reshape:
+    # - `sim_values` as (n_steps, n_objects * n_rollouts)
+    # - `log_values` as (n_steps, n_objects)
+    sim_values = tf.reshape(
+        tf.transpose(sim_values, [2, 1, 0]), (n_steps, n_objects * n_rollouts)
+    )
+    log_values = tf.transpose(log_values, [1, 0])
+  if feature_config.WhichOneof('estimator') == 'histogram':
+    log_likelihood = histogram_estimate(
+        feature_config.histogram, log_values, sim_values
+    )
+  elif feature_config.WhichOneof('estimator') == 'kernel_density':
+    log_likelihood = kernel_density_estimate(
+        feature_config.kernel_density, log_values, sim_values
+    )
+  elif feature_config.WhichOneof('estimator') == 'bernoulli':
+    log_likelihood = bernoulli_estimate(
+        feature_config.bernoulli, log_values, sim_values
+    )
+  else:
+    raise ValueError(
+        '`FeatureConfig` contains an invalid estimator. '
+        f'Found: {feature_config.WhichOneof("estimator")}'
+    )
+
+  # Depending on `independent_timesteps`, the likelihoods might be flattened, so
+  # reshape back to the initial `log_values` shape.
+  log_likelihood = tf.reshape(log_likelihood, (n_steps, n_objects))
+  # Transposes it back to shape as log_values's shape, which is
+  # (n_objects, n_steps).
+  log_likelihood = tf.transpose(log_likelihood, [1, 0])
+  return log_likelihood
+
+
+def log_likelihood_estimate_timeseries(
+    feature_config: sim_agents_metrics_pb2.SimAgentMetricsConfig.FeatureConfig,
+    log_values: tf.Tensor,
+    sim_values: tf.Tensor,
+) -> tf.Tensor:
+  """Computes the log-likelihood estimates for a time-series simulated feature.
+
+  Args:
+    feature_config: A time-series compatible `FeatureConfig`.
+    log_values: A float Tensor with shape (n_objects, n_steps).
+    sim_values: A float Tensor with shape (n_rollouts, n_objects, n_steps).
+
+  Returns:
+    A tensor of shape (n_objects, n_steps) containing the log probability
+    estimates of the log features under the simulated distribution of the same
+    feature.
+  """
+  if feature_config.aggregate_objects:
+    return _log_likelihood_estimate_timeseries_scene_level(
+        feature_config, log_values, sim_values
+    )
+  else:
+    return _log_likelihood_estimate_timeseries_agent_level(
+        feature_config, log_values, sim_values
+    )
 
 
 def log_likelihood_estimate_scenario_level(

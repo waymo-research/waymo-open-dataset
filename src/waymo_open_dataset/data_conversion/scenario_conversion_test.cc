@@ -15,9 +15,17 @@ limitations under the License.
 
 #include "waymo_open_dataset/data_conversion/scenario_conversion.h"
 
+#include <cmath>
+#include <cstdint>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "google/protobuf/text_format.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "tensorflow/core/example/example.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"

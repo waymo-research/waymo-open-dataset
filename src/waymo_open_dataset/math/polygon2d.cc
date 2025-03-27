@@ -15,20 +15,23 @@ limitations under the License.
 
 // Copyright 2011 Google Inc. All Rights Reserved.
 
-#include "waymo_open_dataset/math/polygon2d.h"
-
 #include <float.h>
 #include <stddef.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <limits>
 #include <memory>
 
 #include <glog/logging.h>
+#include "absl/base/optimization.h"
 #include "absl/strings/str_format.h"
-#include "waymo_open_dataset/math/exactfloat.h"
+
+#include "waymo_open_dataset/math/math_util.h"
+#include "waymo_open_dataset/math/polygon2d.h"
+#include "waymo_open_dataset/math/segment2d.h"
 
 namespace waymo {
 namespace open_dataset {
@@ -47,40 +50,104 @@ double Cross(const Vec2d v0, const Vec2d v1, const Vec2d v2, const Vec2d v3) {
   return (v1 - v0).CrossProd(v3 - v2);
 }
 
-// Compute (v1-v0).Cross(v3-v2) using exact precision. This uses a software
-// FP implementation, which is much slower than native floating point, but
-// produces exact results.
-double CrossExact(const Vec2d v0, const Vec2d v1, const Vec2d v2,
-                  const Vec2d v3) {
-  const ExactFloat v10x = ExactFloat(v1.x()) - ExactFloat(v0.x());
-  const ExactFloat v10y = ExactFloat(v1.y()) - ExactFloat(v0.y());
-  const ExactFloat v32x = ExactFloat(v3.x()) - ExactFloat(v2.x());
-  const ExactFloat v32y = ExactFloat(v3.y()) - ExactFloat(v2.y());
-
-  const ExactFloat cp = v10x * v32y - v32x * v10y;
-  return cp.ToDouble();
-}
-
 // Constant to check if the result of a Cross operation would need to be
 // recomputed with exact precision. Checking that precisely would require
 // dynamically computing the epsilon. Approximate by using 2^-50, which is two
 // bits apart from 1.0. This is conservative as it will happen on all cases
 // below 2^-50, which should be rare.
-static const double kCrossExactEpsilon = std::pow(2, -50);
+static constexpr double kCrossExactEpsilon = 0x1p-50;  // 2 ^ -50
 
-// Compute (v1-v0).Cross(v3-v2)
-// If the result is very close to 0, recompute it with exact precision (at a
-// significant performance cost). The intent is for decisions to be made about
-// the sign of the result.
+// Accsum computes the accurate summation of 16 double precision floats.
+// Algorithm from the following paper:
+//
+// Accurate floating-point summation part I: Faithful Rounding.
+// Siegfried M. Rump, Takeshi Ogita And Shin’Ichi Oish
+//
+// https://www.tuhh.de/ti3/paper/rump/RuOgOi07I.pdf
+double AccSum(std::array<double, 16>& p) {
+  static constexpr double kAccSum = 0x1p-53;  // 2 ^ - 53
+
+  auto NextPowerTwo = [](double d) {
+    return std::pow(2, static_cast<int>(std::ceil(std::log2(d))));
+  };
+
+  const int n = p.size();
+  double mu = std::abs(p[0]);
+  for (const double pe : p) {
+    mu = std::max(mu, std::abs(pe));
+  }
+  if (mu == 0.0) return 0.0;
+  const double ms = 32.0;  // NextPowerTwo(n + 2);
+  const double phi = kAccSum * ms;
+  const double factor = kAccSum * ms * ms;
+  double sigma = ms * NextPowerTwo(mu);
+
+  double t = 0.0;
+  for (;;) {
+    double tau = 0.0;
+    double sum_p = 0.0;
+    for (int i = 0; i < n; ++i) {
+      const double q = (sigma + p[i]) - sigma;
+      tau += q;
+      p[i] -= q;
+      sum_p += p[i];
+    }
+    double tau1 = t + tau;
+    if (std::abs(tau1) >= factor * sigma ||
+        sigma <= std::numeric_limits<double>::min()) {
+      const double tau2 = tau - (tau1 - t);
+      return tau1 + (tau2 + sum_p);
+    }
+    t = tau1;
+    if (t == 0.0) {
+      return AccSum(p);
+    }
+    sigma = phi * sigma;
+  }
+}
+
+// Compute (v1-v0).Cross(v3-v2). The sign of the result is computed with precise
+// accuracy, by using precise floating point algorithms for results close to
+// zero, at a significant performance cost. The intent of this function is to be
+// used when computing intersections, which uses an algorithm that relies on
+// exact sign computations (see Polygon2d::ComputeIntersectionVertices).
 double CrossMaybeExact(const Vec2d v0, const Vec2d v1, const Vec2d v2,
                        const Vec2d v3) {
-  const double c = Cross(v0, v1, v2, v3);
+  if (v0 == v1 || v2 == v3) {
+    return 0.0;
+  }
 
+  const double c = Cross(v0, v1, v2, v3);
   if (ABSL_PREDICT_TRUE(std::abs(c) > kCrossExactEpsilon)) {
     // More precision is needed if c is a single bit apart from 0.0.
     return c;
   }
-  return CrossExact(v0, v1, v2, v3);
+
+  // Expand (v1-v0).Cross(v3-v2) as a sum of products.
+  std::array<double, 16> term;
+
+  // Compute each product.
+  term[0] = v1.x() * v3.y();
+  term[1] = -v0.x() * v3.y();
+  term[2] = -v1.x() * v2.y();
+  term[3] = v0.x() * v2.y();
+  term[4] = -v1.y() * v3.x();
+  term[5] = v0.y() * v3.x();
+  term[6] = v1.y() * v2.x();
+  term[7] = -v0.y() * v2.x();
+  // Compute any loss due to rounding.
+  // std::fma computes the intermediate result at infinite precision.
+  term[8] = std::fma(v1.x(), v3.y(), -term[0]);
+  term[9] = std::fma(-v0.x(), v3.y(), -term[1]);
+  term[10] = std::fma(-v1.x(), v2.y(), -term[2]);
+  term[11] = std::fma(v0.x(), v2.y(), -term[3]);
+  term[12] = std::fma(-v1.y(), v3.x(), -term[4]);
+  term[13] = std::fma(v0.y(), v3.x(), -term[5]);
+  term[14] = std::fma(v1.y(), v2.x(), -term[6]);
+  term[15] = std::fma(-v0.y(), v2.x(), -term[7]);
+
+  // Compute the sum of the terms without precision loss.
+  return AccSum(term);
 }
 
 // Compute the area of a non self-instersecting polygon, which is represented by
@@ -208,79 +275,85 @@ double Polygon2d::AreaNoValidityCheck() const { return AreaInternal(points_); }
 namespace {
 
 // Given a segment and a colinear point, check if the point is in the segment,
-// and if so, update *intersection to the intersection value (point).
-bool ColinearSegmentPointIntersection(const Segment2d& segment,
-                                      const Vec2d point, Vec2d* intersection) {
+// and if so, update *intersection to the intersection value (q).
+bool ColinearSegmentPointIntersection(const Vec2d p0, const Vec2d p1,
+                                      const Vec2d q, Vec2d* intersection) {
   // Compute the AABB for the segment and check that the point lands inside it.
-  const Vec2d bottom_left = segment.start().ElemWiseMin(segment.end());
-  const Vec2d top_right = segment.start().ElemWiseMax(segment.end());
-  if (bottom_left.x() <= point.x() && point.x() <= top_right.x() &&
-      bottom_left.y() <= point.y() && point.y() <= top_right.y()) {
-    *intersection = point;
+  const Vec2d bottom_left = p0.ElemWiseMin(p1);
+  const Vec2d top_right = p0.ElemWiseMax(p1);
+  if (bottom_left.x() <= q.x() && q.x() <= top_right.x() &&
+      bottom_left.y() <= q.y() && q.y() <= top_right.y()) {
+    *intersection = q;
     return true;
   }
   return false;
+}
+
+// Compute the intersection of two segments. The algorithm in
+// ComputeIntersectionVertices depends on exact computation, adjustment by
+// epsilon is not acceptable.
+bool ExactIntersection(const Vec2d p0, const Vec2d p1, const Vec2d q0,
+                       const Vec2d q1, const double det, Vec2d* intersection) {
+  if (det == 0.0) {
+    // Segments are parallel.
+    if (CrossMaybeExact(p0, p1, p0, q0) != 0.0) {
+      // But not colinear.
+      return false;
+    }
+    // If they are overlapping, return one of the intersection points.
+    return ColinearSegmentPointIntersection(q0, q1, p0, intersection) ||
+           ColinearSegmentPointIntersection(q0, q1, p1, intersection) ||
+           ColinearSegmentPointIntersection(p0, p1, q0, intersection) ||
+           ColinearSegmentPointIntersection(p0, p1, q1, intersection);
+  }
+
+  const double detsign = std::copysign(1.0, det);
+  const double epsilon = std::max(std::abs(det), 1.0) * kCrossExactEpsilon;
+
+  // t1/det is the intersection point projected to s1.
+  // Must be in the range [0-1] if there is an intersection
+  const double t1 = CrossMaybeExact(p0, q0, q1, q0);
+  if (t1 * detsign < 0.0 || t1 * detsign > std::abs(det) + epsilon) {
+    return false;
+  }
+  if (ABSL_PREDICT_FALSE(t1 * detsign > std::abs(det) - epsilon)) {
+    // t1/det is close to 1, reverse both segments and recompute the
+    // intersection, to use full precision if close to the segment start.
+    const double rt1 = CrossMaybeExact(p1, q1, q0, q1);
+    if (rt1 * detsign < 0.0) return false;
+  }
+
+  // t2/det is the intersection point projected to s2.
+  // Must be in the range [0-1] if there is an intersection
+  const double t2 = CrossMaybeExact(p0, p1, p0, q0);
+  if (t2 * detsign < 0.0 || t2 * detsign > std::abs(det) + epsilon) {
+    return false;
+  }
+  if (ABSL_PREDICT_FALSE(t2 * detsign > std::abs(det) - epsilon)) {
+    // t2/det is close to 1, reverse both segments and recompute the
+    // intersection, to use full precision if close to the segment start.
+    const double rt2 = CrossMaybeExact(p1, p0, p1, q1);
+    if (rt2 * detsign < 0.0) return false;
+  }
+
+  // BoundToRange to avoid precision errors from the division.
+  *intersection = p0 + (p1 - p0) * BoundToRange(0.0, 1.0, t1 / det);
+  return true;
 }
 
 }  // namespace
 
 namespace internal {
 
-// Compute the intersection of two segments. The algorithm in
-// ComputeIntersectionVertices depends on exact computation, adjustment by
-// epsilon is not acceptable.
 bool ExactSegmentIntersection(const Segment2d& s1, const Segment2d& s2,
                               Vec2d* intersection) {
-  // Copy start/end vectors to locals, to enable reuse.
   const Vec2d s1s = s1.start(), s1e = s1.end();
   const Vec2d s2s = s2.start(), s2e = s2.end();
 
   const double det = CrossMaybeExact(s1s, s1e, s2e, s2s);
-  if (det == 0.0) {
-    // Segments are parallel.
-    if (CrossMaybeExact(s1s, s1e, s1s, s2s) != 0.0) {
-      // But not colinear.
-      return false;
-    }
-    // If they are overlapping, return one of the intersection points.
-    return ColinearSegmentPointIntersection(s2, s1s, intersection) ||
-           ColinearSegmentPointIntersection(s2, s1e, intersection) ||
-           ColinearSegmentPointIntersection(s1, s2s, intersection) ||
-           ColinearSegmentPointIntersection(s1, s2e, intersection);
-  }
-
-  const double detsign = std::copysign(1.0, det);
-
-  // t1/det is the intersection point projected to s1.
-  // Must be in the range [0-1] if there is an intersection
-  const double t1 = CrossMaybeExact(s1s, s2s, s2e, s2s);
-  if (t1 * detsign < 0.0 || t1 * detsign - std::abs(det) > kCrossExactEpsilon) {
-    return false;
-  }
-  if (ABSL_PREDICT_FALSE(t1 * detsign - std::abs(det) > -kCrossExactEpsilon)) {
-    // t1/det is close to 1, reverse both segments and recompute the
-    // intersection, to use full precision if close to the segment start.
-    const double rt1 = CrossMaybeExact(s1e, s2e, s2s, s2e);
-    if (rt1 * detsign < 0.0) return false;
-  }
-
-  // t2/det is the intersection point projected to s2.
-  // Must be in the range [0-1] if there is an intersection
-  const double t2 = CrossMaybeExact(s1s, s1e, s1s, s2s);
-  if (t2 * detsign < 0.0 || t2 * detsign - std::abs(det) > kCrossExactEpsilon) {
-    return false;
-  }
-  if (ABSL_PREDICT_FALSE(t2 * detsign - std::abs(det) > -kCrossExactEpsilon)) {
-    // t2/det is close to 1, reverse both segments and recompute the
-    // intersection, to use full precision if close to the segment start.
-    const double rt2 = CrossMaybeExact(s1e, s1s, s1e, s2e);
-    if (rt2 * detsign < 0.0) return false;
-  }
-
-  // BoundToRange to avoid precision errors from the division.
-  *intersection = s1s + (s1e - s1s) * BoundToRange(0.0, 1.0, t1 / det);
-  return true;
+  return ExactIntersection(s1s, s1e, s2s, s2e, det, intersection);
 }
+
 
 }  // namespace internal
 
@@ -305,7 +378,6 @@ std::vector<Vec2d> Polygon2d::ComputeIntersectionVertices(
   // intersection polygon.
 
   // We use P and Q to represent this polygon and the other one.
-  int p_idx = 0, q_idx = 0;
   const std::vector<Vec2d>& other_points = other.points();
   bool p_inside = false, q_inside = false;
   const int total_num_points = NumPoints() + other.NumPoints();
@@ -323,20 +395,21 @@ std::vector<Vec2d> Polygon2d::ComputeIntersectionVertices(
     }
   };
 
-  for (int i = 0; i < total_num_points * 2; ++i) {
-    const Vec2d p0 = points_[p_idx];
-    const Vec2d p1 = points_[Next(p_idx)];
-    const Vec2d q0 = other_points[q_idx];
-    const Vec2d q1 = other_points[other.Next(q_idx)];
-    const Segment2d seg_p(p0, p1);
-    const Segment2d seg_q(q0, q1);
+  int p_idx = 0, q_idx = 0;
+  int p_idx_next = 1, q_idx_next = 1;
+  Vec2d p0 = points_[p_idx];
+  Vec2d p1 = points_[p_idx_next];
+  Vec2d q0 = other_points[q_idx];
+  Vec2d q1 = other_points[q_idx_next];
 
+  for (int i = 0; i < total_num_points * 2; ++i) {
     // If we found a intersection between <p0, p1> and <q0, q1>, put the
     // intersection into the convex points list, and check that after the
     // intersection whose points will be inside and hence recorded. If we reach
     // the first intersection point, we are done.
     Vec2d inter;
-    if (internal::ExactSegmentIntersection(seg_p, seg_q, &inter)) {
+    const double det = CrossMaybeExact(p0, p1, q1, q0);
+    if (ExactIntersection(p0, p1, q0, q1, det, &inter)) {
       if (convex_points.size() > 2 && inter == convex_points[0]) {
         return convex_points;
       }
@@ -360,7 +433,7 @@ std::vector<Vec2d> Polygon2d::ComputeIntersectionVertices(
 
     // Determine in which polygon we would like to advance according to the
     // "advance rule" in the algorithm.
-    const bool advance_p = (CrossMaybeExact(q1, q0, p1, p0) >= 0.0)
+    const bool advance_p = (det >= 0.0)
                                ? CrossMaybeExact(q1, q0, p1, q0) < 0.0
                                : CrossMaybeExact(p1, p0, q1, p0) >= 0.0;
 
@@ -368,12 +441,18 @@ std::vector<Vec2d> Polygon2d::ComputeIntersectionVertices(
       if (p_inside) {
         append_convex_point(p1, &convex_points);
       }
-      p_idx = Next(p_idx);
+      p_idx = p_idx_next;
+      p0 = p1;
+      p_idx_next = Next(p_idx_next);
+      p1 = points_[p_idx_next];
     } else {
       if (q_inside) {
         append_convex_point(q1, &convex_points);
       }
-      q_idx = other.Next(q_idx);
+      q_idx = q_idx_next;
+      q0 = q1;
+      q_idx_next = other.Next(q_idx_next);
+      q1 = other_points[q_idx_next];
     }
   }
 

@@ -45,6 +45,19 @@ message SimAgentMetricsConfig {
     // [0,1]. The meta-metric (i.e. how all the submission are finally scored
     // and ranked) is just a weighted average of these scores.
     optional float metametric_weight = 5;
+    // Based on this flag, the distribution of simulated features will be
+    // aggregated over all the objects at every single time step.
+    // Example:
+    //  1. SIM_AGENTS challenge uses `aggregate_objects=False` for all
+    //  histogram-based features. For example, for speed features, each
+    //  logged step for each single agent will be evaluated under the speed
+    //  distribution of the 32 parallel simulations at that specific step;
+    //  2. SCENARIO_GEN challenge uses `aggregate_objects=True` for all
+    //  histogram-based features. Similar to speed, for each logged step's all
+    //  objects will be evaluated against the same distribution over all the 32
+    //  parallel simulated scenarios' objects (parallel_simulations *
+    //  num_valid_objects);
+    optional bool aggregate_objects = 6;
   }
 
   // Configuration for the histogram-based likelihood estimation.
@@ -92,6 +105,7 @@ message SimAgentMetricsConfig {
   // Map-based features.
   optional FeatureConfig distance_to_road_edge = 8;
   optional FeatureConfig offroad_indication = 9;
+  optional FeatureConfig traffic_light_violation = 10;
 }
 
 // Aggregation (at the dataset-level or scenario-level) of the lower-level
@@ -125,12 +139,16 @@ message SimAgentMetrics {
   // Map-based features: distance to road edge, offroad indication.
   optional float distance_to_road_edge_likelihood = 11;
   optional float offroad_indication_likelihood = 12;
+  optional float traffic_light_violation_likelihood = 16;
 
   // Fraction of simulated objects that collide for at least one step with any
   // other simulated object.
   optional float simulated_collision_rate = 14;
   // Fraction of simulated objects that drive offroad for at least one step.
   optional float simulated_offroad_rate = 15;
+  // Fraction of simulated objects that violate a traffic light for at least one
+  // step.
+  optional float simulated_traffic_light_violation_rate = 17;
 }
 
 // Bucketed version of the sim agent metrics. This aggregated message is used
@@ -159,4 +177,7 @@ message SimAgentsBucketedMetrics {
   optional float simulated_collision_rate = 8;
   // Fraction of simulated objects that drive offroad for at least one step.
   optional float simulated_offroad_rate = 9;
+  // Fraction of simulated objects that violate a traffic light for at least one
+  // step.
+  optional float simulated_traffic_light_violation_rate = 10;
 }

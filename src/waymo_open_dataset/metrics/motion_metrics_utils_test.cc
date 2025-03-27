@@ -498,6 +498,13 @@ TEST(MotionMetricsUtils, PredictionToPolygon) {
   }
 }
 
+TEST(MotionMetricsUtils, AverageAngle) {
+  EXPECT_NEAR(AverageAngle(0.0, 0.0), 0.0, 1e-5);
+  EXPECT_NEAR(AverageAngle(0.0, M_PI), M_PI / 2.0, 1e-5);
+  EXPECT_NEAR(AverageAngle(M_PI / 2.0, M_PI), 3 * M_PI / 4.0, 1e-5);
+  EXPECT_NEAR(AverageAngle(-M_PI + .05, M_PI - .05), M_PI, 1e-5);
+}
+
 }  // namespace
 }  // namespace open_dataset
 }  // namespace waymo

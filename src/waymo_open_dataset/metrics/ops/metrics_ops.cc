@@ -47,7 +47,7 @@ REGISTER_OP("DetectionMetrics")
     .Output("breakdown: uint8")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Computes detection metrics.
@@ -102,7 +102,7 @@ REGISTER_OP("DetectionMetricsState")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
 
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Computes accumulable state for detection metrics.
@@ -142,7 +142,7 @@ REGISTER_OP("DetectionMetricsResult")
     .Attr("config: string")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
 
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Computes detection metrics result.
@@ -185,7 +185,7 @@ REGISTER_OP("MotionMetrics")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Computes motion metrics.
@@ -258,7 +258,7 @@ REGISTER_OP("TrackingMetrics")
     .Attr("config: string")
     .SetShapeFn([](::tensorflow::shape_inference::InferenceContext* c) {
 
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Computes tracking metrics.

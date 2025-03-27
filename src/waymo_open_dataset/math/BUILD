@@ -64,9 +64,10 @@ cc_library(
     ],
     deps = [
         ":box2d",
-        ":exactfloat",
+        ":math_util",
         ":segment2d",
         ":vec2d",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_glog//:glog",
     ],

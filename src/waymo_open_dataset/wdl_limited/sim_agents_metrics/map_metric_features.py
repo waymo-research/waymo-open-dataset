@@ -5,8 +5,6 @@
 # ==============================================================================
 """Map-based metric features for sim agents."""
 
-from typing import Optional, Sequence
-
 import tensorflow as tf
 
 from waymo_open_dataset.protos import map_pb2
@@ -29,7 +27,7 @@ _CYCLIC_MAP_FEATURE_TOLERANCE_M2 = 1.0
 _Z_STRETCH_FACTOR = 3.0
 
 
-_Polyline = Sequence[map_pb2.MapPoint]
+_Polyline = list[map_pb2.MapPoint]
 
 
 def compute_distance_to_road_edge(
@@ -43,7 +41,7 @@ def compute_distance_to_road_edge(
     heading: tf.Tensor,
     valid: tf.Tensor,
     evaluated_object_mask: tf.Tensor,
-    road_edge_polylines: Sequence[_Polyline]
+    road_edge_polylines: list[_Polyline]
 ) -> tf.Tensor:
   """Computes the distance to the road edge for each of the evaluated objects.
 
@@ -93,7 +91,7 @@ def compute_distance_to_road_edge(
   box_corners = box_utils.get_upright_3d_box_corners(boxes)[:, :4]
   box_corners = tf.reshape(box_corners, (num_objects, num_steps, 4, 3))
 
-  # Gather objects in the evaluation set
+  # Gather objects in the evaluation set.
   # `eval_corners` shape: (num_evaluated_objects, num_steps, 4, 3).
   eval_corners = tf.gather(
       box_corners, tf.where(evaluated_object_mask)[:, 0], axis=0)
@@ -104,7 +102,7 @@ def compute_distance_to_road_edge(
   flat_eval_corners = tf.reshape(eval_corners, (-1, 3))
 
   # Tensorize road edges.
-  polylines_tensor = _tensorize_polylines(road_edge_polylines)
+  polylines_tensor, _ = tensorize_polylines(road_edge_polylines)
   is_polyline_cyclic = _check_polyline_cycles(road_edge_polylines)
 
   # Compute distances for all query points.
@@ -128,20 +126,35 @@ def compute_distance_to_road_edge(
   return tf.where(eval_validity, signed_distances, -EXTREMELY_LARGE_DISTANCE)
 
 
-def _tensorize_polylines(polylines: Sequence[_Polyline]) -> tf.Tensor:
+def tensorize_polylines(
+    polylines: list[_Polyline], ids: list[int] | None = None
+) -> tuple[tf.Tensor, tf.Tensor]:
   """Stacks a sequence of polylines into a tensor.
 
   Args:
     polylines: A sequence of Polyline objects.
+    ids: A sequence of integer ids for each polyline in `polylines`. If None,
+      the all zeros ids are returned.
 
   Returns:
     A float tensor with shape (num_polylines, max_length, 4) containing xyz
-      coordinates and a validity flag for all points in the polylines. Polylines
-      are padded with zeros up to the length of the longest one.
+      coordinates and a validity flag for all points in the polylines.
+      Polylines are padded with zeros up to the length of the longest one.
+    A int tensor with shape (num_polylines) containing the ids of the polylines.
+
+  Raises:
+    ValueError: When the number of polylines and ids are inconsistent.
   """
+  if ids is None:
+    ids = [0] * len(polylines)
+  elif len(polylines) != len(ids):
+    raise ValueError('Inconsistent number of polylines and ids.')
+
   polyline_tensors = []
+  id_tensors = []
+
   max_length = 0
-  for polyline in polylines:
+  for polyline, feature_id in zip(polylines, ids):
     # Skip degenerate polylines.
     if len(polyline) < 2:
       continue
@@ -153,17 +166,21 @@ def _tensorize_polylines(polylines: Sequence[_Polyline]) -> tf.Tensor:
             for map_point in polyline
         ])
     )
+    id_tensors.append(feature_id)
+
   # shape: (num_polylines, max_length, 4)
-  return tf.stack(
+  stacked_polylines = tf.stack(
       [
           tf.concat([p, tf.zeros([max_length - p.shape[0], 4])], axis=0)
           for p in polyline_tensors
       ],
       axis=0,
   )
+  # shape: (num_polylines)
+  return stacked_polylines, tf.constant(id_tensors, dtype=tf.int32)
 
 
-def _check_polyline_cycles(polylines: Sequence[_Polyline]) -> tf.Tensor:
+def _check_polyline_cycles(polylines: list[_Polyline]) -> tf.Tensor:
   """Checks if given polylines are cyclic and returns the result as a tensor.
 
   Args:
@@ -191,7 +208,7 @@ def _check_polyline_cycles(polylines: Sequence[_Polyline]) -> tf.Tensor:
 def _compute_signed_distance_to_polylines(
     xyzs: tf.Tensor,
     polylines: tf.Tensor,
-    is_polyline_cyclic: Optional[tf.Tensor] = None,
+    is_polyline_cyclic: tf.Tensor | None = None,
     z_stretch: float = 1.0,
 ) -> tf.Tensor:
   """Computes the signed distance to the 2D boundary defined by polylines.

@@ -101,6 +101,22 @@ TEST(ComputeIoU, Box3d) {
   EXPECT_NEAR(1.0, ComputeIoU(b11, b11, Label::Box::TYPE_3D), kError);
 }
 
+TEST(ComputeIoU, OverlappingBox3d) {
+  const Label::Box b1 =
+      BuildBox3d(70.970001220703125, 10.090000152587891, -0.37999999523162842,
+                 4.2699999809265137, 2.0199999809265137, 1.6599999666213989,
+                 -3.119999885559082);
+  // Same as b1 with a small difference on length.
+  const Label::Box b2 = BuildBox3d(
+      70.970001220703125, 10.090000152587891, -0.37999999523162842, 4.25,
+      2.0199999809265137, 1.6599999666213989, -3.119999885559082);
+  EXPECT_NEAR(ComputeIoU(b1, b2, Label::Box::TYPE_3D),
+      1 - (4.2699999809265137 - 4.25) * 2.0199999809265137 *
+              1.6599999666213989 /
+              (4.2699999809265137 * 2.0199999809265137 * 1.6599999666213989),
+      kError);
+}
+
 TEST(BatchComputeIoU, EmptyB2s) {
   const Label::Box b1 = BuildBox3d(0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 0.0);
   ASSERT_EQ(BatchComputeIoU(b1, {}, Label::Box::TYPE_3D).size(), 0);

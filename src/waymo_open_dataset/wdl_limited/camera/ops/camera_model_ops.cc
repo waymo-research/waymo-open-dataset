@@ -43,7 +43,7 @@ namespace tensorflow {
 namespace {
 namespace co = ::waymo::open_dataset;
 
-// Length of the instrinsic vector.
+// Length of the intrinsic vector.
 constexpr int kIntrinsicLen = 9;
 // Length of the camera metadata vector.
 constexpr int kMetadataLen = 3;
@@ -301,7 +301,7 @@ REGISTER_OP("WorldToImage")
       } else {
         c->set_output(0, c->input(4));
       }
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Maps global coordinates to image coordinates. See dataset.proto for more
@@ -340,7 +340,7 @@ REGISTER_OP("WorldToImageMovingPoint")
       } else {
         c->set_output(0, c->input(4));
       }
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Maps global coordinates to image coordinates by considering each point's
@@ -371,7 +371,7 @@ REGISTER_OP("ImageToWorld")
     .Output("global_coordinate: T")
     .SetShapeFn([](shape_inference::InferenceContext* c) {
       c->set_output(0, c->input(4));
-      return ::tensorflow::Status();
+      return absl::Status();
     })
     .Doc(R"doc(
 Maps global coordinates to image coordinates. See dataset.proto for more

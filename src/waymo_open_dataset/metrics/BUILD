@@ -218,12 +218,15 @@ cc_test(
     srcs = ["motion_metrics_test.cc"],
     deps = [
         ":motion_metrics",
+        "//waymo_open_dataset/common:status",
         "//waymo_open_dataset/math:vec2d",
         "//waymo_open_dataset/protos:motion_metrics_cc_proto",
         "//waymo_open_dataset/protos:motion_submission_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_glog//:glog",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 

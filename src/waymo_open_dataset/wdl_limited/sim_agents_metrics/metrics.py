@@ -15,6 +15,7 @@ import tensorflow as tf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos import sim_agents_metrics_pb2
 from waymo_open_dataset.protos import sim_agents_submission_pb2
+from waymo_open_dataset.utils.sim_agents import submission_specs
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import estimators
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import metric_features
 from waymo_open_dataset.wdl_limited.sim_agents_metrics import trajectory_features
@@ -29,7 +30,8 @@ _METRIC_FIELD_NAMES_BY_BUCKET = {
         'time_to_collision',
     ],
     'map_based': [
-        'distance_to_road_edge', 'offroad_indication'
+        'distance_to_road_edge', 'offroad_indication',
+        'traffic_light_violation',
     ]
 }
 _METRIC_FIELD_NAMES = (
@@ -38,12 +40,19 @@ _METRIC_FIELD_NAMES = (
     _METRIC_FIELD_NAMES_BY_BUCKET['map_based']
 )
 
+_ChallengeType = submission_specs.ChallengeType
 
-def load_metrics_config() -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
+
+def load_metrics_config(
+    challenge_type: _ChallengeType,
+) -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
   """Loads the `SimAgentMetricsConfig` used for the challenge."""
-  # pylint: disable=line-too-long
-  # pyformat: disable
-  config_path = '{pyglib_resource}waymo_open_dataset/wdl_limited/sim_agents_metrics/challenge_2024_config.textproto'.format(pyglib_resource='')
+  if challenge_type == _ChallengeType.SIM_AGENTS:
+    config_path = '{pyglib_resource}waymo_open_dataset/wdl_limited/sim_agents_metrics/challenge_2025_sim_agents_config.textproto'.format(pyglib_resource='')  # pylint: disable=line-too-long
+  elif challenge_type == _ChallengeType.SCENARIO_GEN:
+    config_path = '{pyglib_resource}waymo_open_dataset/wdl_limited/sim_agents_metrics/challenge_2025_scenario_gen_config.textproto'.format(pyglib_resource='')  # pylint: disable=line-too-long
+  else:
+    raise ValueError(f'Unsupported {challenge_type=}')
   with open(config_path, 'r') as f:
     config = sim_agents_metrics_pb2.SimAgentMetricsConfig()
     text_format.Parse(f.read(), config)
@@ -53,15 +62,28 @@ def load_metrics_config() -> sim_agents_metrics_pb2.SimAgentMetricsConfig:
 def compute_scenario_metrics_for_bundle(
     config: sim_agents_metrics_pb2.SimAgentMetricsConfig,
     scenario: scenario_pb2.Scenario,
-    scenario_rollouts: sim_agents_submission_pb2.ScenarioRollouts
+    scenario_rollouts: sim_agents_submission_pb2.ScenarioRollouts,
+    challenge_type: _ChallengeType = _ChallengeType.SIM_AGENTS,
 ) -> sim_agents_metrics_pb2.SimAgentMetrics:
   """Computes the scenario-level metrics for the given bundle."""
   # Computes the metric features for log and sim.
   log_features, sim_features = (
       metric_features.compute_scenario_rollouts_features(
-          scenario, scenario_rollouts)
-    )
+          scenario, scenario_rollouts, challenge_type
+      )
+  )
+  return compute_scenario_metrics_for_features_bundle(
+      config, scenario.scenario_id, log_features, sim_features
+  )
 
+
+def compute_scenario_metrics_for_features_bundle(
+    config: sim_agents_metrics_pb2.SimAgentMetricsConfig,
+    scenario_id: str,
+    log_features: metric_features.MetricFeatures,
+    sim_features: metric_features.MetricFeatures,
+) -> sim_agents_metrics_pb2.SimAgentMetrics:
+  """Computes the scenario-level metrics for the given features bundle."""
   # ==== Average Displacement Error ====
   # This metric is not included in the scoring meta-metric, but we report it
   # to have a baseline comparison with existing Behaviour Prediction challenges.
@@ -146,13 +168,20 @@ def compute_scenario_metrics_for_bundle(
       )
   )
 
+  # Time to collision is computed with assumption on the agent being a vehicle.
+  # To improve the precision of this metric, we only consider vehicles.
   ttc_log_likelihood = estimators.log_likelihood_estimate_timeseries(
       feature_config=config.time_to_collision,
       log_values=log_features.time_to_collision[0],
       sim_values=sim_features.time_to_collision,
   )
+  # Shape: (n_objects,).
+  is_vehicle = tf.equal(log_features.object_type,
+                        scenario_pb2.Track.ObjectType.TYPE_VEHICLE)[0]
+  ttc_validity = tf.logical_and(
+      log_features.valid[0], is_vehicle[:, tf.newaxis])
   ttc_likelihood = tf.exp(
-      _reduce_average_with_validity(ttc_log_likelihood, log_features.valid[0])
+      _reduce_average_with_validity(ttc_log_likelihood, ttc_validity)
   )
 
   # Off-road and distance to road edge. Again, aggregate over objects and
@@ -185,6 +214,25 @@ def compute_scenario_metrics_for_bundle(
       )
   )
 
+  # Traffic light violation. This is treated like collision and offroad,
+  # aggregated over time for any violation for each object (filtered by
+  # validity) and scored against log. Filter for vehicles only.
+  # Shape: (n_objects, n_steps).
+  tl_validity = tf.logical_and(
+      log_features.valid[0], is_vehicle[:, tf.newaxis])
+  log_traffic_light_violation_indication = tf.reduce_any(tf.logical_and(
+      log_features.traffic_light_violation_per_step, tl_validity[tf.newaxis]
+  ), axis=2)
+  sim_traffic_light_violation_indication = tf.reduce_any(tf.logical_and(
+      sim_features.traffic_light_violation_per_step, tl_validity[tf.newaxis]
+  ), axis=2)
+  tl_score = estimators.log_likelihood_estimate_scenario_level(
+      feature_config=config.traffic_light_violation,
+      log_values=log_traffic_light_violation_indication[0],
+      sim_values=sim_traffic_light_violation_indication,
+  )
+  tl_likelihood = tf.exp(tf.reduce_mean(tl_score))
+
   # ==== Simulated collision and offroad rates ====
   simulated_collision_rate = tf.reduce_sum(
       # `sim_collision_indication` shape: (n_samples, n_objects).
@@ -194,6 +242,21 @@ def compute_scenario_metrics_for_bundle(
       # `sim_offroad_indication` shape: (n_samples, n_objects).
       tf.cast(sim_offroad_indication, tf.int32)
   ) / tf.reduce_sum(tf.ones_like(sim_offroad_indication, dtype=tf.int32))
+
+  traffic_light_violation_indication = tf.reduce_any(
+      tf.where(
+          log_features.valid,
+          sim_features.traffic_light_violation_per_step,
+          False,
+      ),
+      axis=2,
+  )
+  traffic_light_violation_rate = tf.reduce_sum(
+      # `sim_traffic_light_violation_per_step` shape: (n_samples, n_objects).
+      tf.cast(traffic_light_violation_indication, tf.int32)
+  ) / tf.reduce_sum(
+      tf.ones_like(traffic_light_violation_indication, dtype=tf.int32)
+  )
 
   # ==== Meta-metric ====
   likelihood_metrics = {
@@ -210,18 +273,21 @@ def compute_scenario_metrics_for_bundle(
           distance_to_road_edge_likelihood.numpy()
       ),
       'offroad_indication_likelihood': offroad_likelihood.numpy(),
+      'traffic_light_violation_likelihood': tl_likelihood.numpy(),
   }
 
   metametric = _compute_metametric(
       config, sim_agents_metrics_pb2.SimAgentMetrics(**likelihood_metrics))
 
   return sim_agents_metrics_pb2.SimAgentMetrics(
-      scenario_id=scenario.scenario_id,
+      scenario_id=scenario_id,
       metametric=metametric,
       average_displacement_error=average_displacement_error,
       min_average_displacement_error=min_average_displacement_error,
       simulated_collision_rate=simulated_collision_rate.numpy(),
       simulated_offroad_rate=simulated_offroad_rate.numpy(),
+      simulated_traffic_light_violation_rate=(
+          traffic_light_violation_rate.numpy()),
       **likelihood_metrics,
   )
 
@@ -271,6 +337,8 @@ def aggregate_metrics_to_buckets(
       min_ade=metrics.min_average_displacement_error,
       simulated_collision_rate=metrics.simulated_collision_rate,
       simulated_offroad_rate=metrics.simulated_offroad_rate,
+      simulated_traffic_light_violation_rate=(
+          metrics.simulated_traffic_light_violation_rate),
   )
 
 

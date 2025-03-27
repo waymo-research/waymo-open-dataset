@@ -15,11 +15,14 @@ limitations under the License.
 
 #include "waymo_open_dataset/metrics/motion_metrics.h"
 
+#include <string>
+#include <vector>
+
 
 #include <glog/logging.h>
-#include "google/protobuf/text_format.h"
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "google/protobuf/text_format.h"
+#include "waymo_open_dataset/common/status.h"
 #include "waymo_open_dataset/math/vec2d.h"
 #include "waymo_open_dataset/protos/motion_metrics.pb.h"
 #include "waymo_open_dataset/protos/motion_submission.pb.h"

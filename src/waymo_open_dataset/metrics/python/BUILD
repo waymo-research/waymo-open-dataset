@@ -36,7 +36,6 @@ py_library(
 py_test(
     name = "detection_metrics_test",
     srcs = ["detection_metrics_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -61,7 +60,6 @@ py_library(
 py_test(
     name = "motion_metrics_test",
     srcs = ["motion_metrics_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -84,7 +82,6 @@ py_library(
 py_test(
     name = "tracking_metrics_test",
     srcs = ["tracking_metrics_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -140,7 +137,6 @@ py_library(
 py_test(
     name = "wod_detection_evaluator_test",
     srcs = ["wod_detection_evaluator_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),

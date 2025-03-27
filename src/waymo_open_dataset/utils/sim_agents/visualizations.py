@@ -162,7 +162,8 @@ def get_animated_states(
     # At each animation step, we need to remove the existing patches. This can
     # only be done using the `pop()` operation.
     for _ in range(len(axis.patches)):
-      axis.patches.pop()
+      for line in axis.patches:
+        line.remove()
     bboxes = add_all_current_objects(
         axis=axis, x=x[:, t], y=y[:, t], yaw=yaw[:, t], length=length[:, t],
         width=width[:, t], color_idx=color_idx[:, t])

@@ -1,0 +1,93 @@
+/* Copyright 2025 The Waymo Open Dataset Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto is used to submit results for the Waymo Open Dataset End-to-End
+// Driving (E2ED) Challenge.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/protos/end_to_end_driving_data.proto";
+
+message TrajectoryPrediction {
+  // Position in meters. Right-handed coordinate system.
+  // +x = forward, +y = left, +z = up.
+  // The ego-vehicle is located at (0, 0, 0) at t=0.
+  // The prediction length should be 5s at 4Hz, containing 20 waypoints.
+  // The first waypoint should be at t+0.25s and the last waypoint should be at
+  // t+5s. Only x,y coordinates are included. The z coordinate is not used.
+  repeated float pos_x = 1 [packed = true];
+  repeated float pos_y = 2 [packed = true];
+}
+
+message FrameTrajectoryPredictions {
+
+  // The unique identifier for this frame. This should match the name
+  // field in the Context proto (E2EDFrame.frame.context.name).
+  optional string frame_name = 1;
+
+  // The ego-vehicle future trajectory prediction for this frame.
+  optional TrajectoryPrediction trajectory = 2;
+}
+
+// Message packaging a full submission to the challenge.
+message E2EDChallengeSubmission {
+  // The set of trajectories to evaluate. One entry should exist for
+  // every frame in the test set.
+  repeated FrameTrajectoryPredictions predictions = 1;
+
+  // The challenge submission type.
+  enum SubmissionType {
+    UNKNOWN = 0;
+    // A submission for the Waymo open dataset end-to-end driving challenge.
+    E2ED_SUBMISSION = 1;
+  }
+  // Identifier of the submission type. Has to be set for the submission to be
+  // valid.
+  optional SubmissionType submission_type = 2;
+
+  // This must be set as the full email used to register at waymo.com/open.
+  optional string account_name = 3;
+
+  // This name needs to be short, descriptive and unique. Only the latest result
+  // of the method from a user will show up on the leaderboard.
+  optional string unique_method_name = 4;
+
+  // Author information.
+  repeated string authors = 5;
+  optional string affiliation = 6;
+
+  // A brief description of the method.
+  optional string description = 7;
+
+  // Link to paper or other link that describes the method.
+  optional string method_link = 8;
+
+  // Set this to true if your model used publicly available open-source
+  // LLM/VLM(s) for pre-training. This field is now REQUIRED for a valid
+  // submission.
+  optional bool uses_public_model_pretraining = 11;
+
+  // If any open-source model was used, specify their names and configuration.
+  repeated string public_model_names = 13;
+
+  // Specify an estimate of the number of parameters of the model used to
+  // generate this submission. The number must be specified as an integer number
+  // followed by a multiplier suffix (from the set [K, M, B, T, ...], e.g.
+  // "200K"). This field is now REQUIRED for a valid submission.
+  optional string num_model_parameters = 12;
+
+}

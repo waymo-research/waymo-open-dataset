@@ -91,3 +91,7 @@ time_to_collision: {
   metametric_weight: 0.11
 }
 
+traffic_light_violation: {
+  bernoulli: {}
+  metametric_weight: 0.0
+}

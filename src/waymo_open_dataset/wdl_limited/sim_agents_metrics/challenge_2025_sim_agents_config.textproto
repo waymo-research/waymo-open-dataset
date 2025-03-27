@@ -69,7 +69,7 @@ distance_to_road_edge: {
     additive_smoothing_pseudocount: 0.1
   }
   independent_timesteps: true
-  metametric_weight: 0.1
+  metametric_weight: 0.05
 }
 
 offroad_indication: {
@@ -90,5 +90,5 @@ time_to_collision: {
 
 traffic_light_violation: {
   bernoulli: {}
-  metametric_weight: 0.0
+  metametric_weight: 0.05
 }

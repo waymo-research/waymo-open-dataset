@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "waymo_open_dataset/metrics/motion_metrics_utils.h"
 
+#include <math.h>
 #include <set>
 
 #include "waymo_open_dataset/math/math_util.h"
@@ -237,6 +238,11 @@ int CurrentTrackStep(const MotionMetricsConfig& config) {
   return config.track_history_samples();
 }
 
+double AverageAngle(double angle_1_rad, double angle_2_rad) {
+  return atan2((sin(angle_1_rad) + sin(angle_2_rad)),
+               (cos(angle_1_rad) + cos(angle_2_rad)));
+}
+
 Polygon2d PredictionToPolygon(const MotionMetricsConfig& config,
                               const SingleTrajectory& trajectory,
                               int trajectory_step, const Track& track,
@@ -261,7 +267,8 @@ Polygon2d PredictionToPolygon(const MotionMetricsConfig& config,
     const Vec2d previous = Position(trajectory, trajectory_step - 1);
     const Vec2d current = Position(trajectory, trajectory_step);
     const Vec2d next = Position(trajectory, trajectory_step + 1);
-    heading = ((next - current).Angle() + (current - previous).Angle()) / 2.0;
+    heading =
+        AverageAngle((next - current).Angle(), (current - previous).Angle());
   }
 
   const int track_step = use_current_box_dimensions

@@ -1,0 +1,83 @@
+/* Copyright 2025 The Waymo Open Dataset Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+// This proto contains the  Waymo Open Dataset End-to-End Driving (E2ED) data
+// format.
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+import "waymo_open_dataset/dataset.proto";
+
+message E2EDFrame {
+  // This proto contains the Waymo Open Dataset End-to-End Driving (E2ED) data
+  // format.
+
+  // WOD frame object populated with camera image, calibration, and metadata.
+  // Populated fields:
+  //  frame.context
+  //    .name = unique identifier for this frame.
+  //    .camera_calibrations = calibration metadata for all cameras.
+  //    All other fields in `frame.context` are unused.
+  //  frame.timestamp_micros = current frame timestamp.
+  //  frame.images = camera images.
+  //  All other fields in `frame` are unused.
+  // For details about frame.context.camera_calibrations and frame.images, see
+  // the CameraCalibration and CameraImage protos.
+  optional waymo.open_dataset.Frame frame = 1;
+
+  // t = (0, 5s] future log states at 4Hz. Only position fields are populated.
+  // Future position x,y coords are used as prediction targets. z coords are
+  // included for visualization, but are not used as prediction targets.
+  optional EgoTrajectoryStates future_states = 5;
+  // t = (-4s, 0] past history states at 4Hz.
+  optional EgoTrajectoryStates past_states = 6;
+  // Driving intent of the ego-vehicle at this timestep.
+  optional EgoIntent.Intent intent = 7;
+
+
+}
+
+message EgoTrajectoryStates {
+  // Position in meters. Right-handed coordinate system.
+  // +x = forward, +y = left, +z = up.
+  // The ego-vehicle is located at (0, 0, 0).
+  repeated float pos_x = 1 [packed = true];
+  repeated float pos_y = 2 [packed = true];
+  repeated float pos_z = 3 [packed = true];
+
+  // Velocity in m/s.
+  repeated float vel_x = 4 [packed = true];
+  repeated float vel_y = 5 [packed = true];
+
+  // Acceleration in m/s^2.
+  repeated float accel_x = 6 [packed = true];
+  repeated float accel_y = 7 [packed = true];
+
+  // Only populated for trajectories with human-labeled preferences.
+  // Valid scores range from [0, 10], inclusive.
+  optional float preference_score = 8;
+}
+
+message EgoIntent {
+  // Driving intent of the ego-vehicle at a given timestep.
+  enum Intent {
+    UNKNOWN = 0;
+    GO_STRAIGHT = 1;
+    GO_LEFT = 2;
+    GO_RIGHT = 3;
+  }
+}

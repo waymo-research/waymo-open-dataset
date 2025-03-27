@@ -10,6 +10,7 @@ linear_speed: {
   }
   independent_timesteps: true
   metametric_weight: 0.05
+  aggregate_objects: true
 }
 
 linear_acceleration: {
@@ -21,6 +22,7 @@ linear_acceleration: {
   }
   independent_timesteps: true
   metametric_weight: 0.05
+  aggregate_objects: true
 }
 
 angular_speed: {
@@ -32,6 +34,7 @@ angular_speed: {
   }
   independent_timesteps: true
   metametric_weight: 0.05
+  aggregate_objects: true
 }
 
 angular_acceleration: {
@@ -43,6 +46,7 @@ angular_acceleration: {
   }
   independent_timesteps: true
   metametric_weight: 0.05
+  aggregate_objects: true
 }
 
 distance_to_nearest_object: {
@@ -54,11 +58,13 @@ distance_to_nearest_object: {
   }
   independent_timesteps: true
   metametric_weight: 0.1
+  aggregate_objects: true
 }
 
 collision_indication: {
   bernoulli: {}
   metametric_weight: 0.25
+  aggregate_objects: true
 }
 
 distance_to_road_edge: {
@@ -69,12 +75,14 @@ distance_to_road_edge: {
     additive_smoothing_pseudocount: 0.1
   }
   independent_timesteps: true
-  metametric_weight: 0.1
+  metametric_weight: 0.05
+  aggregate_objects: true
 }
 
 offroad_indication: {
   bernoulli: {}
   metametric_weight: 0.25
+  aggregate_objects: true
 }
 
 time_to_collision: {
@@ -86,9 +94,10 @@ time_to_collision: {
   }
   independent_timesteps: true
   metametric_weight: 0.1
+  aggregate_objects: true
 }
 
 traffic_light_violation: {
   bernoulli: {}
-  metametric_weight: 0.0
+  metametric_weight: 0.05
 }

@@ -33,5 +33,9 @@ cc_library(
     ],
     hdrs = ["zlib.h"],
     includes = ["."],
+    defines = [
+        "_POSIX_C_SOURCE=200809L", # Enable POSIX.1-2008 features
+        "HAVE_UNISTD_H",
+    ],
 )
 

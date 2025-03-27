@@ -1,8 +1,8 @@
 """Build rule to build cc and py protos."""
 
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_python//python:proto.bzl", "py_proto_library")
-load("//third_party/protobuf/bazel:proto_library.bzl", "proto_library")
 
 _SUFFIXES = {
     "proto": "_proto",

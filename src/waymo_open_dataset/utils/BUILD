@@ -251,7 +251,6 @@ py_library(
 py_test(
     name = "box_utils_test",
     srcs = ["box_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":box_utils",
@@ -263,7 +262,6 @@ py_test(
 py_test(
     name = "occupancy_flow_data_test",
     srcs = ["occupancy_flow_data_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":occupancy_flow_data",
@@ -274,7 +272,6 @@ py_test(
 py_test(
     name = "occupancy_flow_grids_test",
     srcs = ["occupancy_flow_grids_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":occupancy_flow_data",
@@ -287,7 +284,6 @@ py_test(
 py_test(
     name = "occupancy_flow_metrics_test",
     srcs = ["occupancy_flow_metrics_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -300,7 +296,6 @@ py_test(
 py_test(
     name = "occupancy_flow_renderer_test",
     srcs = ["occupancy_flow_renderer_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -313,7 +308,6 @@ py_test(
 py_test(
     name = "occupancy_flow_test_util_test",
     srcs = ["occupancy_flow_test_util_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":occupancy_flow_test_util",
@@ -323,7 +317,6 @@ py_test(
 py_test(
     name = "occupancy_flow_vis_test",
     srcs = ["occupancy_flow_vis_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":occupancy_flow_data",
@@ -336,7 +329,6 @@ py_test(
 py_test(
     name = "range_image_utils_test",
     srcs = ["range_image_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -348,7 +340,6 @@ py_test(
 py_test(
     name = "transform_utils_test",
     srcs = ["transform_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":transform_utils",
@@ -416,7 +407,6 @@ py_test(
 py_test(
     name = "trajectory_utils_test",
     srcs = ["trajectory_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":test_utils",
@@ -427,7 +417,6 @@ py_test(
 py_test(
     name = "geometry_utils_test",
     srcs = ["geometry_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('tensorflow'),
         ":geometry_utils",
@@ -438,7 +427,6 @@ py_test(
     name = "womd_lidar_utils_test",
     srcs = ["womd_lidar_utils_test.py"],
     data = ["//waymo_open_dataset/utils/testdata:motion_dataset_test_data"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -452,7 +440,6 @@ py_test(
 py_test(
     name = "womd_camera_utils_test",
     srcs = ["womd_camera_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),
@@ -465,7 +452,6 @@ py_test(
 py_test(
     name = "example_utils_test",
     srcs = ["example_utils_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('absl-py'),
         requirement('tensorflow'),

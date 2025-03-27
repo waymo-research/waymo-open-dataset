@@ -23,6 +23,8 @@ import "waymo_open_dataset/protos/camera_tokens.proto";
 import "waymo_open_dataset/protos/compressed_lidar.proto";
 import "waymo_open_dataset/protos/map.proto";
 
+
+
 message ObjectState {
   // Coordinates of the center of the object bounding box.
   optional double center_x = 2;

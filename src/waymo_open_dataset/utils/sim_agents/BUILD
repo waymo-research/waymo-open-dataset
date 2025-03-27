@@ -74,8 +74,8 @@ filegroup(
 py_test(
     name = "submission_specs_test",
     srcs = ["submission_specs_test.py"],
-    python_version = "PY3",
     deps = [
+        requirement('absl-py'),
         requirement('tensorflow'),
         ":submission_specs",
         ":test_utils",
@@ -88,12 +88,12 @@ py_test(
 py_test(
     name = "converters_test",
     srcs = ["converters_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('absl-py'),
         requirement('tensorflow'),
         ":converters",
         ":submission_specs",
+        "//waymo_open_dataset/protos:scenario_proto_py_pb2",
         "//waymo_open_dataset/utils:test_utils",
     ],
 )

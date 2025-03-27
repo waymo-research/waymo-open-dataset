@@ -39,7 +39,6 @@ py_library(
 py_test(
     name = "camera_model_ops_test",
     srcs = ["camera_model_ops_test.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         requirement('tensorflow'),

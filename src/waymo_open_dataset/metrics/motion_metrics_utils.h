@@ -89,6 +89,10 @@ Polygon2d PredictionToPolygon(const MotionMetricsConfig& config,
 // Returns a bounding box polygon for the given object state.
 Polygon2d StateToPolygon(const ObjectState& state);
 
+
+// Returns the average of two angles in radians.
+double AverageAngle(double angle_1_rad, double angle_2_rad);
+
 }  // namespace open_dataset
 }  // namespace waymo
 

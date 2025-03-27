@@ -22,6 +22,7 @@ limitations under the License.
 
 #include <glog/logging.h>
 #include "absl/container/flat_hash_map.h"
+#include "absl/log/log.h"
 #include "absl/strings/escaping.h"
 #include "absl/types/optional.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -185,20 +186,21 @@ class DetectionMetricsOp final : public OpKernel {
 
   // Computes the detection metrics.
   OutputTensors ComputeImpl(const InputTensors& input, OpKernelContext* ctx) {
-    LOG(INFO) << "Computing detection metrics for "
-              << input.prediction_bbox->dim_size(0) << " predicted boxes.";
-    LOG(INFO) << "Parsing prediction "
-              << input.prediction_bbox->shape().DebugString()
-              << input.prediction_frame_id->shape();
+    LOG_EVERY_N_SEC(INFO, 30)
+        << "Computing detection metrics for "
+        << input.prediction_bbox->dim_size(0) << " predicted boxes.";
+    LOG_EVERY_N_SEC(INFO, 30)
+        << "Parsing prediction " << input.prediction_bbox->shape().DebugString()
+        << input.prediction_frame_id->shape();
     absl::flat_hash_map<int64_t, std::vector<co::Object>> pds_map =
         co::ParseObjectFromTensors(
             *input.prediction_bbox, *input.prediction_type,
             *input.prediction_frame_id, *input.prediction_score,
             *input.prediction_overlap_nlz, absl::nullopt, absl::nullopt,
             absl::nullopt);
-    LOG(INFO) << "Parsing ground truth "
-              << input.ground_truth_bbox->shape().DebugString()
-              << input.ground_truth_frame_id->shape();
+    LOG_EVERY_N_SEC(INFO, 30) << "Parsing ground truth "
+                              << input.ground_truth_bbox->shape().DebugString()
+                              << input.ground_truth_frame_id->shape();
 
     absl::flat_hash_map<int64_t, std::vector<co::Object>> gts_map =
         co::ParseObjectFromTensors(
@@ -339,20 +341,21 @@ class DetectionMetricsStateOp final : public OpKernel {
   // Computes the detection metrics state.
   std::vector<co::DetectionMeasurements> ComputeImpl(const InputTensors& input,
                                                      OpKernelContext* ctx) {
-    LOG(INFO) << "Computing detection metrics for "
-              << input.prediction_bbox->dim_size(0) << " predicted boxes.";
-    LOG(INFO) << "Parsing prediction "
-              << input.prediction_bbox->shape().DebugString()
-              << input.prediction_frame_id->shape();
+    LOG_EVERY_N_SEC(INFO, 30)
+        << "Computing detection metrics for "
+        << input.prediction_bbox->dim_size(0) << " predicted boxes.";
+    LOG_EVERY_N_SEC(INFO, 30)
+        << "Parsing prediction " << input.prediction_bbox->shape().DebugString()
+        << input.prediction_frame_id->shape();
     absl::flat_hash_map<int64_t, std::vector<co::Object>> pds_map =
         co::ParseObjectFromTensors(
             *input.prediction_bbox, *input.prediction_type,
             *input.prediction_frame_id, *input.prediction_score,
             *input.prediction_overlap_nlz, absl::nullopt, absl::nullopt,
             absl::nullopt);
-    LOG(INFO) << "Parsing ground truth "
-              << input.ground_truth_bbox->shape().DebugString()
-              << input.ground_truth_frame_id->shape();
+    LOG_EVERY_N_SEC(INFO, 30) << "Parsing ground truth "
+                              << input.ground_truth_bbox->shape().DebugString()
+                              << input.ground_truth_frame_id->shape();
 
     absl::flat_hash_map<int64_t, std::vector<co::Object>> gts_map =
         co::ParseObjectFromTensors(

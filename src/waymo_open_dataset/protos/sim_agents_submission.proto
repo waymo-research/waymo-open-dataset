@@ -20,6 +20,8 @@ syntax = "proto2";
 
 package waymo.open_dataset;
 
+import "waymo_open_dataset/protos/scenario.proto";
+
 message SimulatedTrajectory {
   // The simulated trajectory for a single object, including position and
   // heading. The (x, y, z) coordinates identify the centroid of the modeled
@@ -38,8 +40,24 @@ message SimulatedTrajectory {
   repeated float center_y = 3 [packed = true];
   repeated float center_z = 4 [packed = true];
   repeated float heading = 5 [packed = true];
+  // Optional fields. These fields represent the dimensions (in time) of the
+  // bounding box of the object, with the same conventions as above. If these
+  // are not required by the challenge, we assume a fixed box dimensions.
+  // Please refer to challenge specification to check if these fields are used.
+  repeated float width = 7 [packed = true];
+  repeated float length = 8 [packed = true];
+  repeated float height = 9 [packed = true];
+  // Optional field, representing the validity of the object at each time step.
+  // If this is not required by the challenge, we assume the object at all steps
+  // are valid. Please refer to challenge specification to check if these fields
+  // are used.
+  repeated bool valid = 11 [packed = true];
   // ID of the object.
   optional int32 object_id = 6;
+  // Optional field, representing the type of the object. If this is not
+  // required by the challenge, this field is ignored. Please refer to challenge
+  // specification to check if these fields are used.
+  optional Track.ObjectType object_type = 10;
 }
 
 message JointScene {

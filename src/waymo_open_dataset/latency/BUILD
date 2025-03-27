@@ -27,7 +27,6 @@ cc_binary(
 py_binary(
     name = "make_objects_file_from_latency_results",
     srcs = ["make_objects_file_from_latency_results.py"],
-    python_version = "PY3",
     deps = [
         requirement('numpy'),
         "//waymo_open_dataset:dataset_proto_py_pb2",
