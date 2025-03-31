@@ -100,11 +100,11 @@ class ConvertersTest(parameterized.TestCase, tf.test.TestCase):
         not use_log_validity,
     )
 
-  def test_simulated_scenegen_to_trajectories(self):
+  def test_simulated_scenariogen_to_trajectories(self):
     scenario = test_utils.get_womd_test_scenario()
     challenge_type = submission_specs.ChallengeType.SCENARIO_GEN
     joint_scenes = converters.scenario_to_joint_scene(scenario, challenge_type)
-    trajectories = converters.simulated_scenegen_to_trajectories(
+    trajectories = converters.simulated_scenariogen_to_trajectories(
         joint_scenes,
         scenario,
         challenge_type,

@@ -53,7 +53,7 @@ message SimAgentMetricsConfig {
     //  logged step for each single agent will be evaluated under the speed
     //  distribution of the 32 parallel simulations at that specific step;
     //  2. SCENARIO_GEN challenge uses `aggregate_objects=True` for all
-    //  histogram-based features. Similar to speed, for each logged step's all
+    //  histogram-based features. Similar to speed, for each logged step all
     //  objects will be evaluated against the same distribution over all the 32
     //  parallel simulated scenarios' objects (parallel_simulations *
     //  num_valid_objects);

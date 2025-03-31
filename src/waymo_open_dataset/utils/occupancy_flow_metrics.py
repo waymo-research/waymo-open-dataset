@@ -17,7 +17,7 @@
 from typing import Sequence
 
 import tensorflow as tf
-import tensorflow_graphics.image.transformer as tfg_transformer
+
 
 from waymo_open_dataset.protos import occupancy_flow_metrics_pb2
 from waymo_open_dataset.utils import occupancy_flow_grids
@@ -321,10 +321,13 @@ def _flow_warp(
     warped_indices = warped_indices + 1
     # NOTE: tensorflow graphics expects warp to contain (x, y) as well.
     # [batch_size, height, width, 2]
-    warped_origin = tfg_transformer.sample(
-        image=flow_origin_occupancy,
-        warp=warped_indices,
-        pixel_type=tfg_transformer.PixelType.INTEGER,
+    # Tensorflow-graphics is deprecated, so we need to replace this.
+    # We are temporarily disabling this function until we find a replacement.
+    # Please, sync to previous versions of this codebase if you need this
+    # function.
+    raise NotImplementedError(
+        'This function is temporarily disabled since tensorflow-graphics '
+        'is deprecated.'
     )
     warped_flow_origins.append(warped_origin)
 

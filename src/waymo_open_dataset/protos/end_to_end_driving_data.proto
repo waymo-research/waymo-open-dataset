@@ -54,7 +54,7 @@ message E2EDFrame {
 message EgoTrajectoryStates {
   // Position in meters. Right-handed coordinate system.
   // +x = forward, +y = left, +z = up.
-  // The ego-vehicle is located at (0, 0, 0).
+  // The origin (0, 0, 0) is at the middle of the ego vehicle's rear axle.
   repeated float pos_x = 1 [packed = true];
   repeated float pos_y = 2 [packed = true];
   repeated float pos_z = 3 [packed = true];

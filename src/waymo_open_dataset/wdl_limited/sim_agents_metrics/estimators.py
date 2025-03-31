@@ -80,9 +80,9 @@ def _log_likelihood_estimate_timeseries_scene_level(
   """Computes the log-likelihood estimates for a time-series simulated feature.
 
   This log-likelihood estimation is performed on a scene-level basis,
-  aggregating over all agents. One scene is one snapshot of information at one
-  timestep. One scenario contains multiple scene, like 91 scenes for scenario
-  gen in WOMD. One Scene contains multiple agents.
+  aggregating over all agents. One Scene captures one snapshot of the simulation
+  for a single timestep.  One Scene contains multiple agents.  One Scenario
+  contains multiple Scenes, e.g. 91 scenes for SCENARIO_GEN in WOMD.
   Note: This function is only used for the SCENARIO_GEN challenge.
 
   Args:

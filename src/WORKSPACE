@@ -78,10 +78,10 @@ http_archive(
 
 http_archive(
     name = "com_google_absl",
-    sha256 = "94aef187f688665dc299d09286bfa0d22c4ecb86a80b156dff6aabadc5a5c26d",
-    strip_prefix = "abseil-cpp-273292d1cfc0a94a65082ee350509af1d113344d",
+    sha256 = "9892836ab0d3f099b8c15076c6f4168144f452d097bd49da215fe0df36a2d48c",
+    strip_prefix = "abseil-cpp-c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
     urls = [
-        "https://github.com/abseil/abseil-cpp/archive/273292d1cfc0a94a65082ee350509af1d113344d.tar.gz"
+        "https://github.com/abseil/abseil-cpp/archive/c2435f8342c2d0ed8101cb43adfd605fdc52dca2.tar.gz"
     ],
 )
 
@@ -155,7 +155,7 @@ http_archive(
     ],
 )
 
-# We TensorFlow from the pip package via pip_parse belo, this repo is only
+# We TensorFlow from the pip package via pip_parse below, this repo is only
 # needed for bzl scripts (ex. tf_gen_op_wrapper_py), which are not in the pip
 # package.
 http_archive(

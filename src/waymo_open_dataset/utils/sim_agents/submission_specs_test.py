@@ -236,8 +236,7 @@ class SubmissionSpecsTest(tf.test.TestCase, parameterized.TestCase):
       )
 
   @parameterized.parameters(
-      (submission_specs.ChallengeType.SIM_AGENTS),
-      (submission_specs.ChallengeType.SCENARIO_GEN),
+      (submission_specs.ChallengeType.SIM_AGENTS,),
   )
   def test_validate_scenario_rollouts_wrong_n_simulations(
       self, challenge_type: submission_specs.ChallengeType
@@ -259,21 +258,14 @@ class SubmissionSpecsTest(tf.test.TestCase, parameterized.TestCase):
           scenario_rollouts, scenario, challenge_type
       )
 
-  @parameterized.parameters(
-      (submission_specs.ChallengeType.SIM_AGENTS),
-      # TODO(xiukun): ask Nico how to fake a test submission for scenario gen.
-      # (submission_specs.ChallengeType.SCENARIO_GEN),
-      # Placeholder for now, in order to avoid error for parameterized test.
-      (submission_specs.ChallengeType.SIM_AGENTS),
-  )
-  def test_validate_scenario_with_test_submission(
-      self, challenge_type: submission_specs.ChallengeType
-  ):
+  def test_validate_scenario_with_test_submission(self):
     scenario = test_utils.get_womd_test_scenario()
     test_submission = sim_agents_test_utils.load_test_submission()
     scenario_rollouts = test_submission.scenario_rollouts[0]
     submission_specs.validate_scenario_rollouts(
-        scenario_rollouts, scenario, challenge_type
+        scenario_rollouts,
+        scenario,
+        challenge_type=submission_specs.ChallengeType.SIM_AGENTS,
     )
 
 

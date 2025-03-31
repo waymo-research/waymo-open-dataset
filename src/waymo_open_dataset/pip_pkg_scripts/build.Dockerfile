@@ -1,6 +1,6 @@
 # We Keep it to a bare minumum to run bazel build to build the pip package (wheel).
 # An official docker image to build manylinux2014_x86_64 wheels.
-FROM quay.io/pypa/manylinux_2_28_x86_64
+FROM quay.io/pypa/manylinux_2_28
 
 # go is required to use bazelisk
 RUN yum -y install sudo golang python3 clang

@@ -49,7 +49,6 @@ py_library(
     srcs = ["occupancy_flow_metrics.py"],
     deps = [
         requirement('tensorflow'),
-        requirement('tensorflow_graphics'),
         ":occupancy_flow_grids",
         "//waymo_open_dataset/protos:occupancy_flow_metrics_proto_py_pb2",
     ],

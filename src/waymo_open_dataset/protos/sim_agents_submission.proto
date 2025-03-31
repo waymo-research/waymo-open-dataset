@@ -42,14 +42,13 @@ message SimulatedTrajectory {
   repeated float heading = 5 [packed = true];
   // Optional fields. These fields represent the dimensions (in time) of the
   // bounding box of the object, with the same conventions as above. If these
-  // are not required by the challenge, we assume a fixed box dimensions.
+  // are not required by the challenge, we assume fixed box dimensions.
   // Please refer to challenge specification to check if these fields are used.
   repeated float width = 7 [packed = true];
   repeated float length = 8 [packed = true];
   repeated float height = 9 [packed = true];
-  // Optional field, representing the validity of the object at each time step.
-  // If this is not required by the challenge, we assume the object at all steps
-  // are valid. Please refer to challenge specification to check if these fields
+  // Specifies an object field, when required by the challenge, otherwise
+  // ignored. Please refer to challenge specification to check if these fields
   // are used.
   repeated bool valid = 11 [packed = true];
   // ID of the object.

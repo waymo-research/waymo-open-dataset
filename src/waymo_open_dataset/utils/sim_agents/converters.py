@@ -102,7 +102,7 @@ def scenario_to_joint_scene(
     )
   if not _all_tensor_length_equal(trajectories):
     raise ValueError(
-        'The trajectories used does not have all the contained tensors with the'
+        'The trajectories used do not have all the contained tensors with the'
         ' same length.'
     )
   # Iterate over objects and create `SimulatedTrajectory`s.
@@ -225,7 +225,7 @@ def joint_scene_to_trajectories(
   )
 
 
-def simulated_scenegen_to_trajectories(
+def simulated_scenariogen_to_trajectories(
     joint_scene: sim_agents_submission_pb2.JointScene,
     scenario: scenario_pb2.Scenario,
     challenge_type: _ChallengeType,
@@ -235,7 +235,7 @@ def simulated_scenegen_to_trajectories(
   Note: This function is only used for the SCENARIO_GEN challenge.
 
   Args:
-    joint_scene: A JointScene representing a simulated data for Scenario
+    joint_scene: A JointScene representing a simulated scenario for Scenario
       Generation. The input joint_scene is assumed to be obtained from
       `scenario_to_joint_scene()` above.
     scenario: The original scenario proto, only used for validity mask.
@@ -263,7 +263,7 @@ def simulated_scenegen_to_trajectories(
     sim_z.append(simulated_trajectory.center_z)
     sim_heading.append(simulated_trajectory.heading)
     sim_ids.append(simulated_trajectory.object_id)
-    # For SENARIO_GEN, we assume the length, width, height, valid, and
+    # For SCENARIO_GEN, we assume the length, width, height, valid, and
     # object_type must be provided, instead of optional.
     sim_length.append(simulated_trajectory.length)
     sim_width.append(simulated_trajectory.width)

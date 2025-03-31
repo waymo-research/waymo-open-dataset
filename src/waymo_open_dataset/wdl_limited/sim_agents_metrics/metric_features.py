@@ -122,7 +122,7 @@ def compute_metric_features(
         joint_scene, scenario, use_log_validity=use_log_validity
     )
   elif challenge_type == _ChallengeType.SCENARIO_GEN:
-    simulated_trajectories = converters.simulated_scenegen_to_trajectories(
+    simulated_trajectories = converters.simulated_scenariogen_to_trajectories(
         joint_scene, scenario, challenge_type
     )
 

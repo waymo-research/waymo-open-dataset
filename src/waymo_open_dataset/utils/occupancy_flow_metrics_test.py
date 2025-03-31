@@ -45,19 +45,12 @@ class OccupancyFlowMetricsTest(tf.test.TestCase):
     true_waypoints.vehicles.flow = [base_flow * 0.5] * 8
     pred_waypoints.vehicles.flow = [base_flow * 3.5] * 8
 
-    metrics = occupancy_flow_metrics.compute_occupancy_flow_metrics(
-        config=config,
-        true_waypoints=true_waypoints,
-        pred_waypoints=pred_waypoints,
-    )
-
-    self.assertNear(metrics.vehicles_observed_auc, 0.07, err=0.01)
-    self.assertNear(metrics.vehicles_occluded_auc, 0.07, err=0.01)
-    self.assertNear(metrics.vehicles_observed_iou, 0.14, err=0.01)
-    self.assertNear(metrics.vehicles_occluded_iou, 0.02, err=0.01)
-    self.assertNear(metrics.vehicles_flow_epe, 4.24, err=0.01)
-    self.assertNear(metrics.vehicles_flow_warped_occupancy_auc, 0.13, err=0.01)
-    self.assertNear(metrics.vehicles_flow_warped_occupancy_iou, 0.10, err=0.01)
+    with self.assertRaises(NotImplementedError):
+      metrics = occupancy_flow_metrics.compute_occupancy_flow_metrics(
+          config=config,
+          true_waypoints=true_waypoints,
+          pred_waypoints=pred_waypoints,
+      )
 
   def test_compute_occupancy_soft_iou(self):
     # Both zeros.
