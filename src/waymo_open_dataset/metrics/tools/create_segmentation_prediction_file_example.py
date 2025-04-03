@@ -37,18 +37,22 @@ def _create_single_frame_seg_pd_file_example():
       pd = open_dataset.MatrixInt32()
       for _ in range(50):
         for _ in range(1000):
+          pd.data.append(segmentation_pb2.Segmentation.TYPE_UNDEFINED)
           pd.data.append(segmentation_pb2.Segmentation.TYPE_CAR)
       pd.shape.dims.append(50)
       pd.shape.dims.append(1000)
+      pd.shape.dims.append(2)
       pd_str = zlib.compress(pd.SerializeToString())
       segmentation_label.ri_return1.segmentation_label_compressed = pd_str
       # Add prediction for the second return image.
       pd = open_dataset.MatrixInt32()
       for _ in range(50):
         for _ in range(1000):
+          pd.data.append(segmentation_pb2.Segmentation.TYPE_UNDEFINED)
           pd.data.append(segmentation_pb2.Segmentation.TYPE_PEDESTRIAN)
       pd.shape.dims.append(50)
       pd.shape.dims.append(1000)
+      pd.shape.dims.append(2)
       pd_str = zlib.compress(pd.SerializeToString())
       segmentation_label.ri_return2.segmentation_label_compressed = pd_str
       frame.segmentation_labels.append(segmentation_label)
