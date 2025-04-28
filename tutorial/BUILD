@@ -50,6 +50,7 @@ py_binary(
         "//waymo_open_dataset/metrics/ops:py_metrics_ops",
         "//waymo_open_dataset/metrics/python:config_util_py",
         "//waymo_open_dataset/metrics/python:keypoint_metrics",
+        "//waymo_open_dataset/metrics/python:rater_feedback_utils",
         "//waymo_open_dataset/protos:breakdown_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_proto_py_pb2",
         "//waymo_open_dataset/protos:camera_segmentation_submission_proto_py_pb2",

@@ -251,15 +251,26 @@ def compute_metric_features(
   for dynamic_map_state in scenario.dynamic_map_states:
     traffic_signals.append(list(dynamic_map_state.lane_states))
 
-  red_light_violations = traffic_light_features.compute_red_light_violation(
-      center_x=simulated_trajectories.x,
-      center_y=simulated_trajectories.y,
-      valid=simulated_trajectories.valid,
-      evaluated_object_mask=evaluated_object_mask,
-      lane_polylines=lane_polylines,
-      lane_ids=lane_ids,
-      traffic_signals=traffic_signals
-  )
+  if lane_polylines and traffic_signals:
+    red_light_violations = traffic_light_features.compute_red_light_violation(
+        center_x=simulated_trajectories.x,
+        center_y=simulated_trajectories.y,
+        valid=simulated_trajectories.valid,
+        evaluated_object_mask=evaluated_object_mask,
+        lane_polylines=lane_polylines,
+        lane_ids=lane_ids,
+        traffic_signals=traffic_signals
+    )
+  else:
+    # Cannot compute red light violations without lanes and traffic signals,
+    # so we assume no violations.
+    red_light_violations = tf.zeros(
+        (
+            len(evaluated_sim_agent_ids),
+            simulated_trajectories.valid.shape[1],
+        ),
+        dtype=tf.bool,
+    )
 
   if challenge_type == _ChallengeType.SIM_AGENTS:
     # Slice in time to reduce to `current_time_index` steps.

@@ -167,3 +167,19 @@ py_test(
         "//waymo_open_dataset/protos:metrics_proto_py_pb2",
     ],
 )
+
+py_library(
+    name = "rater_feedback_utils",
+    srcs = ["rater_feedback_utils.py"],
+    deps = [requirement('numpy')],
+)
+
+py_test(
+    name = "rater_feedback_utils_test",
+    srcs = ["rater_feedback_utils_test.py"],
+    deps = [
+        requirement('absl-py'),
+        requirement('numpy'),
+        ":rater_feedback_utils",
+    ],
+)

@@ -48,6 +48,13 @@ message E2EDFrame {
   // Driving intent of the ego-vehicle at this timestep.
   optional EgoIntent.Intent intent = 7;
 
+  // Future trajectories with human-labeled rater scores. Only x,y position
+  // fields are populated, along with the rated score. This field is valid
+  // for only a subset of frames. For these frames, there are up to 3 rated
+  // trajectories. In all other frames, this field is marked as invalid with
+  // assigned rater scores of -1 or left empty. Valid scores range from [0, 10].
+  repeated EgoTrajectoryStates preference_trajectories = 8;
+
 
 }
 
@@ -67,7 +74,7 @@ message EgoTrajectoryStates {
   repeated float accel_x = 6 [packed = true];
   repeated float accel_y = 7 [packed = true];
 
-  // Only populated for trajectories with human-labeled preferences.
+  // Only populated for trajectories with human-labeled scores.
   // Valid scores range from [0, 10], inclusive.
   optional float preference_score = 8;
 }

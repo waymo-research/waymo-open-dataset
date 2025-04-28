@@ -175,6 +175,10 @@ all_proto_library(
 )
 
 all_proto_library(
+    src = "end_to_end_driving_metrics.proto",
+)
+
+all_proto_library(
     src = "end_to_end_driving_submission.proto",
     deps = [
         ":end_to_end_driving_data_proto",
