@@ -1,5 +1,23 @@
 # History of code and dataset version updates.
 
+## April 2025 Update
+
+End-To-End Driving Dataset (v 1.0.0):
+
+* Training Set Expanded: We have enriched our training dataset with an additional 200 runs, bringing the total to 2,037 runs.
+* Testing Set Available: A new testing set comprising 1,505 runs is available to download.
+* Validation Set with Rater Feedback Labels and Scenario Tags: We have also
+uploaded a validation set of 479 runs. Importantly, this set includes our rater
+feedback labels and scenario tags, allowing participants to validate their
+model's performance
+
+Code Updates:
+
+* Rater Feedback Metric Code Released: The code for calculating our Rater
+Feedback Score is now publicly available.
+* Colab Updated: Our colab tutorial has been updated to demonstrate how to use the Rater Feedback Score calculation code.
+* Data Proto Updated: We have updated the data proto to reflect the release of rater feedback labels in the validation set.
+
 ## March 2025 Update
 This update contains several changes to the metrics and new datasets.
 

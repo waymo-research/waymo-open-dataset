@@ -190,7 +190,7 @@ py_wheel(
         "dacite==1.8.1"
     ],
     homepage = "https://github.com/waymo-research/waymo-open-dataset",
-    version = "1.6.6",
+    version = "1.6.7",
     deps = [
         ":all_python_modules",
     ],
