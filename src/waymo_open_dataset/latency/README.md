@@ -93,13 +93,13 @@ gzip example_docker_image.tar
 ```
 
 To upload image to the bucket you can use Web interface of Google Cloud Storage
-or `gsutil` command:
+or `gcloud storage` command:
 
 ```bash
-gsutil cp example_docker_image.tar.gz  gs://example_bucket_name/example_folder/
+gcloud storage cp example_docker_image.tar.gz  gs://example_bucket_name/example_folder/
 ```
 
-More info on `gsutil` command available at [official documentation](https://cloud.google.com/storage/docs/gsutil/commands/cp)
+More info on `gcloud storage` command available at [official documentation](https://cloud.google.com/storage/docs/gsutil/commands/cp)
 
 You will need to grant Waymo’s service account
 `213834518535-compute@developer.gserviceaccount.com` permissions to read from
