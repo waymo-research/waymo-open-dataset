@@ -99,7 +99,7 @@ or `gcloud storage` command:
 gcloud storage cp example_docker_image.tar.gz  gs://example_bucket_name/example_folder/
 ```
 
-More info on `gcloud storage` command available at [official documentation](https://cloud.google.com/storage/docs/gsutil/commands/cp)
+More info on `gcloud storage` command available at [official documentation](https://docs.cloud.google.com/sdk/gcloud/reference/storage/cp)
 
 You will need to grant Waymo’s service account
 `213834518535-compute@developer.gserviceaccount.com` permissions to read from
